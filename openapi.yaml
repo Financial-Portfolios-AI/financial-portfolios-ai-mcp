@@ -1,0 +1,571 @@
+openapi: 3.1.0
+info:
+  title: Financial Portfolios AI API
+  description: Official REST API for Financial Portfolios AI (https://financial-portfolios.ai). Access quantitative portfolio model allocations, historical snapshots, rebalancing alignment engine, and proprietary investment research. All data is provided for informational and educational purposes under the publisher exclusion.
+  version: 1.0.0
+  contact:
+    name: Financial Portfolios AI Support
+    url: https://financial-portfolios.ai
+    email: support@financial-portfolios.ai
+servers:
+  - url: https://financial-portfolios.ai
+    description: Production Customer Portal API
+
+paths:
+  /api/v1/portfolios:
+    get:
+      operationId: listPortfolios
+      summary: List accessible quantitative portfolios
+      description: Retrieve list of all quantitative investment model portfolios accessible under the user's active subscription.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: List of accessible portfolios
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/portfolios/{portfolio_code}:
+    get:
+      operationId: getPortfolioAllocation
+      summary: Get current or historical portfolio allocation
+      description: Retrieve latest target allocation snapshot, position weights, expected returns, volatility, equity exposure, and cash allocation for a specific portfolio.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: portfolio_code
+          in: path
+          required: true
+          description: Portfolio code (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE)
+          schema:
+            type: string
+            example: AQA_AGGRESSIVE
+        - name: as_of
+          in: query
+          required: false
+          description: Optional historical snapshot date (YYYY-MM-DD or ISO 8601)
+          schema:
+            type: string
+            example: "2026-08-01"
+      responses:
+        '200':
+          description: Target portfolio allocation snapshot
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioSnapshot'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/v1/portfolios/{portfolio_code}/history:
+    get:
+      operationId: getPortfolioHistory
+      summary: Get portfolio allocation history
+      description: Retrieve historical allocation snapshots for up to 365 days.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: portfolio_code
+          in: path
+          required: true
+          description: Portfolio code (e.g. AQA_AGGRESSIVE)
+          schema:
+            type: string
+            example: AQA_AGGRESSIVE
+        - name: days
+          in: query
+          required: false
+          description: Number of calendar days of history (1-365)
+          schema:
+            type: integer
+            default: 30
+            minimum: 1
+            maximum: 365
+      responses:
+        '200':
+          description: Historical allocation timeline
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PortfolioHistoryResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/portfolios/{portfolio_code}/rebalance:
+    post:
+      operationId: rebalancePortfolio
+      summary: Calculate portfolio model alignment arithmetic
+      description: Upload user's current holdings (max 200 rows, 512 KB) and calculate mathematical BUY/SELL deltas to match the target portfolio model. Informational calculation only.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: portfolio_code
+          in: path
+          required: true
+          description: Target portfolio code (e.g. AQA_AGGRESSIVE)
+          schema:
+            type: string
+            example: AQA_AGGRESSIVE
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Holdings CSV file containing ticker and quantity columns (max 200 rows, 512 KB)
+                as_of:
+                  type: string
+                  description: Optional target date snapshot
+      responses:
+        '200':
+          description: Rebalancing orders result (returns raw CSV by default on REST endpoint)
+          content:
+            text/csv:
+              schema:
+                type: string
+                description: Raw rebalance orders in CSV format
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '422':
+          description: Invalid holdings format
+
+  /api/v1/portfolios/rebalance/template:
+    get:
+      operationId: getRebalanceTemplate
+      summary: Download holdings CSV template
+      description: Download sample CSV template required for uploading user holdings (limits: max 200 rows, 512 KB).
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Holdings CSV template
+          content:
+            text/csv:
+              schema:
+                type: string
+
+  /api/v1/blog/posts:
+    get:
+      operationId: listBlogPosts
+      summary: List quantitative research posts
+      description: List published quantitative research articles, market updates, and commentaries.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Paginated research post list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPostListResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/v1/blog/posts/{slug}:
+    get:
+      operationId: getBlogPost
+      summary: Get full research article
+      description: Retrieve full content of a published research article by slug.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            example: q3-2026-quant-outlook
+      responses:
+        '200':
+          description: Full blog post content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /api/tokens/me:
+    get:
+      operationId: getMyTokenInfo
+      summary: Get API token metadata
+      description: Check metadata, rate limits, and usage stats for the active API token.
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: API Token metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APITokenResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Personal API token (format aqat_v1_<hex_token>) obtained from https://financial-portfolios.ai/settings/api-tokens
+
+  responses:
+    UnauthorizedError:
+      description: API key missing, invalid, or expired
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "API key required. Include it as: X-API-Key: aqat_v1_..."
+    ForbiddenError:
+      description: Subscription required or account inactive
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Active subscription required to access this portfolio"
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              detail:
+                type: string
+                example: "Portfolio not found"
+
+  schemas:
+    PortfolioSummary:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: string
+          example: AQA_AGGRESSIVE
+        product_name:
+          type: string
+          example: Aggressive Growth Portfolio
+        product_description:
+          type: string
+          example: High-growth algorithmic equity strategy
+        risk_level:
+          type: string
+          example: High
+        theme:
+          type: string
+          example: Momentum & Growth
+
+    PortfolioListResponse:
+      type: object
+      required:
+        - portfolios
+        - total
+      properties:
+        portfolios:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortfolioSummary'
+        total:
+          type: integer
+          example: 3
+
+    Position:
+      type: object
+      required:
+        - ticker
+        - weight
+      properties:
+        ticker:
+          type: string
+          example: AAPL
+        weight:
+          type: number
+          example: 0.15
+        sector:
+          type: string
+          example: Technology
+        expected_return:
+          type: number
+          example: 0.125
+        expected_volatility:
+          type: number
+          example: 0.22
+
+    HistoryPosition:
+      type: object
+      required:
+        - ticker
+        - weight
+      properties:
+        ticker:
+          type: string
+          example: AAPL
+        weight:
+          type: number
+          example: 0.15
+        sector:
+          type: string
+          example: Technology
+
+    PortfolioSnapshot:
+      type: object
+      required:
+        - portfolio_code
+        - date
+        - equity_exposure
+        - cash_allocation
+        - positions
+      properties:
+        portfolio_code:
+          type: string
+          example: AQA_AGGRESSIVE
+        date:
+          type: string
+          format: date-time
+        model_version:
+          type: string
+          example: v2.4.1
+        equity_exposure:
+          type: number
+          example: 0.92
+        cash_allocation:
+          type: number
+          example: 0.08
+        effective_n:
+          type: number
+          example: 14.2
+        total_positions:
+          type: integer
+          example: 25
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+
+    PortfolioHistoryEntry:
+      type: object
+      required:
+        - date
+        - equity_exposure
+        - cash_allocation
+        - effective_n
+        - total_positions
+        - positions
+      properties:
+        date:
+          type: string
+          format: date-time
+        model_version:
+          type: string
+          example: v2.4.1
+        equity_exposure:
+          type: number
+          example: 0.92
+        cash_allocation:
+          type: number
+          example: 0.08
+        effective_n:
+          type: number
+          example: 14.2
+        total_positions:
+          type: integer
+          example: 25
+        positions:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryPosition'
+
+    PortfolioHistoryResponse:
+      type: object
+      required:
+        - portfolio_code
+        - days
+        - total_snapshots
+        - snapshots
+      properties:
+        portfolio_code:
+          type: string
+          example: AQA_AGGRESSIVE
+        days:
+          type: integer
+          example: 30
+        total_snapshots:
+          type: integer
+          example: 30
+        snapshots:
+          type: array
+          items:
+            $ref: '#/components/schemas/PortfolioHistoryEntry'
+
+    BlogPostSummary:
+      type: object
+      required:
+        - id
+        - title
+        - slug
+        - is_gated
+        - is_accessible
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Q3 2026 Quantitative Outlook
+        slug:
+          type: string
+          example: q3-2026-quant-outlook
+        excerpt:
+          type: string
+          example: Deep-dive into macroeconomic regime shifts and factor returns.
+        featured_image_url:
+          type: string
+          nullable: true
+        author:
+          type: string
+          example: Chief Investment Strategist
+        published_at:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        is_gated:
+          type: boolean
+        is_accessible:
+          type: boolean
+
+    BlogPostListResponse:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - page_size
+        - total_pages
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlogPostSummary'
+        total:
+          type: integer
+          example: 1
+        page:
+          type: integer
+          example: 1
+        page_size:
+          type: integer
+          example: 20
+        total_pages:
+          type: integer
+          example: 1
+
+    BlogPost:
+      type: object
+      required:
+        - id
+        - title
+        - slug
+        - content
+        - is_gated
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        featured_image_url:
+          type: string
+          nullable: true
+        author:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        is_gated:
+          type: boolean
+
+    APITokenResponse:
+      type: object
+      required:
+        - id
+        - name
+        - token_prefix
+        - is_active
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        token_prefix:
+          type: string
+          example: aqat_v1_...
+        is_active:
+          type: boolean
+        use_count:
+          type: integer
+        last_used_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time

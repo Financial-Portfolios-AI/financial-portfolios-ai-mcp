@@ -1,0 +1,55 @@
+{
+  "name": "financial-portfolios-ai",
+  "display_name": "Financial Portfolios AI Extension",
+  "description": "Google Vertex AI & Gemini Extension for quantitative model portfolios, target asset allocations, and model alignment arithmetic from Financial Portfolios AI. Informational only under publisher exclusion.",
+  "runtime_environment": "GOOGLE_CLOUD_RUN",
+  "service_endpoint": "https://financial-portfolios.ai/api/v1",
+  "mcp_endpoint": "https://<your-cloud-run-domain>/mcp",
+  "auth_config": {
+    "auth_type": "API_KEY",
+    "api_key_config": {
+      "key_name": "X-API-Key",
+      "location": "HEADER",
+      "format": "aqat_v1_<hex_token>"
+    }
+  },
+  "api_spec": {
+    "format": "OPEN_API_V3",
+    "spec_path": "./openapi.yaml"
+  },
+  "category": "FINANCE_AND_INVESTING",
+  "tools": [
+    {
+      "name": "list_portfolios",
+      "description": "List accessible quantitative investment portfolios."
+    },
+    {
+      "name": "get_portfolio_allocation",
+      "description": "Retrieve current or historical target allocation snapshot and risk metrics."
+    },
+    {
+      "name": "get_portfolio_history",
+      "description": "Retrieve historical allocation snapshots over a custom time window."
+    },
+    {
+      "name": "rebalance_portfolio",
+      "description": "Calculate mathematical model alignment arithmetic (share quantity differences) for user holdings."
+    },
+    {
+      "name": "get_rebalance_template",
+      "description": "Download holdings CSV template (max 200 rows, 512 KB)."
+    },
+    {
+      "name": "list_blog_posts",
+      "description": "Search and list published quantitative research articles."
+    },
+    {
+      "name": "get_blog_post",
+      "description": "Retrieve full content of a research article."
+    },
+    {
+      "name": "get_token_info",
+      "description": "Check API token metadata and active subscription status."
+    }
+  ]
+}

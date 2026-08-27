@@ -1,0 +1,25 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Financial Portfolios AI",
+  "name_for_model": "financial_portfolios_ai",
+  "description_for_human": "Analyze quantitative investment portfolios, target asset allocations, model alignment arithmetic, and research.",
+  "description_for_model": "Assistant tool plugin to discover quantitative portfolio allocations, compute model alignment arithmetic, and inspect market commentaries from Financial Portfolios AI under the publisher exclusion.",
+  "auth": {
+    "type": "service_http",
+    "authorization_type": "custom_header",
+    "custom_header_name": "X-API-Key",
+    "verification_tokens": {}
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://financial-portfolios.ai/openapi.yaml",
+    "is_user_authenticated": true
+  },
+  "mcp": {
+    "transport": "streamable-http",
+    "endpoint": "https://<your-cloud-run-domain>/mcp"
+  },
+  "logo_url": "https://financial-portfolios.ai/assets/logo-512.png",
+  "contact_email": "support@financial-portfolios.ai",
+  "legal_info_url": "https://financial-portfolios.ai/terms"
+}

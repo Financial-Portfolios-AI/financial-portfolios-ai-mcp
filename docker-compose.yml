@@ -1,0 +1,57 @@
+# =============================================================================
+# Financial Portfolios AI — MCP server (local / integration)
+# Runs the Streamable-HTTP + SSE MCP server and wires it to the customer portal
+# backend over the portal's Docker network. The image is a thin proxy: it forwards
+# the caller's aqat_v1_ token to the portal's /api/v1 API (see src/.../auth.py).
+#
+# The Dockerfile COPYs BOTH ./financial-portfolios-ai-sdk and
+# ./financial-portfolios-ai-mcp, so the build context is the PARENT directory.
+#
+# Usage (from this directory, with the portal stack already up):
+#   docker compose up -d --build
+#   curl http://localhost:8090/healthz
+# The portal's `trading_network` must exist (it does once the portal is running).
+# =============================================================================
+
+services:
+  mcp:
+    container_name: fpai-mcp
+    build:
+      context: ..                                  # financial-portfolio-ai-oss (sdk + mcp)
+      dockerfile: financial-portfolios-ai-mcp/Dockerfile
+    ports:
+      - "${MCP_PUBLISH_PORT:-8090}:8080"
+    environment:
+      # Portal origin the SDK calls (it appends /api/v1/... and /api/tokens).
+      # Defaults to production. For local integration against a self-hosted portal,
+      # set FINANCIAL_PORTFOLIOS_BASE_URL to your backend origin (e.g. the portal's
+      # internal Docker service on a shared network) in a local .env — do not hard-
+      # code private hostnames here.
+      - FINANCIAL_PORTFOLIOS_BASE_URL=${FINANCIAL_PORTFOLIOS_BASE_URL:-https://financial-portfolios.ai}
+      # Optional single-user default token (per-request X-API-Key overrides it).
+      - FINANCIAL_PORTFOLIOS_API_TOKEN=${FINANCIAL_PORTFOLIOS_API_TOKEN:-}
+      # OAuth 2.1: public authorization-server (issuer) + this server's public URL,
+      # advertised in /.well-known/oauth-protected-resource for marketplace clients.
+      - OAUTH_AUTHORIZATION_SERVER=${OAUTH_AUTHORIZATION_SERVER:-http://localhost:3000}
+      - MCP_PUBLIC_URL=${MCP_PUBLIC_URL:-http://localhost:8090/mcp}
+      - MCP_HOST=0.0.0.0
+      - MCP_PORT=8080
+      - MCP_LOG_LEVEL=${MCP_LOG_LEVEL:-INFO}
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz').read()"]
+      interval: 30s
+      timeout: 5s
+      start_period: 8s
+      retries: 3
+    networks:
+      - trading_network
+    restart: unless-stopped
+
+networks:
+  # Optional: join an external Docker network so the MCP can reach a self-hosted
+  # portal backend by its internal service name. Override the network name and the
+  # backend URL via env for your own deployment; not required for the hosted portal.
+  trading_network:
+    external: true
+    name: ${PORTAL_NETWORK:-trading_network}

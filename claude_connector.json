@@ -1,0 +1,107 @@
+{
+  "name": "financial-portfolios-ai",
+  "display_name": "Financial Portfolios AI",
+  "version": "1.0.0",
+  "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. (Informational only under publisher exclusion; not individualized financial advice).",
+  "website_url": "https://financial-portfolios.ai",
+  "documentation_url": "https://financial-portfolios.ai/docs",
+  "icon_url": "https://financial-portfolios.ai/assets/logo-512.png",
+  "author": {
+    "name": "Financial Portfolios AI Team",
+    "email": "support@financial-portfolios.ai",
+    "url": "https://financial-portfolios.ai"
+  },
+  "transports": {
+    "streamable_http": {
+      "path": "/mcp",
+      "description": "Recommended remote Streamable HTTP transport for Claude Connectors on web & cloud"
+    },
+    "sse": {
+      "path": "/sse",
+      "description": "Server-Sent Events (SSE) transport"
+    },
+    "stdio": {
+      "command": "financial-portfolios-ai-mcp",
+      "args": ["stdio"],
+      "description": "Standard I/O transport for local Claude Desktop and Claude Code CLI"
+    }
+  },
+  "authentication": {
+    "type": "api_key",
+    "header_name": "X-API-Key",
+    "alternative_header_name": "Authorization",
+    "token_format": "aqat_v1_<hex_key>",
+    "login_url": "https://financial-portfolios.ai/auth/google",
+    "token_generation_url": "https://financial-portfolios.ai/settings/api-tokens",
+    "instructions": "Log in to https://financial-portfolios.ai using Google Social Login, generate a personal API token under Settings > API Tokens, and supply it as an X-API-Key header to Claude."
+  },
+  "capabilities": {
+    "tools": [
+      {
+        "name": "list_portfolios",
+        "description": "List all accessible quantitative investment portfolios (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE)."
+      },
+      {
+        "name": "get_portfolio_allocation",
+        "description": "Retrieve current or historical target allocation snapshot, position weights, expected returns, and risk metrics."
+      },
+      {
+        "name": "get_portfolio_history",
+        "description": "Retrieve historical allocation snapshots over a custom time window (up to 365 days)."
+      },
+      {
+        "name": "rebalance_portfolio",
+        "description": "Calculate mathematical target-model alignment arithmetic (share quantity differences) given user holdings (max 200 rows, 512 KB)."
+      },
+      {
+        "name": "get_rebalance_template",
+        "description": "Download the standard CSV template format and guidelines for uploading user portfolio holdings."
+      },
+      {
+        "name": "list_blog_posts",
+        "description": "Search and list published quantitative research articles, market updates, and investment commentaries."
+      },
+      {
+        "name": "get_blog_post",
+        "description": "Retrieve full content of a published research article by slug."
+      },
+      {
+        "name": "get_token_info",
+        "description": "Inspect active API token metadata, usage rate limits, and subscription status."
+      }
+    ],
+    "resources": [
+      {
+        "uri": "portfolios://catalog",
+        "name": "Portfolio Catalog",
+        "mime_type": "application/json"
+      },
+      {
+        "uri": "research://posts/latest",
+        "name": "Latest Research & Market Insights",
+        "mime_type": "application/json"
+      }
+    ],
+    "resource_templates": [
+      {
+        "uri_template": "portfolios://{portfolio_code}/allocation",
+        "name": "Portfolio Target Allocation",
+        "mime_type": "application/json"
+      }
+    ],
+    "prompts": [
+      {
+        "name": "portfolio_review",
+        "description": "Comprehensive portfolio analysis prompt to evaluate asset allocation, risk profile, and position weights."
+      },
+      {
+        "name": "rebalance_advisor",
+        "description": "Guided assistant prompt for calculating and reviewing model alignment arithmetic for user holdings."
+      },
+      {
+        "name": "market_research_digest",
+        "description": "Synthesizes recent quantitative research articles and market commentaries into an executive summary."
+      }
+    ]
+  }
+}

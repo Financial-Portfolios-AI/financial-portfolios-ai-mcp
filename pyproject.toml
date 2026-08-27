@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "financial-portfolios-ai-mcp"
+version = "1.0.0"
+description = "Model Context Protocol (MCP) server for Financial Portfolios AI (Claude Connectors, Claude Desktop & Claude Code)"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "Financial Portfolios AI Team", email = "support@financial-portfolios.ai" }
+]
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-connectors",
+    "anthropic",
+    "finance",
+    "portfolios",
+    "quant",
+    "rebalance",
+    "ai-agent"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp[cli]>=1.0.0",
+    "financial-portfolios-ai>=1.0.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "uvicorn[standard]>=0.30.0",
+    "fastapi>=0.110.0",
+    "python-dotenv>=1.0.0",
+    "click>=8.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "respx>=0.20.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+financial-portfolios-ai-mcp = "financial_portfolios_ai_mcp.cli:main"
+
+[project.urls]
+Homepage = "https://financial-portfolios.ai"
+Documentation = "https://financial-portfolios.ai/docs"
+Repository = "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp.git"
+Issues = "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/financial_portfolios_ai_mcp"]
+# NOTE: openapi.yaml already ships inside the package at
+# src/financial_portfolios_ai_mcp/openapi.yaml (identical to the repo-root copy),
+# so a force-include of the root file to the same wheel path collides. Removed.
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.uv.sources]
+financial-portfolios-ai = { path = "../financial-portfolios-ai-sdk", editable = true }
