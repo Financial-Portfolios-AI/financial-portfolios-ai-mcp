@@ -31,8 +31,17 @@ steps:
       - '--platform'
       - 'managed'
       - '--allow-unauthenticated'
+      # OAUTH_AUTHORIZATION_SERVER + MCP_PUBLIC_URL are advertised in
+      # /.well-known/oauth-protected-resource (RFC 9728) so marketplace/directory
+      # clients discover the portal authorization server and this resource. They
+      # must be the PUBLIC portal origin, not localhost (ADR-0196/0198).
       - '--set-env-vars'
-      - 'FINANCIAL_PORTFOLIOS_BASE_URL=https://financial-portfolios.ai,MCP_LOG_LEVEL=INFO'
+      - 'FINANCIAL_PORTFOLIOS_BASE_URL=https://financial-portfolios.ai,OAUTH_AUTHORIZATION_SERVER=https://financial-portfolios.ai,MCP_PUBLIC_URL=https://financial-portfolios.ai/mcp,MCP_LOG_LEVEL=INFO'
+      # The /sse transport holds long-lived streaming connections. Cloud Run's own
+      # request timeout must be >= the LB backend timeout (mcp_backend_timeout_sec,
+      # 3600s in mcp_edge.tf) or the edge would cut streams short.
+      - '--timeout'
+      - '3600'
       - '--min-instances'
       - '0'
       - '--max-instances'
