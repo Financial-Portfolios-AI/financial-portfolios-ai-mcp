@@ -76,7 +76,20 @@ def create_app() -> FastAPI:
     # Build the transport sub-apps with ROOT internal paths so that mounting at
     # /mcp and /sse yields the advertised public URLs (default path is /mcp, which
     # mounted at /mcp would produce /mcp/mcp).
-    streamable_app = mcp_server.streamable_http_app(streamable_http_path="/")
+    #
+    # stateless_http=True: this server is a pure, stateless tool proxy (no
+    # server-initiated messages, no subscriptions). Stateful mode keeps per-session
+    # state in memory and intermittently 404s "Session not found" when a client
+    # (e.g. LM Studio) POSTs `notifications/initialized`/`tools/list` right after
+    # `initialize`, before the session is registered — a race clients don't retry.
+    # Stateless mode makes every request self-contained, so that error is
+    # impossible, and it is also required for correctness on multi-instance /
+    # autoscaled hosts (Cloud Run) where in-memory sessions don't survive
+    # cross-instance routing.
+    streamable_app = mcp_server.streamable_http_app(
+        streamable_http_path="/",
+        stateless_http=True,
+    )
     sse_app = mcp_server.sse_app(sse_path="/", message_path="/messages/")
 
     # Combined lifespan: mounting a Starlette sub-app into FastAPI does NOT run the

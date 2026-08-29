@@ -218,8 +218,9 @@ def run(url: str, token: str | None) -> int:
     try:
         result = client.initialize()
         server = result.get("serverInfo", {})
+        sess = f"session {client.session_id[:8]}…" if client.session_id else "stateless (no session id)"
         ok(f"initialize -> {server.get('name')} v{server.get('version')} "
-           f"(protocol {result.get('protocolVersion')}, session {client.session_id[:8]}…)")
+           f"(protocol {result.get('protocolVersion')}, {sess})")
     except SmokeError as e:
         fail(str(e))
         print(_c("31", "\nHandshake failed — cannot continue. Is the server up on this URL?"))
