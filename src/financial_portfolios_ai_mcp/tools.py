@@ -29,8 +29,10 @@ def register_tools(server: Any) -> None:
     @server.tool(
         name="list_portfolios",
         description=(
-            "List all quantitative investment portfolios accessible under the user's active "
-            "subscription on Financial Portfolios AI (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE)."
+            "List the model portfolios the user is subscribed to / has access to on Financial "
+            "Portfolios AI (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE). Call this first when the "
+            "user refers to 'my portfolios', 'my holdings', or 'my positions' without naming a specific "
+            "portfolio, then use `get_portfolio_allocation` to show the holdings of each."
         ),
     )
     async def list_portfolios() -> str:
@@ -73,10 +75,15 @@ def register_tools(server: Any) -> None:
     @server.tool(
         name="get_portfolio_allocation",
         description=(
-            "Retrieve current or historical target allocation snapshot for a specific portfolio "
-            "(e.g. 'AQA_AGGRESSIVE', 'AQA_BALANCED', 'AQA_DEFENSIVE'). Returns target asset weights, "
-            "tickers, sectors, expected return, volatility, equity exposure, and cash allocation. "
-            "Output represents mathematical target-model allocation arithmetic, not personalized investment advice."
+            "Show the current holdings and positions of a model portfolio: the stocks/tickers it "
+            "holds and their target weights. USE THIS whenever a user asks to see 'my portfolio', "
+            "'my holdings', 'my positions', 'what's in my portfolio', 'what stocks do I hold', or the "
+            "current/latest allocation for a portfolio (e.g. 'AQA_AGGRESSIVE', 'AQA_BALANCED', "
+            "'AQA_DEFENSIVE'). If the user does not name a portfolio, call `list_portfolios` first to "
+            "find their entitled portfolio codes, then call this for each. Returns target asset weights, "
+            "tickers, sectors, expected return, volatility, equity exposure, and cash allocation, and "
+            "can also fetch a historical snapshot via `as_of`. Output represents mathematical "
+            "target-model allocation arithmetic, not personalized investment advice."
         ),
     )
     async def get_portfolio_allocation(

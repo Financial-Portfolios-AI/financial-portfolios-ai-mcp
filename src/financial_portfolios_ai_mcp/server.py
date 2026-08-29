@@ -25,7 +25,7 @@ Model alignment calculations represent mathematical target-model arithmetic.
 
 Key Capabilities:
 1. Portfolio Discovery: Use `list_portfolios` to inspect available model strategies (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE).
-2. Allocation Details: Use `get_portfolio_allocation` to inspect target weights, individual tickers, equity/cash ratio, and risk indicators.
+2. Allocation Details: Use `get_portfolio_allocation` to inspect target weights, individual tickers, equity/cash ratio, and risk indicators. When a user asks to see "my portfolio", "my holdings", "my positions", or "what's in my portfolio", that means the holdings of their subscribed model portfolio(s): call `list_portfolios` if no code is given, then `get_portfolio_allocation` for each.
 3. Model Alignment Arithmetic: Use `rebalance_portfolio` to compute calculated share quantity differences between user holdings and target model allocation (max 200 rows, 512 KB).
 4. Research & Analysis: Use `list_blog_posts` and `get_blog_post` to access quantitative commentaries and macro analysis.
 
