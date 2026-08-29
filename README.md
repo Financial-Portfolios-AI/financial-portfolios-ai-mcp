@@ -174,6 +174,32 @@ uv run ruff check .
 uv run financial-portfolios-ai-mcp http --port 8080 --reload
 ```
 
+### End-to-end smoke test
+
+`scripts/smoke_test.py` exercises a running server over Streamable HTTP with the
+standard library only (no deps): `/healthz` → `initialize` → `tools/list`, and —
+if you pass an API token — real `tools/call` round-trips (`list_portfolios` →
+`get_portfolio_allocation`). It also regression-checks that
+`get_portfolio_allocation` advertises the words "holdings"/"positions" so that a
+prompt like *"show me my portfolio holdings"* actually invokes it.
+
+```bash
+# Handshake + tools/list + phrasing check (no credentials needed)
+python scripts/smoke_test.py
+
+# Full path incl. entitled data (generate a token at the portal /api-access)
+python scripts/smoke_test.py --token aqat_v1_xxxxx
+# or:  MCP_URL=http://localhost:8090/mcp/ MCP_TOKEN=aqat_v1_xxxxx python scripts/smoke_test.py
+```
+
+Exit code is 0 only if every executed check passes.
+
+> **Local docker-compose:** the compose file defaults `FINANCIAL_PORTFOLIOS_BASE_URL`
+> to the production origin. To point the server at a local portal backend on the
+> shared docker network, create a (gitignored) `.env` next to `docker-compose.yml`
+> with `FINANCIAL_PORTFOLIOS_BASE_URL=http://aqa-portal-backend:8000` and
+> `docker compose up -d`.
+
 ---
 
 ## License
