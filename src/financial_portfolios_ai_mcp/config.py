@@ -42,6 +42,15 @@ class Settings(BaseSettings):
         validation_alias="MCP_PUBLIC_URL",
         description="This MCP server's public URL (OAuth protected-resource identifier)",
     )
+    oauth_challenge_enabled: bool = Field(
+        default=True,
+        validation_alias="OAUTH_CHALLENGE_ENABLED",
+        description=(
+            "Return a 401 WWW-Authenticate challenge on tokenless MCP requests so "
+            "OAuth-capable clients begin the authorization flow. Set false for pure "
+            "header-token (aqat_v1_) deployments where no client performs OAuth."
+        ),
+    )
 
     # Server runtime settings
     host: str = Field(

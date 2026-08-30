@@ -16,13 +16,50 @@ from financial_portfolios_ai_mcp.server import mcp_server
 
 logger = logging.getLogger(__name__)
 
+# Transport mounts that carry MCP traffic. A tokenless request to one of these is
+# challenged with a 401 so OAuth-capable clients begin the authorization flow;
+# the well-known/health/root/openapi routes are always public.
+_PROTECTED_PREFIXES = ("/mcp", "/sse")
+
+
+def _header(scope, name: bytes) -> str | None:
+    for h_name, h_val in scope.get("headers", []):
+        if h_name.lower() == name:
+            return h_val.decode("latin1").strip()
+    return None
+
+
+def _resource_metadata_url(scope) -> str:
+    """Public URL of THIS server's RFC 9728 protected-resource metadata, derived
+    from the request so it is correct behind a proxy (X-Forwarded-Proto/Host)."""
+    proto = _header(scope, b"x-forwarded-proto")
+    host = _header(scope, b"x-forwarded-host") or _header(scope, b"host")
+    if host:
+        scheme = (proto or scope.get("scheme") or "https").split(",")[0].strip()
+        return f"{scheme}://{host}/.well-known/oauth-protected-resource"
+    # Fallback to the configured public resource origin.
+    origin = get_settings().public_resource_url.rstrip("/")
+    for suffix in ("/mcp", "/sse"):
+        if origin.endswith(suffix):
+            origin = origin[: -len(suffix)]
+    return f"{origin.rstrip('/')}/.well-known/oauth-protected-resource"
+
 
 class InboundAuthHeaderASGIMiddleware:
     """
     Pure ASGI middleware that extracts the incoming API token from HTTP headers
     (X-API-Key or Authorization: Bearer) and binds it to the current
     asynchronous request context (ContextVar) before dispatching to mounted apps or routes.
-    
+
+    It ALSO issues the OAuth 2.1 challenge (RFC 9728 / MCP authorization spec): a
+    tokenless request to an MCP transport path gets `401` with
+    `WWW-Authenticate: Bearer resource_metadata="…"`, which is what makes an
+    OAuth-capable client (Claude, ChatGPT) discover the authorization server and
+    start the flow. Requests that already carry a credential (an `aqat_v1_` key or
+    an OAuth Bearer token) pass straight through and are validated downstream by the
+    portal `/api/v1` resource server (`get_api_or_oauth_user`). The challenge can be
+    disabled with OAUTH_CHALLENGE_ENABLED=false for pure header-token deployments.
+
     Security note: Query parameter tokens are intentionally NOT accepted to prevent
     credential leakage into server access logs, browser history, and proxy logs.
     """
@@ -46,6 +83,19 @@ class InboundAuthHeaderASGIMiddleware:
                         token = val_str[7:].strip()
                         break
 
+            # OAuth challenge: tokenless MCP request → 401 pointing at our
+            # protected-resource metadata (skip CORS preflight and public routes).
+            path = scope.get("path", "")
+            method = scope.get("method", "GET").upper()
+            if (
+                not token
+                and method != "OPTIONS"
+                and any(path.startswith(p) for p in _PROTECTED_PREFIXES)
+                and get_settings().oauth_challenge_enabled
+            ):
+                await self._challenge(scope, send)
+                return
+
             # Bind token to context variable for downstream tools in mounted apps
             token_ctx = set_request_token(token)
             try:
@@ -55,6 +105,22 @@ class InboundAuthHeaderASGIMiddleware:
             return
 
         await self.app(scope, receive, send)
+
+    async def _challenge(self, scope, send) -> None:
+        meta = _resource_metadata_url(scope)
+        body = (
+            b'{"error":"unauthorized",'
+            b'"error_description":"Authentication required. Present an OAuth 2.1 Bearer '
+            b'token or an X-API-Key (aqat_v1_...).",'
+            b'"resource_metadata":"' + meta.encode("latin1") + b'"}'
+        )
+        headers = [
+            (b"content-type", b"application/json"),
+            (b"www-authenticate", f'Bearer resource_metadata="{meta}"'.encode("latin1")),
+            (b"content-length", str(len(body)).encode("latin1")),
+        ]
+        await send({"type": "http.response.start", "status": 401, "headers": headers})
+        await send({"type": "http.response.body", "body": body})
 
 
 @asynccontextmanager

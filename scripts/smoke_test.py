@@ -211,6 +211,40 @@ def run(url: str, token: str | None) -> int:
         fail(f"health check failed: {last_err}")
         failures += 1
 
+    # 1b. OAuth 2.1 challenge (RFC 9728) ------------------------------------
+    # A tokenless MCP request must be answered with 401 + WWW-Authenticate so
+    # OAuth-capable clients (Claude, ChatGPT) discover the authorization server.
+    info("\n[1b] OAuth challenge on tokenless request")
+    try:
+        req = urllib.request.Request(
+            url,
+            data=b'{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}',
+            headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+            method="POST",
+        )
+        urllib.request.urlopen(req, timeout=15)
+        # A 2xx here means no challenge — only a problem if the deployment expects OAuth.
+        print(_c("33", "  SKIP  tokenless request was not challenged "
+                       "(OAUTH_CHALLENGE_ENABLED=false, or a token is baked in)"))
+    except urllib.error.HTTPError as e:
+        www = e.headers.get("WWW-Authenticate", "") if e.headers else ""
+        if e.code == 401 and "resource_metadata=" in www:
+            ok(f"tokenless -> 401 with WWW-Authenticate: {www[:80]}…")
+        else:
+            fail(f"tokenless request returned {e.code} but no resource_metadata challenge: {www!r}")
+            failures += 1
+    except (urllib.error.URLError, OSError) as e:
+        fail(f"could not reach {url}: {getattr(e, 'reason', e)}")
+        failures += 1
+
+    # Beyond here the MCP handshake requires a credential (the 401 challenge above
+    # means initialize is authenticated). Skip cleanly if no token was supplied.
+    if not token:
+        info("\n[2] MCP handshake")
+        print(_c("33", "  SKIP  no token — initialize now requires auth. Pass --token aqat_v1_… "
+                       "to exercise the handshake and tools."))
+        return failures
+
     client = MCPClient(url, token)
 
     # 2. handshake -----------------------------------------------------------
