@@ -1,25 +1,26 @@
 {
+  "$comment": "Template: ${PUBLIC_ORIGIN} is substituted at render time. Produce a submittable manifest with `python scripts/render_manifests.py --env prod` (or --env dev), or fetch the rendered document from a running server at GET /manifests/gemini_extension.json, which fills in the origin it was reached on.",
   "name": "financial-portfolios-ai",
   "display_name": "Financial Portfolios AI Extension",
   "description": "Google Vertex AI & Gemini Extension for quantitative model portfolios, target asset allocations, and model alignment arithmetic from Financial Portfolios AI. Informational only under publisher exclusion.",
-  "icon_uri": "https://financial-portfolios.ai/assets/icon-512.png",
+  "icon_uri": "${PUBLIC_ORIGIN}/assets/icon-512.png",
   "icons": [
     {
-      "src": "https://financial-portfolios.ai/assets/icon-48.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-48.png",
       "mimeType": "image/png",
       "sizes": [
         "48x48"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-192.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-192.png",
       "mimeType": "image/png",
       "sizes": [
         "192x192"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-512.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-512.png",
       "mimeType": "image/png",
       "sizes": [
         "512x512"
@@ -27,8 +28,8 @@
     }
   ],
   "runtime_environment": "GOOGLE_CLOUD_RUN",
-  "service_endpoint": "https://financial-portfolios.ai/api/v1",
-  "mcp_endpoint": "https://<your-cloud-run-domain>/mcp",
+  "service_endpoint": "${PUBLIC_ORIGIN}/api/v1",
+  "mcp_endpoint": "${PUBLIC_ORIGIN}/mcp",
   "auth_config": {
     "auth_type": "API_KEY",
     "api_key_config": {

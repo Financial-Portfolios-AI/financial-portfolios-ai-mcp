@@ -1,4 +1,5 @@
 {
+  "$comment": "Template: ${PUBLIC_ORIGIN} is substituted at render time. Produce a submittable manifest with `python scripts/render_manifests.py --env prod` (or --env dev), or fetch the rendered document from a running server at GET /manifests/chatgpt_manifest.json, which fills in the origin it was reached on.",
   "schema_version": "v1",
   "name_for_human": "Financial Portfolios AI",
   "name_for_model": "financial_portfolios_ai",
@@ -12,14 +13,14 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://financial-portfolios.ai/openapi.yaml",
+    "url": "${PUBLIC_ORIGIN}/openapi.yaml",
     "is_user_authenticated": true
   },
   "mcp": {
     "transport": "streamable-http",
-    "endpoint": "https://<your-cloud-run-domain>/mcp"
+    "endpoint": "${PUBLIC_ORIGIN}/mcp"
   },
-  "logo_url": "https://financial-portfolios.ai/assets/icon-512.png",
+  "logo_url": "${PUBLIC_ORIGIN}/assets/icon-512.png",
   "contact_email": "support@financial-portfolios.ai",
-  "legal_info_url": "https://financial-portfolios.ai/terms"
+  "legal_info_url": "${PUBLIC_ORIGIN}/terms"
 }

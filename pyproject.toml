@@ -70,6 +70,14 @@ Issues = "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/financial_portfolios_ai_mcp"]
+
+# The provider manifest templates live at the repo root (that is where the
+# directories and the docs expect them) but must also ship inside the wheel so a
+# packaged server can render and serve them from /manifests/<name>.
+[tool.hatch.build.targets.wheel.force-include]
+"claude_connector.json" = "financial_portfolios_ai_mcp/manifests/claude_connector.json"
+"chatgpt_manifest.json" = "financial_portfolios_ai_mcp/manifests/chatgpt_manifest.json"
+"gemini_extension.json" = "financial_portfolios_ai_mcp/manifests/gemini_extension.json"
 # NOTE: openapi.yaml already ships inside the package at
 # src/financial_portfolios_ai_mcp/openapi.yaml (identical to the repo-root copy),
 # so a force-include of the root file to the same wheel path collides. Removed.

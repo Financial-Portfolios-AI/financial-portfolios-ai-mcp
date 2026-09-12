@@ -13,6 +13,8 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.icons import icon_specs, media_type, read_asset
+from financial_portfolios_ai_mcp.manifests import MANIFESTS
+from financial_portfolios_ai_mcp.manifests import render as render_manifest
 from financial_portfolios_ai_mcp.server import mcp_server
 
 logger = logging.getLogger(__name__)
@@ -213,12 +215,22 @@ def create_app() -> FastAPI:
                 "sse": "/sse",
             },
             "icons": icon_specs(_request_origin(request.scope)),
+            "manifests": {name: f"/manifests/{name}" for name in MANIFESTS},
             "docs": "https://financial-portfolios.ai/docs",
             "openapi": {
                 "yaml": "/openapi.yaml",
                 "json": "/openapi.json",
             },
         })
+
+    @app.get("/manifests/{filename}", summary="Provider connector manifest")
+    async def get_manifest(filename: str, request: Request) -> Response:
+        # Rendered against the origin the request arrived on, so the dev and prod
+        # deployments each hand out a manifest pointing at themselves.
+        document = render_manifest(filename, _request_origin(request.scope))
+        if document is None:
+            return PlainTextResponse("Not found", status_code=404)
+        return JSONResponse(document)
 
     @app.get("/assets/{filename}", summary="Brand icon assets (PNG / ICO)")
     async def get_asset(filename: str) -> Response:

@@ -1,53 +1,54 @@
 {
+  "$comment": "Template: ${PUBLIC_ORIGIN} is substituted at render time. Produce a submittable manifest with `python scripts/render_manifests.py --env prod` (or --env dev), or fetch the rendered document from a running server at GET /manifests/claude_connector.json, which fills in the origin it was reached on.",
   "name": "financial-portfolios-ai",
   "display_name": "Financial Portfolios AI",
   "version": "1.0.0",
   "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. Subscribers see the live book; other signed-in users see the public book delayed by ~45 days. (Informational only under publisher exclusion; not individualized financial advice).",
-  "website_url": "https://financial-portfolios.ai",
-  "documentation_url": "https://financial-portfolios.ai/docs",
-  "icon_url": "https://financial-portfolios.ai/assets/icon-512.png",
+  "website_url": "${PUBLIC_ORIGIN}",
+  "documentation_url": "${PUBLIC_ORIGIN}/docs",
+  "icon_url": "${PUBLIC_ORIGIN}/assets/icon-512.png",
   "icons": [
     {
-      "src": "https://financial-portfolios.ai/assets/icon-48.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-48.png",
       "mimeType": "image/png",
       "sizes": [
         "48x48"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-128.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-128.png",
       "mimeType": "image/png",
       "sizes": [
         "128x128"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-192.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-192.png",
       "mimeType": "image/png",
       "sizes": [
         "192x192"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-256.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-256.png",
       "mimeType": "image/png",
       "sizes": [
         "256x256"
       ]
     },
     {
-      "src": "https://financial-portfolios.ai/assets/icon-512.png",
+      "src": "${PUBLIC_ORIGIN}/assets/icon-512.png",
       "mimeType": "image/png",
       "sizes": [
         "512x512"
       ]
     }
   ],
-  "favicon_url": "https://financial-portfolios.ai/favicon.ico",
+  "favicon_url": "${PUBLIC_ORIGIN}/favicon.ico",
   "author": {
     "name": "Financial Portfolios AI Team",
     "email": "support@financial-portfolios.ai",
-    "url": "https://financial-portfolios.ai"
+    "url": "${PUBLIC_ORIGIN}"
   },
   "transports": {
     "streamable_http": {
@@ -71,9 +72,9 @@
     "header_name": "X-API-Key",
     "alternative_header_name": "Authorization",
     "token_format": "aqat_v1_<hex_key>",
-    "login_url": "https://financial-portfolios.ai/auth/google",
-    "token_generation_url": "https://financial-portfolios.ai/settings/api-tokens",
-    "instructions": "Log in to https://financial-portfolios.ai using Google Social Login, generate a personal API token under Settings > API Tokens, and supply it as an X-API-Key header to Claude."
+    "login_url": "${PUBLIC_ORIGIN}/auth/google",
+    "token_generation_url": "${PUBLIC_ORIGIN}/settings/api-tokens",
+    "instructions": "Log in to ${PUBLIC_ORIGIN} using Google Social Login, generate a personal API token under Settings > API Tokens, and supply it as an X-API-Key header to Claude."
   },
   "capabilities": {
     "tools": [

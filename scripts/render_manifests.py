@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
-"""Render the connector manifests for a given deployment environment.
+"""Render the provider connector manifests for a deployment environment.
 
-The committed manifests carry the production origin because that is what the
-Claude / ChatGPT / Gemini directories are submitted with. Every other environment
-is the same document with a different origin, so render it rather than keeping a
-second hand-edited copy in sync:
+The manifests in the repo root are templates: every absolute URL is written as
+`${PUBLIC_ORIGIN}/...` so a single document serves every environment. This script
+produces the submittable artifacts:
 
-    python scripts/render_manifests.py --origin https://dev.financial-portfolios.ai --out build/dev
+    python scripts/render_manifests.py --env prod
+    python scripts/render_manifests.py --env dev
+    python scripts/render_manifests.py --origin https://staging.example.com
 
-The MCP server itself never reads these files; it derives its own public URLs from
-MCP_PUBLIC_BASE_URL / MCP_PUBLIC_URL, and falls back to the origin the request
-arrived on. This script only exists for the static manifests submitted to the
-provider directories.
+A running server renders the same documents on demand at `GET /manifests/<name>`,
+using the origin the request arrived on - prefer that when you can reach the
+deployment, and use this script for offline artifacts.
 """
 
 import argparse
@@ -19,54 +19,58 @@ import json
 import sys
 from pathlib import Path
 
-MANIFESTS = ("claude_connector.json", "chatgpt_manifest.json", "gemini_extension.json")
+REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(REPO_ROOT / "src"))
 
-# Origins appearing in the committed manifests that belong to the portal and should
-# therefore follow the target environment.
-SOURCE_ORIGINS = ("https://financial-portfolios.ai",)
+from financial_portfolios_ai_mcp.manifests import (
+    MANIFESTS,
+    PLACEHOLDER,
+    render,
+)
 
-
-def retarget(value: object, origin: str) -> object:
-    """Recursively rewrite portal origins inside strings of a JSON document."""
-    if isinstance(value, str):
-        for source in SOURCE_ORIGINS:
-            value = value.replace(source, origin)
-        return value
-    if isinstance(value, list):
-        return [retarget(item, origin) for item in value]
-    if isinstance(value, dict):
-        return {key: retarget(item, origin) for key, item in value.items()}
-    return value
+ENVIRONMENTS = {
+    "prod": "https://financial-portfolios.ai",
+    "dev": "https://dev.financial-portfolios.ai",
+}
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--env",
+        choices=sorted(ENVIRONMENTS),
+        help="Named environment to render for.",
+    )
+    target.add_argument(
         "--origin",
-        required=True,
-        help="Target public origin, e.g. https://dev.financial-portfolios.ai",
+        help="Explicit public origin, e.g. https://staging.financial-portfolios.ai",
     )
     parser.add_argument(
         "--out",
-        default="build/manifests",
-        help="Directory to write the rendered manifests to (default: build/manifests)",
+        help="Directory to write to (default: build/manifests/<env or host>).",
     )
     args = parser.parse_args(argv)
 
-    origin = args.origin.rstrip("/")
+    origin = (args.origin or ENVIRONMENTS[args.env]).rstrip("/")
     if not origin.startswith(("http://", "https://")):
         parser.error("--origin must include the scheme, e.g. https://dev.financial-portfolios.ai")
 
-    repo_root = Path(__file__).resolve().parent.parent
-    out_dir = Path(args.out)
+    label = args.env or origin.split("://", 1)[1].replace("/", "_")
+    out_dir = Path(args.out) if args.out else REPO_ROOT / "build" / "manifests" / label
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for name in MANIFESTS:
-        source = repo_root / name
-        document = json.loads(source.read_text(encoding="utf-8"))
-        target = out_dir / name
-        target.write_text(json.dumps(retarget(document, origin), indent=2) + "\n", encoding="utf-8")
-        print(f"{name} -> {target}")
+        document = render(name, origin)
+        if document is None:
+            print(f"{name}: template not found", file=sys.stderr)
+            return 1
+        rendered = json.dumps(document, indent=2) + "\n"
+        if PLACEHOLDER in rendered:
+            print(f"{name}: placeholder survived rendering", file=sys.stderr)
+            return 1
+        (out_dir / name).write_text(rendered, encoding="utf-8")
+        print(f"{name} -> {out_dir / name}")
 
     return 0
 

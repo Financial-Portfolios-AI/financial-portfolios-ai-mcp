@@ -187,7 +187,8 @@ to the connector and its tool calls:
 - **Over HTTP** - the PNG/ICO set is served unauthenticated from `/assets/` (the OAuth
   challenge does not cover it) with a one-week immutable cache header.
 - **In the manifests** - `claude_connector.json`, `chatgpt_manifest.json` and
-  `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files.
+  `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files,
+  through the `${PUBLIC_ORIGIN}` placeholder (see [Manifests](#manifests)).
 
 Sources live in `src/financial_portfolios_ai_mcp/assets/` and ship inside the wheel.
 
@@ -207,12 +208,29 @@ gcloud builds submit --config cloudbuild.yaml \
   --substitutions=_PORTAL_ORIGIN=https://dev.financial-portfolios.ai,_MCP_PUBLIC_BASE_URL=https://dev.financial-portfolios.ai
 ```
 
-The static provider manifests carry the production origin because that is what the
-directories are submitted with; render the other environments instead of hand-editing them:
+## Manifests
+
+The three provider manifests are **templates**, not environment-specific files: every
+absolute URL in them is written as `${PUBLIC_ORIGIN}/...`, so one document per provider
+serves prod, dev and anything else. Nothing in the repo hardcodes a deployment hostname.
+
+Get a submittable manifest either way:
 
 ```bash
-python scripts/render_manifests.py --origin https://dev.financial-portfolios.ai --out build/dev
+# offline, for directory submission
+python scripts/render_manifests.py --env prod        # -> build/manifests/prod/
+python scripts/render_manifests.py --env dev         # -> build/manifests/dev/
+python scripts/render_manifests.py --origin https://staging.financial-portfolios.ai
+
+# or from a running deployment, rendered against the origin you reached it on
+curl https://dev.financial-portfolios.ai/manifests/claude_connector.json
 ```
+
+`GET /manifests/<name>` is the authoritative rendering: it fills in the origin the
+request arrived on, so the dev deployment always hands out dev URLs and the prod
+deployment prod URLs, with no build step and nothing to keep in sync. `GET /` lists the
+available manifests. A test asserts the committed templates never regain a hardcoded
+origin, and another asserts the script and the endpoint produce identical documents.
 
 ---
 

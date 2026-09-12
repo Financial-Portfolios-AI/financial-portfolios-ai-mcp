@@ -1,6 +1,7 @@
 """Unit tests for Server setup, ASGI HTTP app, and remote multi-tenant auth propagation."""
 
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -9,6 +10,8 @@ from fastapi.testclient import TestClient
 from financial_portfolios_ai_mcp.app import create_app
 from financial_portfolios_ai_mcp.auth import resolve_api_token
 from financial_portfolios_ai_mcp.config import get_settings
+from financial_portfolios_ai_mcp.manifests import MANIFESTS, PLACEHOLDER
+from financial_portfolios_ai_mcp.manifests import render as render_manifest
 from financial_portfolios_ai_mcp.server import mcp_server
 
 
@@ -198,3 +201,39 @@ def test_root_icon_urls_follow_request_origin():
     remote = [i["src"] for i in resp.json()["icons"] if i["src"].startswith("http")]
     assert remote
     assert all(s.startswith("https://dev.financial-portfolios.ai/assets/") for s in remote)
+
+
+def test_manifest_templates_carry_no_environment_origin():
+    """The committed manifests must stay origin-agnostic."""
+    for name in MANIFESTS:
+        text = (Path(__file__).resolve().parent.parent / name).read_text(encoding="utf-8")
+        assert PLACEHOLDER in text, f"{name} has no origin placeholder"
+        assert "https://financial-portfolios.ai" not in text, f"{name} hardcodes prod"
+        assert "https://dev.financial-portfolios.ai" not in text, f"{name} hardcodes dev"
+
+
+def test_manifests_rendered_for_request_origin():
+    """A dev deployment hands out a manifest pointing at dev."""
+    client = TestClient(create_app())
+    resp = client.get(
+        "/manifests/claude_connector.json",
+        headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"},
+    )
+    assert resp.status_code == 200
+    doc = resp.json()
+    assert doc["icon_url"] == "https://dev.financial-portfolios.ai/assets/icon-512.png"
+    assert doc["website_url"] == "https://dev.financial-portfolios.ai"
+    assert "$comment" not in doc
+    assert PLACEHOLDER not in resp.text
+
+    assert client.get("/manifests/nope.json").status_code == 404
+
+
+def test_render_manifests_script_matches_served_document():
+    """The offline renderer and the live endpoint agree."""
+    rendered = render_manifest("gemini_extension.json", "https://dev.financial-portfolios.ai")
+    resp = TestClient(create_app()).get(
+        "/manifests/gemini_extension.json",
+        headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"},
+    )
+    assert resp.json() == rendered
