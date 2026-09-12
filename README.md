@@ -155,6 +155,29 @@ gcloud run deploy financial-portfolios-ai-mcp \
 - `GET /livez` - Kubernetes/Cloud Run liveness probe
 - `POST /mcp` - Streamable HTTP MCP endpoint
 - `GET /sse` - Server-Sent Events MCP endpoint
+- `GET /assets/{filename}` - Public brand icons (`icon-16|32|48|64|128|192|256|512.png`, `favicon.ico`)
+- `GET /favicon.ico` - Favicon
+
+---
+
+## Branding & Icons
+
+The server ships its logo so Claude, ChatGPT, Gemini and IDE clients render it next
+to the connector and its tool calls:
+
+- **In the protocol** - `initialize` returns `serverInfo.icons` (MCP `Implementation.icons`,
+  spec revision 2025-11-25). The first entry is an inline 48x48 `data:` URI, so the icon
+  also appears for local **stdio** clients with no HTTP server to fetch from; 192x192 and
+  512x512 follow as absolute HTTPS URLs.
+- **Over HTTP** - the PNG/ICO set is served unauthenticated from `/assets/` (the OAuth
+  challenge does not cover it) with a one-week immutable cache header.
+- **In the manifests** - `claude_connector.json`, `chatgpt_manifest.json` and
+  `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files.
+
+Sources live in `src/financial_portfolios_ai_mcp/assets/` and ship inside the wheel.
+The absolute URLs are built from `MCP_PUBLIC_BASE_URL`, falling back to the origin of
+`MCP_PUBLIC_URL` with the transport path stripped - set `MCP_PUBLIC_BASE_URL` when the
+server is reachable on a different host than the portal.
 
 ---
 

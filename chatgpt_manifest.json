@@ -19,7 +19,7 @@
     "transport": "streamable-http",
     "endpoint": "https://<your-cloud-run-domain>/mcp"
   },
-  "logo_url": "https://financial-portfolios.ai/assets/logo-512.png",
+  "logo_url": "https://financial-portfolios.ai/assets/icon-512.png",
   "contact_email": "support@financial-portfolios.ai",
   "legal_info_url": "https://financial-portfolios.ai/terms"
 }

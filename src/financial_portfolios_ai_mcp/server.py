@@ -4,6 +4,8 @@ import logging
 
 from mcp.server import MCPServer
 
+from financial_portfolios_ai_mcp.config import get_settings
+from financial_portfolios_ai_mcp.icons import icon_specs
 from financial_portfolios_ai_mcp.prompts import register_prompts
 from financial_portfolios_ai_mcp.resources import register_resources
 from financial_portfolios_ai_mcp.tools import register_tools
@@ -37,14 +39,30 @@ The token is automatically passed via HTTP headers (X-API-Key or Authorization) 
 
 def create_mcp_server() -> MCPServer:
     """Create and configure a new MCPServer instance."""
-    server = MCPServer(
-        name="financial-portfolios-ai",
-        title="Financial Portfolios AI",
-        description="Official Model Context Protocol (MCP) server for Financial Portfolios AI.",
-        instructions=SERVER_INSTRUCTIONS.strip(),
-        website_url="https://financial-portfolios.ai",
-        version="1.0.0",
-    )
+    kwargs: dict = {
+        "name": "financial-portfolios-ai",
+        "title": "Financial Portfolios AI",
+        "description": "Official Model Context Protocol (MCP) server for Financial Portfolios AI.",
+        "instructions": SERVER_INSTRUCTIONS.strip(),
+        "website_url": "https://financial-portfolios.ai",
+        "version": "1.0.0",
+    }
+
+    # Brand icons surfaced by LLM providers in connector pickers and tool-call UI.
+    # `Implementation.icons` landed in MCP 2025-11-25; on an older SDK (no `Icon`
+    # type, or an MCPServer that rejects the kwarg) start without icons rather
+    # than failing outright.
+    try:
+        from mcp.types import Icon
+
+        icons = [
+            Icon(src=spec["src"], mime_type=spec["mimeType"], sizes=spec["sizes"])
+            for spec in icon_specs(get_settings().public_origin())
+        ]
+        server = MCPServer(icons=icons, **kwargs) if icons else MCPServer(**kwargs)
+    except (ImportError, TypeError):
+        logger.warning("Installed mcp SDK does not support Implementation.icons; omitting icons")
+        server = MCPServer(**kwargs)
 
     # Register capabilities
     register_tools(server)

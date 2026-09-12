@@ -5,7 +5,45 @@
   "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. (Informational only under publisher exclusion; not individualized financial advice).",
   "website_url": "https://financial-portfolios.ai",
   "documentation_url": "https://financial-portfolios.ai/docs",
-  "icon_url": "https://financial-portfolios.ai/assets/logo-512.png",
+  "icon_url": "https://financial-portfolios.ai/assets/icon-512.png",
+  "icons": [
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-48.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "48x48"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-128.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "128x128"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-192.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "192x192"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-256.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "256x256"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
+  ],
+  "favicon_url": "https://financial-portfolios.ai/favicon.ico",
   "author": {
     "name": "Financial Portfolios AI Team",
     "email": "support@financial-portfolios.ai",
@@ -22,7 +60,9 @@
     },
     "stdio": {
       "command": "financial-portfolios-ai-mcp",
-      "args": ["stdio"],
+      "args": [
+        "stdio"
+      ],
       "description": "Standard I/O transport for local Claude Desktop and Claude Code CLI"
     }
   },

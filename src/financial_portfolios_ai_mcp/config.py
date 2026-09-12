@@ -42,6 +42,15 @@ class Settings(BaseSettings):
         validation_alias="MCP_PUBLIC_URL",
         description="This MCP server's public URL (OAuth protected-resource identifier)",
     )
+    public_base_url: str | None = Field(
+        default=None,
+        validation_alias="MCP_PUBLIC_BASE_URL",
+        description=(
+            "Public origin this server is reachable at, used to build absolute icon "
+            "URLs (/assets/...) advertised to MCP clients. Defaults to the origin of "
+            "MCP_PUBLIC_URL with the transport path stripped."
+        ),
+    )
     oauth_challenge_enabled: bool = Field(
         default=True,
         validation_alias="OAUTH_CHALLENGE_ENABLED",
@@ -73,6 +82,17 @@ class Settings(BaseSettings):
         validation_alias="MCP_REQUEST_TIMEOUT",
         description="HTTP request timeout in seconds",
     )
+
+
+    def public_origin(self) -> str:
+        """Public origin of this server (no transport path), used for absolute
+        asset and well-known URLs."""
+        if self.public_base_url:
+            return self.public_base_url.rstrip("/")
+        origin = self.public_resource_url.rstrip("/")
+        for suffix in ("/mcp", "/sse"):
+            origin = origin.removesuffix(suffix)
+        return origin.rstrip("/")
 
 
 @lru_cache

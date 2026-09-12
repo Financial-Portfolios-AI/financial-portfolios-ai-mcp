@@ -2,6 +2,30 @@
   "name": "financial-portfolios-ai",
   "display_name": "Financial Portfolios AI Extension",
   "description": "Google Vertex AI & Gemini Extension for quantitative model portfolios, target asset allocations, and model alignment arithmetic from Financial Portfolios AI. Informational only under publisher exclusion.",
+  "icon_uri": "https://financial-portfolios.ai/assets/icon-512.png",
+  "icons": [
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-48.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "48x48"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-192.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "192x192"
+      ]
+    },
+    {
+      "src": "https://financial-portfolios.ai/assets/icon-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    }
+  ],
   "runtime_environment": "GOOGLE_CLOUD_RUN",
   "service_endpoint": "https://financial-portfolios.ai/api/v1",
   "mcp_endpoint": "https://<your-cloud-run-domain>/mcp",

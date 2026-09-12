@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, PlainTextResponse
 
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
+from financial_portfolios_ai_mcp.icons import icon_specs, media_type, read_asset
 from financial_portfolios_ai_mcp.server import mcp_server
 
 logger = logging.getLogger(__name__)
@@ -20,6 +21,9 @@ logger = logging.getLogger(__name__)
 # challenged with a 401 so OAuth-capable clients begin the authorization flow;
 # the well-known/health/root/openapi routes are always public.
 _PROTECTED_PREFIXES = ("/mcp", "/sse")
+
+# Immutable, versioned-by-content brand assets: cache hard at the CDN/browser.
+_ASSET_CACHE_CONTROL = "public, max-age=604800, immutable"
 
 
 def _header(scope, name: bytes) -> str | None:
@@ -38,11 +42,7 @@ def _resource_metadata_url(scope) -> str:
         scheme = (proto or scope.get("scheme") or "https").split(",")[0].strip()
         return f"{scheme}://{host}/.well-known/oauth-protected-resource"
     # Fallback to the configured public resource origin.
-    origin = get_settings().public_resource_url.rstrip("/")
-    for suffix in ("/mcp", "/sse"):
-        if origin.endswith(suffix):
-            origin = origin[: -len(suffix)]
-    return f"{origin.rstrip('/')}/.well-known/oauth-protected-resource"
+    return f"{get_settings().public_origin()}/.well-known/oauth-protected-resource"
 
 
 class InboundAuthHeaderASGIMiddleware:
@@ -205,12 +205,39 @@ def create_app() -> FastAPI:
                 "streamable_http": "/mcp",
                 "sse": "/sse",
             },
+            "icons": icon_specs(settings.public_origin()),
             "docs": "https://financial-portfolios.ai/docs",
             "openapi": {
                 "yaml": "/openapi.yaml",
                 "json": "/openapi.json",
             },
         })
+
+    @app.get("/assets/{filename}", summary="Brand icon assets (PNG / ICO)")
+    async def get_asset(filename: str) -> Response:
+        # Public by design: connector directories and chat UIs fetch these
+        # unauthenticated to render the server's logo.
+        if "/" in filename or "\\" in filename or filename.startswith("."):
+            return PlainTextResponse("Not found", status_code=404)
+        raw = read_asset(filename)
+        if raw is None:
+            return PlainTextResponse("Not found", status_code=404)
+        return Response(
+            content=raw,
+            media_type=media_type(filename),
+            headers={"Cache-Control": _ASSET_CACHE_CONTROL},
+        )
+
+    @app.get("/favicon.ico", summary="Favicon", include_in_schema=False)
+    async def favicon() -> Response:
+        raw = read_asset("favicon.ico")
+        if raw is None:
+            return PlainTextResponse("Not found", status_code=404)
+        return Response(
+            content=raw,
+            media_type="image/x-icon",
+            headers={"Cache-Control": _ASSET_CACHE_CONTROL},
+        )
 
     @app.get("/.well-known/oauth-protected-resource", summary="OAuth 2.1 protected-resource metadata")
     async def protected_resource_metadata() -> JSONResponse:

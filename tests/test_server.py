@@ -151,3 +151,36 @@ def test_e2e_mounted_mcp_app_auth_propagation(mock_portfolio_list):
         resp_b = client.get("/test-mcp-e2e-tool", headers={"X-API-Key": "aqat_v1_user_b_token"})
         assert resp_b.status_code == 200
         assert "disclaimer" in resp_b.json()["result"]
+
+
+def test_server_advertises_icons():
+    """The MCP Implementation must carry brand icons for provider UIs."""
+    icons = getattr(mcp_server, "icons", None)
+    assert icons, "MCPServer should advertise icons"
+    srcs = [icon.src for icon in icons]
+    assert any(s.startswith("data:image/png;base64,") for s in srcs)
+    assert any(s == "https://financial-portfolios.ai/assets/icon-512.png" for s in srcs)
+
+
+def test_asset_routes_served_without_auth():
+    """Icon assets are public so connector directories can render the logo."""
+    client = TestClient(create_app())
+
+    resp = client.get("/assets/icon-512.png")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "image/png"
+    assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
+
+    resp = client.get("/favicon.ico")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] == "image/x-icon"
+
+    assert client.get("/assets/does-not-exist.png").status_code == 404
+    assert client.get("/assets/../config.py").status_code == 404
+
+
+def test_root_metadata_includes_icons():
+    resp = TestClient(create_app()).get("/")
+    assert resp.status_code == 200
+    icons = resp.json()["icons"]
+    assert icons and icons[0]["mimeType"] == "image/png"
