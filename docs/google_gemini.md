@@ -67,7 +67,7 @@ If you want enterprise Google Cloud customers to subscribe and provision your so
    - Short Description & Feature List
    - Logo: 512×512 PNG
    - Support URL: `https://financial-portfolios.ai/contact`
-   - Privacy Policy: `https://financial-portfolios.ai/privacy`
+   - Privacy Policy: `https://financial-portfolios.ai/legal/privacy`
 3. Link your Cloud Run service URL and Stripe/GCP Marketplace billing integration.
 4. Submit for Google Cloud Marketplace technical and commercial review.
 

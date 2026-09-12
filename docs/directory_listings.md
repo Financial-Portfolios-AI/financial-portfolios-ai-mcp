@@ -91,11 +91,11 @@ record, not us.
 | :--- | :--- |
 | Server name | Financial Portfolios AI |
 | Tagline (≤55) | Systematic model portfolios, allocations and research |
-| Developer / company | Financial Portfolios AI |
+| Developer / company | Financial Portfolios AI (legal entity: **Autonomous Intelligent Agents LLC**, the name the published privacy policy is issued under — use whichever the portal asks for, and keep it consistent with the policy) |
 | Company website | https://financial-portfolios.ai |
 | Categories | Finance / Investing / Research / Data analysis (pick up to 5) |
 | Documentation URL | https://financial-portfolios.ai/docs |
-| Privacy policy URL | https://financial-portfolios.ai/privacy |
+| Privacy policy URL | https://financial-portfolios.ai/legal/privacy (dev: https://dev.financial-portfolios.ai/legal/privacy) |
 | Support contact | support@financial-portfolios.ai |
 | Icon | `/mcp/assets/icon-512.png` |
 | Authentication | OAuth 2.1 (RFC 9728); API key only for CLI/stdio |
@@ -103,3 +103,21 @@ record, not us.
 
 The tagline above is 53 characters. The description must keep the disclosure sentences:
 `instructions` is model-facing and never shown to someone browsing a directory.
+
+---
+
+## Before submitting anywhere: production is not serving these pages yet
+
+Checked on 2026-09-12. `https://financial-portfolios.ai` serves a "We're under
+construction" placeholder for **every** path, so the URLs above return HTTP 200 with the
+placeholder rather than the real page — `/legal/privacy` included. Status codes are
+useless here: a nonsense path returns 200 too, and `/mcp/assets/icon-512.png` returns
+`text/html` instead of a PNG.
+
+The same pages are live and correct on dev (`https://dev.financial-portfolios.ai/legal/privacy`
+renders the full policy, dated 2026-08-22, issued by Autonomous Intelligent Agents LLC).
+
+This blocks submission rather than delaying it: a missing or incomplete privacy policy is
+an immediate rejection at Claude review, and every provider's reviewer fetches the
+production URLs. Ship the production site, re-check each URL in the table above, then
+submit.

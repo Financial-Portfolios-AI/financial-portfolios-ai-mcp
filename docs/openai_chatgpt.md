@@ -42,7 +42,7 @@ Custom GPTs allow any ChatGPT user (Free, Plus, Team, Enterprise) to find and us
    - Auth Type: `Custom`
    - Custom Header Name: `X-API-Key`
 4. Under **Privacy Policy**:
-   - URL: `https://financial-portfolios.ai/privacy`
+   - URL: `https://financial-portfolios.ai/legal/privacy`
 
 ### Step 4: Verify Builder Profile (Domain Verification)
 To list your GPT publicly on the GPT Store under your verified brand:

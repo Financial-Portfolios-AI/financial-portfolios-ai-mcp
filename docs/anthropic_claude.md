@@ -11,8 +11,8 @@ Before initiating the submission:
 2. **Authentication Ready:** Remote connectors authenticate with OAuth 2.1 against the portal - the user signs in during connector setup and never pastes a key. Command-line clients (Claude Code) instead use a personal API token (`aqat_v1_...`) from `https://financial-portfolios.ai/settings/api-tokens`, which requires the user to be able to log in via Google Social Login.
 3. **Connector Manifest:** [`claude_connector.json`](../claude_connector.json) contains the metadata, tools, resources, and prompts. It is an origin-agnostic template (`${PUBLIC_ORIGIN}`); submit a rendered copy from `python scripts/render_manifests.py --env prod`, or fetch `https://financial-portfolios.ai/mcp/manifests/claude_connector.json` from the running deployment.
 4. **Legal Pages:**
-   - Privacy Policy: `https://financial-portfolios.ai/privacy`
-   - Terms of Service: `https://financial-portfolios.ai/terms`
+   - Privacy Policy: `https://financial-portfolios.ai/legal/privacy`
+   - Terms of Service: `https://financial-portfolios.ai/legal/terms`
 5. **Logo:** 512×512 PNG at `https://financial-portfolios.ai/assets/logo-512.png`.
 
 ---

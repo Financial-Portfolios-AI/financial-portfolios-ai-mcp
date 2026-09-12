@@ -22,5 +22,5 @@
   },
   "logo_url": "${PUBLIC_ORIGIN}/mcp/assets/icon-512.png",
   "contact_email": "support@financial-portfolios.ai",
-  "legal_info_url": "${PUBLIC_ORIGIN}/terms"
+  "legal_info_url": "${PUBLIC_ORIGIN}/legal/terms"
 }

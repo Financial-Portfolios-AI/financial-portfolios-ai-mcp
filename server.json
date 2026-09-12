@@ -46,13 +46,19 @@
     "io.modelcontextprotocol.registry/publisher-provided": {
       "developer": {
         "name": "Financial Portfolios AI",
+        "legalEntity": "Autonomous Intelligent Agents LLC",
         "url": "https://financial-portfolios.ai",
         "supportEmail": "support@financial-portfolios.ai"
       },
-      "categories": ["finance", "investing", "research", "data-analysis"],
+      "categories": [
+        "finance",
+        "investing",
+        "research",
+        "data-analysis"
+      ],
       "documentationUrl": "https://financial-portfolios.ai/docs",
-      "privacyPolicyUrl": "https://financial-portfolios.ai/privacy",
-      "termsUrl": "https://financial-portfolios.ai/terms",
+      "privacyPolicyUrl": "https://financial-portfolios.ai/legal/privacy",
+      "termsUrl": "https://financial-portfolios.ai/legal/terms",
       "authentication": "oauth2",
       "disclosure": "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed. All outputs represent mathematical target-model alignment arithmetic."
     }

@@ -6,6 +6,8 @@
   "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. Subscribers see the live book; other signed-in users see the public book delayed by ~45 days. (Informational only under publisher exclusion; not individualized financial advice).",
   "website_url": "${PUBLIC_ORIGIN}",
   "documentation_url": "${PUBLIC_ORIGIN}/docs",
+  "privacy_policy_url": "${PUBLIC_ORIGIN}/legal/privacy",
+  "terms_url": "${PUBLIC_ORIGIN}/legal/terms",
   "icon_url": "${PUBLIC_ORIGIN}/mcp/assets/icon-512.png",
   "icons": [
     {
