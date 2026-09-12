@@ -22,7 +22,9 @@ COPY financial-portfolios-ai-sdk /financial-portfolios-ai-sdk
 COPY financial-portfolios-ai-mcp/pyproject.toml financial-portfolios-ai-mcp/README.md ./
 COPY financial-portfolios-ai-mcp/src/ ./src/
 COPY financial-portfolios-ai-mcp/openapi.yaml ./openapi.yaml
-COPY financial-portfolios-ai-mcp/claude_connector.json ./
+# All three provider manifest templates: pyproject force-includes them into the
+# wheel so the server can render them at /manifests/<name>.
+COPY financial-portfolios-ai-mcp/claude_connector.json financial-portfolios-ai-mcp/chatgpt_manifest.json financial-portfolios-ai-mcp/gemini_extension.json ./
 
 # Create virtualenv and install all dependencies
 RUN uv venv /app/.venv
@@ -47,7 +49,7 @@ RUN groupadd -r mcpuser && useradd -r -g mcpuser -d /app -s /sbin/nologin mcpuse
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/openapi.yaml ./openapi.yaml
-COPY --from=builder /app/claude_connector.json ./
+COPY --from=builder /app/claude_connector.json /app/chatgpt_manifest.json /app/gemini_extension.json ./
 # The SDK is installed editable ([tool.uv.sources] editable=true), so its source
 # tree must exist at the same path at runtime for the .pth import to resolve.
 COPY --from=builder /financial-portfolios-ai-sdk /financial-portfolios-ai-sdk
