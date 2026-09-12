@@ -1,6 +1,7 @@
 """Configuration settings for Financial Portfolios AI MCP Server."""
 
 from functools import lru_cache
+from urllib.parse import urlparse
 
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -82,6 +83,38 @@ class Settings(BaseSettings):
         validation_alias="MCP_REQUEST_TIMEOUT",
         description="HTTP request timeout in seconds",
     )
+
+    # DNS-rebinding / Host-header allow-list for the Streamable-HTTP + SSE transports
+    # (mcp.server.transport_security). The SDK rejects any request whose Host header
+    # is not on this list with 421 Misdirected Request. Behind the portal load
+    # balancer the forwarded Host is the public portal domain (e.g.
+    # dev.financial-portfolios.ai), which must be present or the connector handshake
+    # silently fails AFTER OAuth. Leave unset to auto-derive from the configured
+    # portal / resource / issuer URLs (plus localhost); set MCP_ALLOWED_HOSTS to a
+    # comma-separated list to override (e.g. add a custom domain).
+    allowed_hosts_override: str | None = Field(
+        default=None,
+        validation_alias="MCP_ALLOWED_HOSTS",
+        description="Comma-separated Host allow-list override for the MCP transports",
+    )
+
+    @property
+    def allowed_hosts(self) -> list[str]:
+        """Resolved Host allow-list for the transport security middleware.
+
+        Exact-match only in the SDK (plus a `host:*` any-port form), so every host
+        is added both bare and with `:*`. Origin is not enforced here — Claude's
+        server-to-server POST sends no Origin, and the SDK allows an absent Origin.
+        """
+        if self.allowed_hosts_override:
+            return [h.strip() for h in self.allowed_hosts_override.split(",") if h.strip()]
+        hosts: set[str] = {"localhost", "127.0.0.1"}
+        for url in (self.public_resource_url, self.portal_base_url, self.authorization_server_url):
+            hostname = urlparse(url).hostname
+            if hostname:
+                hosts.add(hostname)
+        # Add an any-port form for each so a Host with an explicit port also matches.
+        return sorted(hosts | {f"{h}:*" for h in hosts})
 
 
     def public_origin(self) -> str:
