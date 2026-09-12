@@ -8,7 +8,7 @@ This guide details the submission process to register **Financial Portfolios AI*
 
 Before initiating the submission:
 1. **Live Production Endpoint:** Deploy your MCP server to Google Cloud Run (e.g. `https://financial-portfolios-ai-mcp-<project-id>.a.run.app/mcp`).
-2. **Authentication Ready:** The user must be able to log in to `https://financial-portfolios.ai` (via Google Social Login) and generate an API key (`aqat_v1_...`) from `https://financial-portfolios.ai/settings/api-tokens`.
+2. **Authentication Ready:** Remote connectors authenticate with OAuth 2.1 against the portal - the user signs in during connector setup and never pastes a key. Command-line clients (Claude Code) instead use a personal API token (`aqat_v1_...`) from `https://financial-portfolios.ai/settings/api-tokens`, which requires the user to be able to log in via Google Social Login.
 3. **Connector Manifest:** [`claude_connector.json`](../claude_connector.json) contains the metadata, tools, resources, and prompts. It is an origin-agnostic template (`${PUBLIC_ORIGIN}`); submit a rendered copy from `python scripts/render_manifests.py --env prod`, or fetch `https://financial-portfolios.ai/mcp/manifests/claude_connector.json` from the running deployment.
 4. **Legal Pages:**
    - Privacy Policy: `https://financial-portfolios.ai/privacy`
@@ -35,10 +35,14 @@ Anthropic conducts connector reviews through the integrated in-product submissio
 - **Documentation URL:** `https://financial-portfolios.ai/docs`
 
 ### Step 3: Configure Authentication
-- **Auth Type:** `API Key` / `Bearer Token`
-- **Header Name:** `X-API-Key`
+- **Auth Type:** `OAuth 2.1` (RFC 9728 protected resource)
+- **Protected-resource metadata:** `https://financial-portfolios.ai/.well-known/oauth-protected-resource`
+- **Authorization server:** `https://financial-portfolios.ai`
 - **Help / Instructions for Users:**
-  > Sign in to https://financial-portfolios.ai using Google Social Login, go to Settings > API Tokens, generate a personal API Token (`aqat_v1_...`), and paste it here.
+  > Paste the server URL and sign in when prompted. No API key is required.
+- **Command-line clients only:** Claude Code and local stdio do not run the OAuth flow; they pass a
+  personal API token (`aqat_v1_...`) from Settings > API Tokens as an `X-API-Key` header, or via
+  `FINANCIAL_PORTFOLIOS_API_TOKEN` for stdio.
 
 ### Step 4: Validate Tools & Schema
 1. The submission portal will ping your `/mcp` endpoint and execute an automated JSON-RPC handshake (`tools/list`, `resources/list`, `prompts/list`).

@@ -68,13 +68,25 @@
     }
   },
   "authentication": {
-    "type": "api_key",
-    "header_name": "X-API-Key",
-    "alternative_header_name": "Authorization",
-    "token_format": "aqat_v1_<hex_key>",
-    "login_url": "${PUBLIC_ORIGIN}/auth/google",
-    "token_generation_url": "${PUBLIC_ORIGIN}/settings/api-tokens",
-    "instructions": "Log in to ${PUBLIC_ORIGIN} using Google Social Login, generate a personal API token under Settings > API Tokens, and supply it as an X-API-Key header to Claude."
+    "type": "oauth2",
+    "instructions": "Add this server as a custom connector in Claude (Settings > Connectors > Add custom connector), paste the server URL, and sign in when prompted - OAuth 2.1, no API key to paste. Command-line clients (Claude Code, local stdio) instead pass a personal token via the X-API-Key header.",
+    "oauth2": {
+      "protected_resource_metadata": "${PUBLIC_ORIGIN}/.well-known/oauth-protected-resource",
+      "authorization_server": "${PUBLIC_ORIGIN}",
+      "scopes_supported": [
+        "portfolios:read",
+        "research:read",
+        "rebalance:write"
+      ],
+      "description": "A tokenless request to /mcp is answered with 401 and WWW-Authenticate: Bearer resource_metadata=... (RFC 9728), which is what starts the sign-in flow in Claude."
+    },
+    "api_key": {
+      "header_name": "X-API-Key",
+      "alternative_header_name": "Authorization",
+      "token_format": "aqat_v1_<hex_key>",
+      "token_generation_url": "${PUBLIC_ORIGIN}/settings/api-tokens",
+      "description": "For command-line and local stdio clients, which do not run the OAuth flow: generate a personal token at Settings > API Tokens and pass it as X-API-Key (or as FINANCIAL_PORTFOLIOS_API_TOKEN for stdio)."
+    }
   },
   "capabilities": {
     "tools": [

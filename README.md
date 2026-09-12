@@ -54,7 +54,12 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
 
 - **Claude Web Custom Connector:**
   1. Go to **Customize > Connectors** -> **Add custom connector**.
-  2. Enter URL `https://<your-cloud-run-domain>/mcp` and header `X-API-Key: aqat_v1_<token>`.
+  2. Enter the server URL `https://financial-portfolios.ai/mcp` and sign in when prompted.
+     Authentication is OAuth 2.1 - there is no API key to paste. A tokenless request is
+     answered with a `401` + `WWW-Authenticate: Bearer resource_metadata=...` (RFC 9728),
+     which is what starts the sign-in flow.
+  3. Command-line clients (Claude Code) do not run that flow: they pass a personal token as
+     an `X-API-Key` header instead (see [Authentication](#authentication)).
 - **Directory Manifest:** Uses [`claude_connector.json`](claude_connector.json).
 - **Claude Desktop Config:** See [`mcp_clients.json`](mcp_clients.json) for `claude_desktop_config.json`.
 
