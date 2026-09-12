@@ -166,14 +166,14 @@ def test_server_advertises_icons():
     # absolute URLs built from the deployment's own public origin (never hardcoded).
     assert any(s.startswith("data:image/png;base64,") for s in srcs)
     origin = get_settings().public_origin()
-    assert any(s == f"{origin}/assets/icon-512.png" for s in srcs)
+    assert any(s == f"{origin}/mcp/assets/icon-512.png" for s in srcs)
 
 
 def test_asset_routes_served_without_auth():
     """Icon assets are public so connector directories can render the logo."""
     client = TestClient(create_app())
 
-    resp = client.get("/assets/icon-512.png")
+    resp = client.get("/mcp/assets/icon-512.png")
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/png"
     assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
@@ -182,8 +182,11 @@ def test_asset_routes_served_without_auth():
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "image/x-icon"
 
-    assert client.get("/assets/does-not-exist.png").status_code == 404
-    assert client.get("/assets/../config.py").status_code == 404
+    assert client.get("/mcp/assets/does-not-exist.png").status_code == 404
+    # Percent-encoded traversal reaches the handler intact (a bare ../ is normalised
+    # away by the client into /mcp/config.py, which the OAuth challenge rejects).
+    assert client.get("/mcp/assets/%2e%2e%2fconfig.py").status_code == 404
+    assert client.get("/mcp/assets/..%2fconfig.py").status_code == 404
 
 
 def test_root_metadata_includes_icons():
@@ -200,7 +203,7 @@ def test_root_icon_urls_follow_request_origin():
     assert resp.status_code == 200
     remote = [i["src"] for i in resp.json()["icons"] if i["src"].startswith("http")]
     assert remote
-    assert all(s.startswith("https://dev.financial-portfolios.ai/assets/") for s in remote)
+    assert all(s.startswith("https://dev.financial-portfolios.ai/mcp/assets/") for s in remote)
 
 
 def test_manifest_templates_carry_no_environment_origin():
@@ -216,24 +219,33 @@ def test_manifests_rendered_for_request_origin():
     """A dev deployment hands out a manifest pointing at dev."""
     client = TestClient(create_app())
     resp = client.get(
-        "/manifests/claude_connector.json",
+        "/mcp/manifests/claude_connector.json",
         headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"},
     )
     assert resp.status_code == 200
     doc = resp.json()
-    assert doc["icon_url"] == "https://dev.financial-portfolios.ai/assets/icon-512.png"
+    assert doc["icon_url"] == "https://dev.financial-portfolios.ai/mcp/assets/icon-512.png"
     assert doc["website_url"] == "https://dev.financial-portfolios.ai"
     assert "$comment" not in doc
     assert PLACEHOLDER not in resp.text
 
-    assert client.get("/manifests/nope.json").status_code == 404
+    assert client.get("/mcp/manifests/nope.json").status_code == 404
 
 
 def test_render_manifests_script_matches_served_document():
     """The offline renderer and the live endpoint agree."""
     rendered = render_manifest("gemini_extension.json", "https://dev.financial-portfolios.ai")
     resp = TestClient(create_app()).get(
-        "/manifests/gemini_extension.json",
+        "/mcp/manifests/gemini_extension.json",
         headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"},
     )
     assert resp.json() == rendered
+
+
+def test_public_paths_under_mcp_are_not_oauth_challenged():
+    """Icons and manifests live under /mcp but must stay credential-free."""
+    client = TestClient(create_app())
+    assert client.get("/mcp/assets/icon-48.png").status_code == 200
+    assert client.get("/mcp/manifests/claude_connector.json").status_code == 200
+    # The transport itself still challenges a tokenless request.
+    assert client.get("/mcp/").status_code == 401

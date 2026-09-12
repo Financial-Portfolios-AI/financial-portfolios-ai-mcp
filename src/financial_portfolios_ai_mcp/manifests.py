@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 PLACEHOLDER = "${PUBLIC_ORIGIN}"
 
+# Public path prefix for the manifest routes; see icons.ASSET_PATH for why /mcp.
+MANIFEST_PATH = "/mcp/manifests"
+
 MANIFESTS = (
     "claude_connector.json",
     "chatgpt_manifest.json",

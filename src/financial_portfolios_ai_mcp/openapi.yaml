@@ -297,8 +297,6 @@ components:
       type: object
       required:
         - code
-        - access
-        - delayed
       properties:
         code:
           type: string
@@ -319,12 +317,15 @@ components:
           type: string
           description: >-
             Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
-            `lag_days`, premium signal fields stripped).
+            `lag_days`, premium signal fields stripped). Always emitted by a current portal;
+            defaulted rather than required so the document also describes an older one.
           enum: [subscribed, public_delayed]
+          default: subscribed
           example: subscribed
         delayed:
           type: boolean
           description: True when the payload is the public delayed book rather than the live one.
+          default: false
           example: false
 
     PortfolioListResponse:
@@ -354,7 +355,7 @@ components:
           type: number
           example: 0.15
         sector:
-          type: string
+          type: [string, "null"]
           example: Technology
         expected_return:
           type: [number, "null"]
@@ -365,29 +366,15 @@ components:
           description: Null on the public delayed book - never exposed to non-subscribers.
           example: 0.22
 
-    HistoryPosition:
-      type: object
-      required:
-        - ticker
-        - weight
-      properties:
-        ticker:
-          type: string
-          example: AAPL
-        weight:
-          type: number
-          example: 0.15
-        sector:
-          type: string
-          example: Technology
+    # Delayed history entries omit the premium signal keys rather than sending them as
+    # null, which `Position` already allows - so history shares the one position schema.
 
     PortfolioSnapshot:
       type: object
       required:
         - portfolio_code
         - date
-        - access
-        - delayed
+        - total_positions
         - positions
       properties:
         portfolio_code:
@@ -396,6 +383,10 @@ components:
         date:
           type: string
           format: date-time
+          description: >-
+            Always a date-time, including on the delayed book, where it is anchored at
+            midnight. Contrast `as_of`, which is a pure date.
+          example: "2026-07-29T00:00:00"
         model_version:
           type: string
           example: v2.4.1
@@ -418,12 +409,15 @@ components:
           type: string
           description: >-
             Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
-            `lag_days`, premium signal fields stripped).
+            `lag_days`, premium signal fields stripped). Always emitted by a current portal;
+            defaulted rather than required so the document also describes an older one.
           enum: [subscribed, public_delayed]
+          default: subscribed
           example: subscribed
         delayed:
           type: boolean
           description: True when the payload is the public delayed book rather than the live one.
+          default: false
           example: false
         as_of:
           type: [string, "null"]
@@ -470,7 +464,7 @@ components:
         positions:
           type: array
           items:
-            $ref: '#/components/schemas/HistoryPosition'
+            $ref: '#/components/schemas/Position'
 
     PortfolioHistoryResponse:
       type: object
@@ -478,8 +472,6 @@ components:
         - portfolio_code
         - days
         - total_snapshots
-        - access
-        - delayed
         - snapshots
       properties:
         portfolio_code:
@@ -495,12 +487,15 @@ components:
           type: string
           description: >-
             Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
-            `lag_days`, premium signal fields stripped).
+            `lag_days`, premium signal fields stripped). Always emitted by a current portal;
+            defaulted rather than required so the document also describes an older one.
           enum: [subscribed, public_delayed]
+          default: subscribed
           example: subscribed
         delayed:
           type: boolean
           description: True when the payload is the public delayed book rather than the live one.
+          default: false
           example: false
         lag_days:
           type: [integer, "null"]

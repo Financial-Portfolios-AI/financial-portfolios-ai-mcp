@@ -67,9 +67,15 @@ def data_uri(size: int = INLINE_SIZE) -> str | None:
     return "data:image/png;base64," + base64.b64encode(raw).decode("ascii")
 
 
+# Public path prefix for the asset routes. `/mcp` is the prefix the portal's load
+# balancer routes to this service; top-level `/assets` belongs to the portal backend
+# (its own assets router), so an icon URL there would never reach us.
+ASSET_PATH = "/mcp/assets"
+
+
 def asset_url(base_url: str, filename: str) -> str:
-    """Absolute public URL for an asset served from this server's `/assets` route."""
-    return f"{base_url.rstrip('/')}/assets/{filename}"
+    """Absolute public URL for an asset served from this server's asset route."""
+    return f"{base_url.rstrip('/')}{ASSET_PATH}/{filename}"
 
 
 def icon_specs(base_url: str | None = None) -> list[dict[str, object]]:

@@ -72,7 +72,7 @@ For organizations and enterprise workspaces using OpenAI's **Model Context Proto
 - **App Name:** `Financial Portfolios AI`
 - **Transport:** `Streamable HTTP`
 - **MCP Endpoint URL:** `https://<your-cloud-run-domain>/mcp`
-- **App Manifest URL:** `https://financial-portfolios.ai/manifests/chatgpt_manifest.json` - served by the deployment itself and rendered for its own origin (use `https://dev.financial-portfolios.ai/...` for dev). The repo copy [`chatgpt_manifest.json`](../chatgpt_manifest.json) is an origin-agnostic template; render it with `python scripts/render_manifests.py --env prod` rather than submitting it as-is.
+- **App Manifest URL:** `https://financial-portfolios.ai/mcp/manifests/chatgpt_manifest.json` - served by the deployment itself and rendered for its own origin (use `https://dev.financial-portfolios.ai/...` for dev). The repo copy [`chatgpt_manifest.json`](../chatgpt_manifest.json) is an origin-agnostic template; render it with `python scripts/render_manifests.py --env prod` rather than submitting it as-is.
 - **Authentication:** `API Key` (`X-API-Key`).
 
 ---

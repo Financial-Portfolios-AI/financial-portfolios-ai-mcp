@@ -13,8 +13,8 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
-from financial_portfolios_ai_mcp.icons import icon_specs, media_type, read_asset
-from financial_portfolios_ai_mcp.manifests import MANIFESTS
+from financial_portfolios_ai_mcp.icons import ASSET_PATH, icon_specs, media_type, read_asset
+from financial_portfolios_ai_mcp.manifests import MANIFEST_PATH, MANIFESTS
 from financial_portfolios_ai_mcp.manifests import render as render_manifest
 from financial_portfolios_ai_mcp.server import mcp_server
 
@@ -24,6 +24,11 @@ logger = logging.getLogger(__name__)
 # challenged with a 401 so OAuth-capable clients begin the authorization flow;
 # the well-known/health/root/openapi routes are always public.
 _PROTECTED_PREFIXES = ("/mcp", "/sse")
+
+# Public sub-paths of a protected prefix. The icons and manifests live under /mcp
+# because that is what the portal load balancer routes here, but a connector
+# directory fetches them with no credential - challenging those would hide the logo.
+_PUBLIC_PREFIXES = ("/mcp/assets", "/mcp/manifests")
 
 # Immutable, versioned-by-content brand assets: cache hard at the CDN/browser.
 _ASSET_CACHE_CONTROL = "public, max-age=604800, immutable"
@@ -99,6 +104,7 @@ class InboundAuthHeaderASGIMiddleware:
                 not token
                 and method != "OPTIONS"
                 and any(path.startswith(p) for p in _PROTECTED_PREFIXES)
+                and not any(path.startswith(p) for p in _PUBLIC_PREFIXES)
                 and get_settings().oauth_challenge_enabled
             ):
                 await self._challenge(scope, send)
@@ -251,7 +257,7 @@ def create_app() -> FastAPI:
                 "sse": "/sse",
             },
             "icons": icon_specs(_request_origin(request.scope)),
-            "manifests": {name: f"/manifests/{name}" for name in MANIFESTS},
+            "manifests": {name: f"{MANIFEST_PATH}/{name}" for name in MANIFESTS},
             "docs": "https://financial-portfolios.ai/docs",
             "openapi": {
                 "yaml": "/openapi.yaml",
@@ -259,7 +265,8 @@ def create_app() -> FastAPI:
             },
         })
 
-    @app.get("/manifests/{filename}", summary="Provider connector manifest")
+    @app.get(MANIFEST_PATH + "/{filename}", summary="Provider connector manifest")
+    @app.get("/manifests/{filename}", include_in_schema=False)
     async def get_manifest(filename: str, request: Request) -> Response:
         # Rendered against the origin the request arrived on, so the dev and prod
         # deployments each hand out a manifest pointing at themselves.
@@ -268,7 +275,8 @@ def create_app() -> FastAPI:
             return PlainTextResponse("Not found", status_code=404)
         return JSONResponse(document)
 
-    @app.get("/assets/{filename}", summary="Brand icon assets (PNG / ICO)")
+    @app.get(ASSET_PATH + "/{filename}", summary="Brand icon assets (PNG / ICO)")
+    @app.get("/assets/{filename}", include_in_schema=False)
     async def get_asset(filename: str) -> Response:
         # Public by design: connector directories and chat UIs fetch these
         # unauthenticated to render the server's logo.

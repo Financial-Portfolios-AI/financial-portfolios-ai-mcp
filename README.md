@@ -170,7 +170,8 @@ gcloud run deploy financial-portfolios-ai-mcp \
 - `GET /livez` - Kubernetes/Cloud Run liveness probe
 - `POST /mcp` - Streamable HTTP MCP endpoint
 - `GET /sse` - Server-Sent Events MCP endpoint
-- `GET /assets/{filename}` - Public brand icons (`icon-16|32|48|64|128|192|256|512.png`, `favicon.ico`)
+- `GET /mcp/assets/{filename}` - Public brand icons (`icon-16|32|48|64|128|192|256|512.png`, `favicon.ico`)
+- `GET /mcp/manifests/{filename}` - Provider manifest rendered for the requesting origin
 - `GET /favicon.ico` - Favicon
 
 ---
@@ -184,8 +185,12 @@ to the connector and its tool calls:
   spec revision 2025-11-25). The first entry is an inline 48x48 `data:` URI, so the icon
   also appears for local **stdio** clients with no HTTP server to fetch from; 192x192 and
   512x512 follow as absolute HTTPS URLs.
-- **Over HTTP** - the PNG/ICO set is served unauthenticated from `/assets/` (the OAuth
-  challenge does not cover it) with a one-week immutable cache header.
+- **Over HTTP** - the PNG/ICO set is served unauthenticated from `/mcp/assets/` with a
+  one-week immutable cache header. It sits under `/mcp` because that is the prefix the
+  portal load balancer routes to this service; top-level `/assets/*` belongs to the portal
+  backend's own assets router, so an icon URL there would never reach us. The OAuth
+  challenge explicitly exempts `/mcp/assets` and `/mcp/manifests` so directories can fetch
+  them with no credential.
 - **In the manifests** - `claude_connector.json`, `chatgpt_manifest.json` and
   `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files,
   through the `${PUBLIC_ORIGIN}` placeholder (see [Manifests](#manifests)).
@@ -223,10 +228,10 @@ python scripts/render_manifests.py --env dev         # -> build/manifests/dev/
 python scripts/render_manifests.py --origin https://staging.financial-portfolios.ai
 
 # or from a running deployment, rendered against the origin you reached it on
-curl https://dev.financial-portfolios.ai/manifests/claude_connector.json
+curl https://dev.financial-portfolios.ai/mcp/manifests/claude_connector.json
 ```
 
-`GET /manifests/<name>` is the authoritative rendering: it fills in the origin the
+`GET /mcp/manifests/<name>` is the authoritative rendering: it fills in the origin the
 request arrived on, so the dev deployment always hands out dev URLs and the prod
 deployment prod URLs, with no build step and nothing to keep in sync. `GET /` lists the
 available manifests. A test asserts the committed templates never regain a hardcoded

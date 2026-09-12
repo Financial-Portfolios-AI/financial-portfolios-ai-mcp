@@ -9,7 +9,7 @@ This guide details the submission process to register **Financial Portfolios AI*
 Before initiating the submission:
 1. **Live Production Endpoint:** Deploy your MCP server to Google Cloud Run (e.g. `https://financial-portfolios-ai-mcp-<project-id>.a.run.app/mcp`).
 2. **Authentication Ready:** The user must be able to log in to `https://financial-portfolios.ai` (via Google Social Login) and generate an API key (`aqat_v1_...`) from `https://financial-portfolios.ai/settings/api-tokens`.
-3. **Connector Manifest:** [`claude_connector.json`](../claude_connector.json) contains the metadata, tools, resources, and prompts. It is an origin-agnostic template (`${PUBLIC_ORIGIN}`); submit a rendered copy from `python scripts/render_manifests.py --env prod`, or fetch `https://financial-portfolios.ai/manifests/claude_connector.json` from the running deployment.
+3. **Connector Manifest:** [`claude_connector.json`](../claude_connector.json) contains the metadata, tools, resources, and prompts. It is an origin-agnostic template (`${PUBLIC_ORIGIN}`); submit a rendered copy from `python scripts/render_manifests.py --env prod`, or fetch `https://financial-portfolios.ai/mcp/manifests/claude_connector.json` from the running deployment.
 4. **Legal Pages:**
    - Privacy Policy: `https://financial-portfolios.ai/privacy`
    - Terms of Service: `https://financial-portfolios.ai/terms`
