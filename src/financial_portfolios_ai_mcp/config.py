@@ -109,13 +109,20 @@ class Settings(BaseSettings):
         if self.allowed_hosts_override:
             return [h.strip() for h in self.allowed_hosts_override.split(",") if h.strip()]
         hosts: set[str] = {"localhost", "127.0.0.1"}
-        for url in (self.public_resource_url, self.portal_base_url, self.authorization_server_url):
+        # public_base_url is included because it is precisely the case where this
+        # server answers on its own hostname rather than the portal's: leaving it
+        # out would 421 every MCP request to that host.
+        for url in (
+            self.public_resource_url,
+            self.portal_base_url,
+            self.authorization_server_url,
+            self.public_base_url or self.public_resource_url,
+        ):
             hostname = urlparse(url).hostname
             if hostname:
                 hosts.add(hostname)
         # Add an any-port form for each so a Host with an explicit port also matches.
         return sorted(hosts | {f"{h}:*" for h in hosts})
-
 
     def public_origin(self) -> str:
         """Public origin of this server (no transport path), used for absolute
