@@ -16,7 +16,10 @@ paths:
     get:
       operationId: listPortfolios
       summary: List accessible quantitative portfolios
-      description: Retrieve list of all quantitative investment model portfolios accessible under the user's active subscription.
+      description: >-
+        Retrieve every active quantitative investment model portfolio. Each item is annotated
+        with `access`: `subscribed` (the live book is available) or `public_delayed` (holdings
+        are only available delayed by ~45 days).
       security:
         - ApiKeyAuth: []
       responses:
@@ -33,7 +36,14 @@ paths:
     get:
       operationId: getPortfolioAllocation
       summary: Get current or historical portfolio allocation
-      description: Retrieve latest target allocation snapshot, position weights, expected returns, volatility, equity exposure, and cash allocation for a specific portfolio.
+      description: >-
+        Retrieve a target allocation snapshot for a portfolio. Subscribers receive the latest
+        book, including expected return, volatility, equity exposure, cash allocation and
+        effective N. Non-subscribers receive the public delayed book: positions dated no later
+        than `today - lag_days` (~45 days) carrying only ticker, weight and sector, with the
+        premium signal fields and live-snapshot metrics returned as null. `access`, `delayed`,
+        `as_of` and `lag_days` on the response describe which book was served. A code that is
+        not an active public product returns 404.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -69,7 +79,11 @@ paths:
     get:
       operationId: getPortfolioHistory
       summary: Get portfolio allocation history
-      description: Retrieve historical allocation snapshots for up to 365 days.
+      description: >-
+        Retrieve historical allocation snapshots for up to 365 days. Subscribers receive the
+        full history; non-subscribers receive only entries at or before `today - lag_days`
+        (~45 days), with per-entry metrics returned as null. A code that is not an active
+        public product returns 404.
       security:
         - ApiKeyAuth: []
       parameters:
@@ -98,6 +112,8 @@ paths:
                 $ref: '#/components/schemas/PortfolioHistoryResponse'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
 
   /api/v1/portfolios/{portfolio_code}/rebalance:
     post:
@@ -147,7 +163,7 @@ paths:
     get:
       operationId: getRebalanceTemplate
       summary: Download holdings CSV template
-      description: Download sample CSV template required for uploading user holdings (limits: max 200 rows, 512 KB).
+      description: "Download sample CSV template required for uploading user holdings (limits: max 200 rows, 512 KB)."
       security:
         - ApiKeyAuth: []
       responses:
@@ -281,6 +297,8 @@ components:
       type: object
       required:
         - code
+        - access
+        - delayed
       properties:
         code:
           type: string
@@ -297,6 +315,17 @@ components:
         theme:
           type: string
           example: Momentum & Growth
+        access:
+          type: string
+          description: >-
+            Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
+            `lag_days`, premium signal fields stripped).
+          enum: [subscribed, public_delayed]
+          example: subscribed
+        delayed:
+          type: boolean
+          description: True when the payload is the public delayed book rather than the live one.
+          example: false
 
     PortfolioListResponse:
       type: object
@@ -328,10 +357,12 @@ components:
           type: string
           example: Technology
         expected_return:
-          type: number
+          type: [number, "null"]
+          description: Null on the public delayed book - never exposed to non-subscribers.
           example: 0.125
         expected_volatility:
-          type: number
+          type: [number, "null"]
+          description: Null on the public delayed book - never exposed to non-subscribers.
           example: 0.22
 
     HistoryPosition:
@@ -355,8 +386,8 @@ components:
       required:
         - portfolio_code
         - date
-        - equity_exposure
-        - cash_allocation
+        - access
+        - delayed
         - positions
       properties:
         portfolio_code:
@@ -369,17 +400,40 @@ components:
           type: string
           example: v2.4.1
         equity_exposure:
-          type: number
+          type: [number, "null"]
+          description: Null on the public delayed book - derived from the live snapshot only.
           example: 0.92
         cash_allocation:
-          type: number
+          type: [number, "null"]
+          description: Null on the public delayed book - derived from the live snapshot only.
           example: 0.08
         effective_n:
-          type: number
+          type: [number, "null"]
+          description: Null on the public delayed book - derived from the live snapshot only.
           example: 14.2
         total_positions:
           type: integer
           example: 25
+        access:
+          type: string
+          description: >-
+            Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
+            `lag_days`, premium signal fields stripped).
+          enum: [subscribed, public_delayed]
+          example: subscribed
+        delayed:
+          type: boolean
+          description: True when the payload is the public delayed book rather than the live one.
+          example: false
+        as_of:
+          type: [string, "null"]
+          format: date
+          description: Effective date of the served book. Null when not applicable.
+          example: "2026-07-29"
+        lag_days:
+          type: [integer, "null"]
+          description: Delay applied to the public book, in days. Null for subscribers.
+          example: 45
         positions:
           type: array
           items:
@@ -389,9 +443,6 @@ components:
       type: object
       required:
         - date
-        - equity_exposure
-        - cash_allocation
-        - effective_n
         - total_positions
         - positions
       properties:
@@ -402,13 +453,16 @@ components:
           type: string
           example: v2.4.1
         equity_exposure:
-          type: number
+          type: [number, "null"]
+          description: Null on delayed entries.
           example: 0.92
         cash_allocation:
-          type: number
+          type: [number, "null"]
+          description: Null on delayed entries.
           example: 0.08
         effective_n:
-          type: number
+          type: [number, "null"]
+          description: Null on delayed entries.
           example: 14.2
         total_positions:
           type: integer
@@ -424,6 +478,8 @@ components:
         - portfolio_code
         - days
         - total_snapshots
+        - access
+        - delayed
         - snapshots
       properties:
         portfolio_code:
@@ -435,6 +491,21 @@ components:
         total_snapshots:
           type: integer
           example: 30
+        access:
+          type: string
+          description: >-
+            Which book was served: `subscribed` (live) or `public_delayed` (holdings lagged by
+            `lag_days`, premium signal fields stripped).
+          enum: [subscribed, public_delayed]
+          example: subscribed
+        delayed:
+          type: boolean
+          description: True when the payload is the public delayed book rather than the live one.
+          example: false
+        lag_days:
+          type: [integer, "null"]
+          description: Delay applied to the public book, in days. Null for subscribers.
+          example: 45
         snapshots:
           type: array
           items:

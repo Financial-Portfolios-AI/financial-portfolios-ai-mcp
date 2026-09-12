@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from financial_portfolios_ai_mcp.app import create_app
 from financial_portfolios_ai_mcp.auth import resolve_api_token
+from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.server import mcp_server
 
 
@@ -158,8 +159,11 @@ def test_server_advertises_icons():
     icons = getattr(mcp_server, "icons", None)
     assert icons, "MCPServer should advertise icons"
     srcs = [icon.src for icon in icons]
+    # An inline icon so stdio clients render a logo with no HTTP fetch, plus
+    # absolute URLs built from the deployment's own public origin (never hardcoded).
     assert any(s.startswith("data:image/png;base64,") for s in srcs)
-    assert any(s == "https://financial-portfolios.ai/assets/icon-512.png" for s in srcs)
+    origin = get_settings().public_origin()
+    assert any(s == f"{origin}/assets/icon-512.png" for s in srcs)
 
 
 def test_asset_routes_served_without_auth():
@@ -184,3 +188,13 @@ def test_root_metadata_includes_icons():
     assert resp.status_code == 200
     icons = resp.json()["icons"]
     assert icons and icons[0]["mimeType"] == "image/png"
+
+
+def test_root_icon_urls_follow_request_origin():
+    """Dev and prod each advertise their own hostname - no baked-in origin."""
+    client = TestClient(create_app())
+    resp = client.get("/", headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"})
+    assert resp.status_code == 200
+    remote = [i["src"] for i in resp.json()["icons"] if i["src"].startswith("http")]
+    assert remote
+    assert all(s.startswith("https://dev.financial-portfolios.ai/assets/") for s in remote)

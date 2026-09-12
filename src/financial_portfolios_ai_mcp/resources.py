@@ -23,7 +23,10 @@ def register_resources(server: Any) -> None:
     @server.resource(
         "portfolios://catalog",
         name="Portfolio Catalog",
-        description="Catalog of all active quantitative investment portfolios on Financial Portfolios AI",
+        description=(
+            "Catalog of all active quantitative investment portfolios on Financial Portfolios AI, "
+            "each marked `access`: subscribed (live book) or public_delayed (~45-day lag)"
+        ),
         mime_type="application/json",
     )
     async def get_portfolio_catalog() -> str:
@@ -50,7 +53,10 @@ def register_resources(server: Any) -> None:
     @server.resource(
         "portfolios://{portfolio_code}/allocation",
         name="Portfolio Target Allocation",
-        description="Latest model allocation snapshot, position weights, and risk metrics for a specific portfolio",
+        description=(
+            "Model allocation snapshot, position weights, and risk metrics for a specific portfolio: "
+            "the latest book when subscribed, otherwise the public book delayed by ~45 days"
+        ),
         mime_type="application/json",
     )
     async def get_portfolio_resource(portfolio_code: str) -> str:

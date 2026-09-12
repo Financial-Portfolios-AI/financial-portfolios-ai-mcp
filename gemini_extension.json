@@ -45,19 +45,19 @@
   "tools": [
     {
       "name": "list_portfolios",
-      "description": "List accessible quantitative investment portfolios."
+      "description": "List every active quantitative investment portfolio, each marked access = subscribed or public_delayed."
     },
     {
       "name": "get_portfolio_allocation",
-      "description": "Retrieve current or historical target allocation snapshot and risk metrics."
+      "description": "Retrieve a target allocation snapshot: latest book for subscribed portfolios, otherwise the public book delayed ~45 days."
     },
     {
       "name": "get_portfolio_history",
-      "description": "Retrieve historical allocation snapshots over a custom time window."
+      "description": "Retrieve historical allocation snapshots; non-subscribers receive only delayed entries (~45 days)."
     },
     {
       "name": "rebalance_portfolio",
-      "description": "Calculate mathematical model alignment arithmetic (share quantity differences) for user holdings."
+      "description": "Calculate mathematical model alignment arithmetic (share quantity differences) for user holdings. Requires an active subscription."
     },
     {
       "name": "get_rebalance_template",

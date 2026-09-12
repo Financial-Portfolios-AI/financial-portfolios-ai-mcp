@@ -106,14 +106,29 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
 
 | Tool Name | Description | Arguments |
 | :--- | :--- | :--- |
-| `list_portfolios` | List all accessible quantitative portfolios under active subscription. | `api_token` (optional) |
-| `get_portfolio_allocation` | Retrieve latest or historical target allocation snapshot, position weights, expected return, and volatility. | `portfolio_code`, `as_of` (optional), `api_token` (optional) |
-| `get_portfolio_history` | Retrieve historical allocation timeline for up to 365 days. | `portfolio_code`, `days` (1-365), `api_token` (optional) |
-| `rebalance_portfolio` | Calculate BUY/SELL rebalancing orders to match target allocation given current user holdings. | `portfolio_code`, `holdings` (JSON list or CSV), `as_of` (optional) |
+| `list_portfolios` | List every active quantitative portfolio, each marked `access` = `subscribed` or `public_delayed`. | `api_token` (optional) |
+| `get_portfolio_allocation` | Retrieve a target allocation snapshot: the latest book when subscribed, otherwise the public book delayed ~45 days. | `portfolio_code`, `as_of` (optional), `api_token` (optional) |
+| `get_portfolio_history` | Retrieve historical allocation timeline for up to 365 days (delayed entries only for non-subscribers). | `portfolio_code`, `days` (1-365), `api_token` (optional) |
+| `rebalance_portfolio` | Calculate BUY/SELL rebalancing orders to match target allocation given current user holdings. **Requires an active subscription.** | `portfolio_code`, `holdings` (JSON list or CSV), `as_of` (optional) |
 | `get_rebalance_template` | Download sample holdings CSV template and formatting instructions. | `api_token` (optional) |
 | `list_blog_posts` | Search and list published research articles, macro updates, and commentaries. | `page`, `page_size`, `search` (optional) |
 | `get_blog_post` | Read full content of a published research article by slug. | `slug`, `api_token` (optional) |
 | `get_token_info` | Inspect API token metadata, usage rate limits, and subscription status. | `api_token` (optional) |
+
+#### Access levels
+
+Portfolio reads serve one of two books, and every response says which via `access`, `delayed`,
+`as_of` and `lag_days`:
+
+| | `subscribed` | `public_delayed` |
+| :--- | :--- | :--- |
+| Holdings | latest book | dated `<= today - 45 days` (`PUBLIC_HOLDINGS_LAG_DAYS`) |
+| Position fields | ticker, weight, sector, expected return, expected volatility | ticker, weight, sector only |
+| `equity_exposure` / `cash_allocation` / `effective_n` | populated | `null` |
+| `rebalance_portfolio` | allowed | 403 - subscription required |
+
+A portfolio code that is not an active public product returns **404**, deliberately
+indistinguishable from an unknown code.
 
 ### 📦 Resources
 
@@ -175,9 +190,29 @@ to the connector and its tool calls:
   `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files.
 
 Sources live in `src/financial_portfolios_ai_mcp/assets/` and ship inside the wheel.
-The absolute URLs are built from `MCP_PUBLIC_BASE_URL`, falling back to the origin of
-`MCP_PUBLIC_URL` with the transport path stripped - set `MCP_PUBLIC_BASE_URL` when the
-server is reachable on a different host than the portal.
+
+No environment hostname is hardcoded. The absolute URLs resolve in this order:
+
+1. the origin the request arrived on (`X-Forwarded-Proto` / `X-Forwarded-Host`, set by
+   the load balancer and Cloud Run) - so `/` always advertises the hostname the caller used;
+2. `MCP_PUBLIC_BASE_URL`, for the `initialize` handshake, which has no request origin to
+   read (set it when the MCP service answers on its own hostname rather than through the portal);
+3. `MCP_PUBLIC_URL` with the transport path stripped.
+
+A dev deployment therefore advertises `https://dev.financial-portfolios.ai/assets/...`
+purely from its deploy substitution:
+
+```bash
+gcloud builds submit --config cloudbuild.yaml \
+  --substitutions=_PORTAL_ORIGIN=https://dev.financial-portfolios.ai,_MCP_PUBLIC_BASE_URL=https://dev.financial-portfolios.ai
+```
+
+The static provider manifests carry the production origin because that is what the
+directories are submitted with; render the other environments instead of hand-editing them:
+
+```bash
+python scripts/render_manifests.py --origin https://dev.financial-portfolios.ai --out build/dev
+```
 
 ---
 

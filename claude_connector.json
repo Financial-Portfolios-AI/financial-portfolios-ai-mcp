@@ -2,7 +2,7 @@
   "name": "financial-portfolios-ai",
   "display_name": "Financial Portfolios AI",
   "version": "1.0.0",
-  "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. (Informational only under publisher exclusion; not individualized financial advice).",
+  "description": "Connect Claude to Financial Portfolios AI to analyze quantitative portfolios, inspect target asset allocations, calculate rebalancing alignment arithmetic, and read institutional market research. Subscribers see the live book; other signed-in users see the public book delayed by ~45 days. (Informational only under publisher exclusion; not individualized financial advice).",
   "website_url": "https://financial-portfolios.ai",
   "documentation_url": "https://financial-portfolios.ai/docs",
   "icon_url": "https://financial-portfolios.ai/assets/icon-512.png",
@@ -79,19 +79,19 @@
     "tools": [
       {
         "name": "list_portfolios",
-        "description": "List all accessible quantitative investment portfolios (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE)."
+        "description": "List every active quantitative investment portfolio (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE), each marked access = subscribed (live book) or public_delayed (holdings delayed ~45 days)."
       },
       {
         "name": "get_portfolio_allocation",
-        "description": "Retrieve current or historical target allocation snapshot, position weights, expected returns, and risk metrics."
+        "description": "Retrieve a target allocation snapshot: the latest book with expected returns and risk metrics for subscribed portfolios, or the public book delayed ~45 days (ticker/weight/sector only) otherwise. Response carries access, delayed, as_of and lag_days."
       },
       {
         "name": "get_portfolio_history",
-        "description": "Retrieve historical allocation snapshots over a custom time window (up to 365 days)."
+        "description": "Retrieve historical allocation snapshots over a custom time window (up to 365 days). Non-subscribers receive only entries at or before today - 45 days, with null allocation metrics."
       },
       {
         "name": "rebalance_portfolio",
-        "description": "Calculate mathematical target-model alignment arithmetic (share quantity differences) given user holdings (max 200 rows, 512 KB)."
+        "description": "Calculate mathematical target-model alignment arithmetic (share quantity differences) given user holdings (max 200 rows, 512 KB). Requires an active subscription covering the target portfolio."
       },
       {
         "name": "get_rebalance_template",

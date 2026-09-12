@@ -3,7 +3,7 @@
   "name_for_human": "Financial Portfolios AI",
   "name_for_model": "financial_portfolios_ai",
   "description_for_human": "Analyze quantitative investment portfolios, target asset allocations, model alignment arithmetic, and research.",
-  "description_for_model": "Assistant tool plugin to discover quantitative portfolio allocations, compute model alignment arithmetic, and inspect market commentaries from Financial Portfolios AI under the publisher exclusion.",
+  "description_for_model": "Assistant tool plugin to discover quantitative portfolio allocations, compute model alignment arithmetic, and inspect market commentaries from Financial Portfolios AI under the publisher exclusion. Portfolio reads return either the subscriber's live book or, for products the user is not subscribed to, a public book delayed by about 45 days with premium fields stripped; the access, delayed, as_of and lag_days fields on each response say which. Rebalancing requires an active subscription.",
   "auth": {
     "type": "service_http",
     "authorization_type": "custom_header",

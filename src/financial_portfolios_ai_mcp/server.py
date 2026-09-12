@@ -26,10 +26,22 @@ No assessment of suitability, risk tolerance, or financial situation has been co
 Model alignment calculations represent mathematical target-model arithmetic.
 
 Key Capabilities:
-1. Portfolio Discovery: Use `list_portfolios` to inspect available model strategies (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE).
+1. Portfolio Discovery: Use `list_portfolios` to inspect every active model strategy (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE). Each entry is marked `access`: `subscribed` or `public_delayed`.
 2. Allocation Details: Use `get_portfolio_allocation` to inspect target weights, individual tickers, equity/cash ratio, and risk indicators. When a user asks to see "my portfolio", "my holdings", "my positions", or "what's in my portfolio", that means the holdings of their subscribed model portfolio(s): call `list_portfolios` if no code is given, then `get_portfolio_allocation` for each.
-3. Model Alignment Arithmetic: Use `rebalance_portfolio` to compute calculated share quantity differences between user holdings and target model allocation (max 200 rows, 512 KB).
+3. Model Alignment Arithmetic: Use `rebalance_portfolio` to compute calculated share quantity differences between user holdings and target model allocation (max 200 rows, 512 KB). This one requires an active subscription for the target portfolio.
 4. Research & Analysis: Use `list_blog_posts` and `get_blog_post` to access quantitative commentaries and macro analysis.
+
+Access Levels:
+Portfolio reads come in two flavours and the response says which one was served via `access`,
+`delayed`, `as_of` and `lag_days`:
+- `subscribed`: the latest book, with expected return, expected volatility, equity exposure,
+  cash allocation and effective N.
+- `public_delayed`: the public book for an active product the user is not subscribed to. Holdings
+  are no more recent than roughly 45 days ago, positions carry only ticker/weight/sector, and the
+  premium metrics are null.
+When `delayed` is true, tell the user the book is delayed and give its effective date rather than
+presenting it as the current allocation. A portfolio code that is not an active public product
+returns "not found".
 
 Authentication:
 Operations require an active personal API token (format: aqat_v1_...) generated via https://financial-portfolios.ai/settings/api-tokens.

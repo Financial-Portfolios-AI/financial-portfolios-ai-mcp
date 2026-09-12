@@ -35,8 +35,12 @@ steps:
       # /.well-known/oauth-protected-resource (RFC 9728) so marketplace/directory
       # clients discover the portal authorization server and this resource. They
       # must be the PUBLIC portal origin, not localhost (ADR-0196/0198).
+      # Every public URL this server advertises (portal API, OAuth issuer, MCP
+      # resource URL, and the /assets icon URLs) is derived from _PORTAL_ORIGIN, so
+      # a dev deployment advertises dev URLs without any code or manifest edit:
+      #   gcloud builds submit --substitutions=_PORTAL_ORIGIN=https://dev.financial-portfolios.ai
       - '--set-env-vars'
-      - 'FINANCIAL_PORTFOLIOS_BASE_URL=https://financial-portfolios.ai,OAUTH_AUTHORIZATION_SERVER=https://financial-portfolios.ai,MCP_PUBLIC_URL=https://financial-portfolios.ai/mcp,MCP_LOG_LEVEL=INFO'
+      - 'FINANCIAL_PORTFOLIOS_BASE_URL=${_PORTAL_ORIGIN},OAUTH_AUTHORIZATION_SERVER=${_PORTAL_ORIGIN},MCP_PUBLIC_URL=${_PORTAL_ORIGIN}/mcp,MCP_PUBLIC_BASE_URL=${_MCP_PUBLIC_BASE_URL},MCP_LOG_LEVEL=${_LOG_LEVEL}'
       # The /sse transport holds long-lived streaming connections. Cloud Run's own
       # request timeout must be >= the LB backend timeout (mcp_backend_timeout_sec,
       # 3600s in mcp_edge.tf) or the edge would cut streams short.
@@ -53,6 +57,14 @@ steps:
 
 substitutions:
   _REGION: 'us-central1'
+  # Public origin of the environment being deployed (prod by default; pass
+  # https://dev.financial-portfolios.ai for the dev environment).
+  _PORTAL_ORIGIN: 'https://financial-portfolios.ai'
+  # Origin that serves this server's /assets icons. Defaults to the portal origin,
+  # which proxies /assets and /mcp; override when the MCP service is reached on its
+  # own hostname (e.g. the Cloud Run run.app URL) instead of through the portal.
+  _MCP_PUBLIC_BASE_URL: 'https://financial-portfolios.ai'
+  _LOG_LEVEL: 'INFO'
 
 images:
   - 'gcr.io/$PROJECT_ID/financial-portfolios-ai-mcp:$COMMIT_SHA'

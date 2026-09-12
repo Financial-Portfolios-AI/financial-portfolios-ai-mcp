@@ -29,17 +29,23 @@ def register_tools(server: Any) -> None:
     @server.tool(
         name="list_portfolios",
         description=(
-            "List the model portfolios the user is subscribed to / has access to on Financial "
-            "Portfolios AI (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE). Call this first when the "
+            "List every active model portfolio on Financial Portfolios AI (e.g. AQA_AGGRESSIVE, "
+            "AQA_BALANCED, AQA_DEFENSIVE). Each entry carries `access`: `subscribed` means the user's "
+            "subscription covers it and the live book is available; `public_delayed` means only the "
+            "public book is available, with holdings delayed by about 45 days. Call this first when the "
             "user refers to 'my portfolios', 'my holdings', or 'my positions' without naming a specific "
-            "portfolio, then use `get_portfolio_allocation` to show the holdings of each."
+            "portfolio, then use `get_portfolio_allocation` to show the holdings of each - preferring "
+            "the `subscribed` ones when the user says 'my'."
         ),
     )
     async def list_portfolios() -> str:
         """
-        List accessible quantitative investment portfolios.
+        List every active quantitative investment portfolio.
 
-        :return: JSON formatted list of portfolios with risk level, theme, and description.
+        Includes products the user is not subscribed to; those are marked
+        `access: "public_delayed"` and expose only the delayed book.
+
+        :return: JSON formatted list of portfolios with access level, risk level, theme, and description.
         """
         try:
             async with get_async_client() as client:
@@ -80,10 +86,16 @@ def register_tools(server: Any) -> None:
             "'my holdings', 'my positions', 'what's in my portfolio', 'what stocks do I hold', or the "
             "current/latest allocation for a portfolio (e.g. 'AQA_AGGRESSIVE', 'AQA_BALANCED', "
             "'AQA_DEFENSIVE'). If the user does not name a portfolio, call `list_portfolios` first to "
-            "find their entitled portfolio codes, then call this for each. Returns target asset weights, "
-            "tickers, sectors, expected return, volatility, equity exposure, and cash allocation, and "
-            "can also fetch a historical snapshot via `as_of`. Output represents mathematical "
-            "target-model allocation arithmetic, not personalized investment advice."
+            "find the portfolio codes, then call this for each. For a subscribed portfolio this returns "
+            "the LATEST book: target weights, tickers, sectors, expected return, volatility, equity "
+            "exposure, cash allocation and effective N. For a portfolio the user is not subscribed to it "
+            "returns the PUBLIC DELAYED book instead - holdings as of roughly 45 days ago, with only "
+            "ticker, weight and sector per position, and null for expected return, expected volatility, "
+            "equity exposure, cash allocation and effective N. The response's `access`, `delayed`, "
+            "`as_of` and `lag_days` fields say which book was served; state the effective date to the "
+            "user whenever `delayed` is true rather than presenting a delayed book as current. Can also "
+            "fetch a historical snapshot via `as_of`. Output represents mathematical target-model "
+            "allocation arithmetic, not personalized investment advice."
         ),
     )
     async def get_portfolio_allocation(
@@ -92,6 +104,10 @@ def register_tools(server: Any) -> None:
     ) -> str:
         """
         Get portfolio target allocation and risk metrics.
+
+        Subscribers receive the latest book; everyone else receives the public book
+        delayed by `lag_days` (~45 days), with premium signal fields stripped. An
+        unknown code - or one that is not an active public product - is a 404.
 
         :param portfolio_code: Portfolio identifier (e.g., 'AQA_AGGRESSIVE', 'AQA_BALANCED')
         :param as_of: Optional historical snapshot date (YYYY-MM-DD or ISO 8601 format)
@@ -108,14 +124,20 @@ def register_tools(server: Any) -> None:
                     "error": "Authentication or subscription access denied",
                     "portfolio": portfolio_code,
                     "message": str(e),
-                    "hint": "Ensure your account has an active subscription covering this portfolio at https://financial-portfolios.ai",
+                    "hint": "Sign in and generate an API token at https://financial-portfolios.ai/settings/api-tokens. A valid token without a subscription still returns the public delayed book (~45 days) for active products.",
                     "disclaimer": DISCLAIMER,
                 },
                 indent=2,
             )
         except NotFoundError as e:
             return json.dumps(
-                {"error": "Portfolio Not Found", "message": str(e), "disclaimer": DISCLAIMER},
+                {
+                    "error": "Portfolio Not Found",
+                    "portfolio": portfolio_code,
+                    "message": str(e),
+                    "hint": "No active product with this code is available to you. Call `list_portfolios` for the codes that are.",
+                    "disclaimer": DISCLAIMER,
+                },
                 indent=2,
             )
         except RateLimitError as e:
@@ -137,7 +159,11 @@ def register_tools(server: Any) -> None:
         name="get_portfolio_history",
         description=(
             "Retrieve historical allocation snapshots for up to 365 days for a specific portfolio. "
-            "Useful for tracking historical model changes and target allocation evolution."
+            "Useful for tracking historical model changes and target allocation evolution. For a "
+            "subscribed portfolio this returns the full history; otherwise it returns only the public "
+            "delayed entries - nothing more recent than about 45 days ago - with equity exposure, cash "
+            "allocation and effective N null on those entries. The response's `access`, `delayed` and "
+            "`lag_days` fields say which history was served."
         ),
     )
     async def get_portfolio_history(
@@ -146,6 +172,10 @@ def register_tools(server: Any) -> None:
     ) -> str:
         """
         Get portfolio allocation history.
+
+        Subscribers receive the full history; everyone else receives only entries at or
+        before `today - lag_days` (~45 days). An unknown code - or one that is not an
+        active public product - is a 404.
 
         :param portfolio_code: Portfolio identifier (e.g., 'AQA_AGGRESSIVE')
         :param days: Number of calendar days of history (1-365, default: 30)
@@ -193,6 +223,9 @@ def register_tools(server: Any) -> None:
             "Calculate mathematical target-model alignment arithmetic (share quantity differences) "
             "between current user holdings and the chosen portfolio model (e.g. 'AQA_AGGRESSIVE'). "
             "Accepts holdings as a list of dicts (with ticker, quantity, price) or CSV string (max 200 rows, 512 KB). "
+            "Requires an active subscription covering the target portfolio: unlike the allocation and "
+            "history tools, this has no public delayed mode and returns a 403 when the user is not "
+            "entitled. "
             "Note: Uploaded holdings data is processed solely for model alignment calculations. "
             "Output represents mathematical calculations, not trade execution or individualized investment advice."
         ),

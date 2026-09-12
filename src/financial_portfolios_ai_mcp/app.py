@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 from contextlib import AsyncExitStack, asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI, Response
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 
@@ -33,16 +33,21 @@ def _header(scope, name: bytes) -> str | None:
     return None
 
 
-def _resource_metadata_url(scope) -> str:
-    """Public URL of THIS server's RFC 9728 protected-resource metadata, derived
-    from the request so it is correct behind a proxy (X-Forwarded-Proto/Host)."""
+def _request_origin(scope) -> str:
+    """Origin this request arrived on, honouring the proxy headers Cloud Run and the
+    load balancer set, so prod and dev each advertise their own hostname without any
+    environment-specific constant. Falls back to the configured public origin."""
     proto = _header(scope, b"x-forwarded-proto")
     host = _header(scope, b"x-forwarded-host") or _header(scope, b"host")
     if host:
         scheme = (proto or scope.get("scheme") or "https").split(",")[0].strip()
-        return f"{scheme}://{host}/.well-known/oauth-protected-resource"
-    # Fallback to the configured public resource origin.
-    return f"{get_settings().public_origin()}/.well-known/oauth-protected-resource"
+        return f"{scheme}://{host}"
+    return get_settings().public_origin()
+
+
+def _resource_metadata_url(scope) -> str:
+    """Public URL of THIS server's RFC 9728 protected-resource metadata."""
+    return f"{_request_origin(scope)}/.well-known/oauth-protected-resource"
 
 
 class InboundAuthHeaderASGIMiddleware:
@@ -195,7 +200,9 @@ def create_app() -> FastAPI:
     )
 
     @app.get("/", summary="Root status and metadata")
-    async def root() -> JSONResponse:
+    async def root(request: Request) -> JSONResponse:
+        # Icon URLs follow the origin the request came in on, so the dev and prod
+        # deployments each advertise their own /assets without separate config.
         return JSONResponse({
             "service": "financial-portfolios-ai-mcp",
             "version": "1.0.0",
@@ -205,7 +212,7 @@ def create_app() -> FastAPI:
                 "streamable_http": "/mcp",
                 "sse": "/sse",
             },
-            "icons": icon_specs(settings.public_origin()),
+            "icons": icon_specs(_request_origin(request.scope)),
             "docs": "https://financial-portfolios.ai/docs",
             "openapi": {
                 "yaml": "/openapi.yaml",
