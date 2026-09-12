@@ -11,6 +11,7 @@ from financial_portfolios_ai.exceptions import (
     RateLimitError,
     ValidationError,
 )
+from mcp.types import ToolAnnotations
 
 from financial_portfolios_ai_mcp.auth import get_async_client
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
@@ -24,6 +25,7 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="list_portfolios",
+        title="List model portfolios",
         description=(
             "List every active model portfolio on Financial Portfolios AI (e.g. AQA_AGGRESSIVE, "
             "AQA_BALANCED, AQA_DEFENSIVE). Each entry carries `access`: `subscribed` means the user's "
@@ -32,6 +34,11 @@ def register_tools(server: Any) -> None:
             "user refers to 'my portfolios', 'my holdings', or 'my positions' without naming a specific "
             "portfolio, then use `get_portfolio_allocation` to show the holdings of each - preferring "
             "the `subscribed` ones when the user says 'my'."
+        ),
+        annotations=ToolAnnotations(
+            title='List model portfolios',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def list_portfolios() -> str:
@@ -76,6 +83,7 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_portfolio_allocation",
+        title="Portfolio holdings and target allocation",
         description=(
             "Show the current holdings and positions of a model portfolio: the stocks/tickers it "
             "holds and their target weights. USE THIS whenever a user asks to see 'my portfolio', "
@@ -92,6 +100,11 @@ def register_tools(server: Any) -> None:
             "user whenever `delayed` is true rather than presenting a delayed book as current. Can also "
             "fetch a historical snapshot via `as_of`. Output represents mathematical target-model "
             "allocation arithmetic, not personalized investment advice."
+        ),
+        annotations=ToolAnnotations(
+            title='Portfolio holdings and target allocation',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def get_portfolio_allocation(
@@ -153,6 +166,7 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_portfolio_history",
+        title="Allocation history",
         description=(
             "Retrieve historical allocation snapshots for up to 365 days for a specific portfolio. "
             "Useful for tracking historical model changes and target allocation evolution. For a "
@@ -160,6 +174,11 @@ def register_tools(server: Any) -> None:
             "delayed entries - nothing more recent than about 45 days ago - with equity exposure, cash "
             "allocation and effective N null on those entries. The response's `access`, `delayed` and "
             "`lag_days` fields say which history was served."
+        ),
+        annotations=ToolAnnotations(
+            title='Allocation history',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def get_portfolio_history(
@@ -215,6 +234,7 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="rebalance_portfolio",
+        title="Model alignment arithmetic",
         description=(
             "Calculate mathematical target-model alignment arithmetic (share quantity differences) "
             "between current user holdings and the chosen portfolio model (e.g. 'AQA_AGGRESSIVE'). "
@@ -224,6 +244,11 @@ def register_tools(server: Any) -> None:
             "entitled. "
             "Note: Uploaded holdings data is processed solely for model alignment calculations. "
             "Output represents mathematical calculations, not trade execution or individualized investment advice."
+        ),
+        annotations=ToolAnnotations(
+            title='Model alignment arithmetic',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def rebalance_portfolio(
@@ -284,9 +309,15 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_rebalance_template",
+        title="Holdings CSV template",
         description=(
             "Download the sample CSV template format and guidelines for uploading portfolio holdings "
             "for model alignment calculations (limits: max 200 rows, max 512 KB)."
+        ),
+        annotations=ToolAnnotations(
+            title='Holdings CSV template',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def get_rebalance_template() -> str:
@@ -319,9 +350,15 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="list_blog_posts",
+        title="Search research and market commentary",
         description=(
             "List published quantitative research articles, market commentaries, and investment "
             "insights from Financial Portfolios AI."
+        ),
+        annotations=ToolAnnotations(
+            title='Search research and market commentary',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def list_blog_posts(
@@ -364,9 +401,15 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_blog_post",
+        title="Read a research article",
         description=(
             "Retrieve full content of a published quantitative research article or post "
             "by slug from Financial Portfolios AI."
+        ),
+        annotations=ToolAnnotations(
+            title='Read a research article',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def get_blog_post(slug: str) -> str:
@@ -407,9 +450,15 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_token_info",
+        title="API token and subscription status",
         description=(
             "Retrieve metadata about the currently configured API token, including use count, "
             "rate limits, expiration, and subscription status."
+        ),
+        annotations=ToolAnnotations(
+            title='API token and subscription status',
+            read_only_hint=True,
+            open_world_hint=True,
         ),
     )
     async def get_token_info() -> str:

@@ -280,3 +280,32 @@ def test_disclaimer_has_a_single_definition():
     assert tools.DISCLAIMER is DISCLAIMER
     assert resources.DISCLAIMER is DISCLAIMER
     assert prompts.DISCLAIMER_TEXT.endswith(DISCLAIMER)
+
+
+@pytest.mark.asyncio
+async def test_every_tool_is_annotated_for_directory_review():
+    """The Claude directory requires a title and a read-only/destructive hint per tool."""
+    for tool in await mcp_server.list_tools():
+        assert tool.title, f"{tool.name} has no title"
+        assert tool.annotations is not None, f"{tool.name} has no annotations"
+        assert tool.annotations.read_only_hint is not None, f"{tool.name} has no readOnlyHint"
+        # Nothing here mutates state, and everything calls the portal API.
+        assert tool.annotations.read_only_hint is True
+        assert tool.annotations.open_world_hint is True
+
+
+def test_registry_server_json_matches_registry_constraints():
+    """server.json is what the official MCP registry reads."""
+    root = Path(__file__).resolve().parent.parent
+    doc = json.loads((root / "server.json").read_text(encoding="utf-8"))
+
+    assert doc["name"].count("/") == 1 and len(doc["name"]) <= 200
+    assert len(doc["description"]) <= 100
+    assert doc["version"] == mcp_server.version
+
+    # Only this _meta key survives publishing; everything else is dropped.
+    meta = doc["_meta"]["io.modelcontextprotocol.registry/publisher-provided"]
+    assert len(json.dumps(meta).encode()) <= 4096
+    assert meta["developer"]["name"]
+    assert meta["categories"]
+    assert meta["disclosure"] == DISCLAIMER

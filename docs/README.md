@@ -20,6 +20,7 @@ This directory contains comprehensive, step-by-step registration and submission 
 Before starting any submission process, ensure you have the following repository artifacts prepared:
 
 - [x] **Production Cloud Run Endpoint:** `https://<your-cloud-run-domain>/mcp` (Streamable HTTP) and `/sse` (SSE).
+- [x] **MCP Registry Manifest:** [`server.json`](../server.json) - the one listing file that carries developer identity and categories; see [`directory_listings.md`](directory_listings.md) for where those fields come from on every other provider.
 - [x] **Claude Connector Manifest:** [`claude_connector.json`](../claude_connector.json).
 - [x] **OpenAPI 3.1 Specification:** [`openapi.yaml`](../openapi.yaml) (for ChatGPT Actions & Google Vertex AI).
 - [x] **ChatGPT Plugin Manifest:** [`chatgpt_manifest.json`](../chatgpt_manifest.json).

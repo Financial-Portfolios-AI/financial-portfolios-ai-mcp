@@ -1,0 +1,60 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "ai.financial-portfolios/financial-portfolios-ai",
+  "title": "Financial Portfolios AI",
+  "description": "Systematic model portfolios: allocations, holdings history, model-alignment arithmetic, research.",
+  "version": "1.0.0",
+  "websiteUrl": "https://financial-portfolios.ai",
+  "repository": {
+    "url": "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://financial-portfolios.ai/mcp"
+    },
+    {
+      "type": "sse",
+      "url": "https://financial-portfolios.ai/sse"
+    }
+  ],
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "financial-portfolios-ai-mcp",
+      "version": "1.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "FINANCIAL_PORTFOLIOS_API_TOKEN",
+          "description": "Personal API token (aqat_v1_...) from Settings > API Tokens. Remote connectors use OAuth 2.1 instead.",
+          "isSecret": true,
+          "isRequired": false
+        },
+        {
+          "name": "FINANCIAL_PORTFOLIOS_BASE_URL",
+          "description": "Portal origin the server calls. Defaults to https://financial-portfolios.ai.",
+          "isRequired": false
+        }
+      ]
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "developer": {
+        "name": "Financial Portfolios AI",
+        "url": "https://financial-portfolios.ai",
+        "supportEmail": "support@financial-portfolios.ai"
+      },
+      "categories": ["finance", "investing", "research", "data-analysis"],
+      "documentationUrl": "https://financial-portfolios.ai/docs",
+      "privacyPolicyUrl": "https://financial-portfolios.ai/privacy",
+      "termsUrl": "https://financial-portfolios.ai/terms",
+      "authentication": "oauth2",
+      "disclosure": "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed. All outputs represent mathematical target-model alignment arithmetic."
+    }
+  }
+}
