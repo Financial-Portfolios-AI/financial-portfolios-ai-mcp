@@ -9,6 +9,7 @@ from pathlib import Path
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
+from mcp.server.transport_security import TransportSecuritySettings
 
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
@@ -96,6 +97,24 @@ class InboundAuthHeaderASGIMiddleware:
                 await self._challenge(scope, send)
                 return
 
+            # Normalize the bare mount path so Starlette does NOT answer with a
+            # 307 redirect to the trailing-slash form. `app.mount("/mcp", ...)`
+            # makes a request to exactly "/mcp" (no slash) redirect to "/mcp/",
+            # but MCP clients (Claude, ChatGPT) POST to the advertised resource
+            # URL "/mcp" and do NOT follow redirects on the transport request —
+            # so the 307 is a silent connect failure ("redirect back works but
+            # never shows connected"). Rewriting the ASGI scope path here routes
+            # the request straight into the mounted sub-app (internal path "/")
+            # with no HTTP redirect. raw_path is updated to match.
+            for _mount in ("/mcp", "/sse"):
+                if path == _mount:
+                    scope = dict(scope)
+                    scope["path"] = _mount + "/"
+                    raw = scope.get("raw_path")
+                    if raw is not None:
+                        scope["raw_path"] = raw + b"/"
+                    break
+
             # Bind token to context variable for downstream tools in mounted apps
             token_ctx = set_request_token(token)
             try:
@@ -152,11 +171,28 @@ def create_app() -> FastAPI:
     # impossible, and it is also required for correctness on multi-instance /
     # autoscaled hosts (Cloud Run) where in-memory sessions don't survive
     # cross-instance routing.
+    # DNS-rebinding / Host-header allow-list. Behind the portal load balancer the
+    # forwarded Host is the public portal domain (e.g. dev.financial-portfolios.ai);
+    # without it on this list the SDK's transport security answers every
+    # authenticated request with 421 Misdirected Request ("Invalid Host header"),
+    # which surfaces as an OAuth flow that completes but never connects. Hosts are
+    # derived from the configured URLs (see Settings.allowed_hosts) or overridden
+    # via MCP_ALLOWED_HOSTS.
+    transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=settings.allowed_hosts,
+    )
+
     streamable_app = mcp_server.streamable_http_app(
         streamable_http_path="/",
         stateless_http=True,
+        transport_security=transport_security,
     )
-    sse_app = mcp_server.sse_app(sse_path="/", message_path="/messages/")
+    sse_app = mcp_server.sse_app(
+        sse_path="/",
+        message_path="/messages/",
+        transport_security=transport_security,
+    )
 
     # Combined lifespan: mounting a Starlette sub-app into FastAPI does NOT run the
     # sub-app's lifespan, and the MCP StreamableHTTP/SSE session managers start their
