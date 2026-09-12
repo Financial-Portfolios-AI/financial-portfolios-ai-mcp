@@ -13,14 +13,10 @@ from financial_portfolios_ai.exceptions import (
 )
 
 from financial_portfolios_ai_mcp.auth import get_async_client
+from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
 
 logger = logging.getLogger(__name__)
 
-DISCLAIMER = (
-    "Informational and educational purposes only. Not investment, legal, or tax advice, "
-    "and not a recommendation or solicitation. No suitability assessment has been performed. "
-    "All outputs represent mathematical target-model alignment arithmetic."
-)
 
 
 def register_tools(server: Any) -> None:

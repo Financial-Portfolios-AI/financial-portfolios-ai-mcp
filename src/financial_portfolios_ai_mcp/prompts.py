@@ -2,11 +2,7 @@
 
 from typing import Any
 
-DISCLAIMER_TEXT = (
-    "DISCLAIMER: All outputs and calculations provided by Financial Portfolios AI are for "
-    "informational and educational purposes only under the publisher exclusion. They do not constitute "
-    "individualized investment advice or trade solicitations. No suitability assessment has been performed."
-)
+from financial_portfolios_ai_mcp.disclosure import DISCLAIMER_TEXT
 
 
 def register_prompts(server: Any) -> None:

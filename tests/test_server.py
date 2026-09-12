@@ -10,6 +10,7 @@ from fastapi.testclient import TestClient
 from financial_portfolios_ai_mcp.app import create_app
 from financial_portfolios_ai_mcp.auth import resolve_api_token
 from financial_portfolios_ai_mcp.config import get_settings
+from financial_portfolios_ai_mcp.disclosure import DISCLAIMER, SERVICE_DESCRIPTION
 from financial_portfolios_ai_mcp.manifests import MANIFESTS, PLACEHOLDER
 from financial_portfolios_ai_mcp.manifests import render as render_manifest
 from financial_portfolios_ai_mcp.server import mcp_server
@@ -257,3 +258,25 @@ def test_assets_answer_head_requests():
     for path in ("/mcp/assets/icon-512.png", "/favicon.ico", "/mcp/manifests/claude_connector.json"):
         resp = client.head(path)
         assert resp.status_code == 200, path
+
+
+def test_description_is_human_facing_and_carries_the_disclosure():
+    """Directory listings print `description`, not `instructions`."""
+    assert mcp_server.description == SERVICE_DESCRIPTION
+    assert DISCLAIMER in mcp_server.description
+    assert "Model Context Protocol" not in mcp_server.description
+    assert "delayed by about 45 days" in mcp_server.description
+
+
+def test_website_url_follows_the_deployment():
+    """A dev deployment must not advertise the production site."""
+    assert mcp_server.website_url == get_settings().portal_base_url.rstrip("/")
+
+
+def test_disclaimer_has_a_single_definition():
+    """The portal's ADR-0161 wording, defined once and reused."""
+    from financial_portfolios_ai_mcp import prompts, resources, tools
+
+    assert tools.DISCLAIMER is DISCLAIMER
+    assert resources.DISCLAIMER is DISCLAIMER
+    assert prompts.DISCLAIMER_TEXT.endswith(DISCLAIMER)

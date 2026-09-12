@@ -5,6 +5,7 @@ import logging
 from mcp.server import MCPServer
 
 from financial_portfolios_ai_mcp.config import get_settings
+from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
 from financial_portfolios_ai_mcp.icons import icon_specs
 from financial_portfolios_ai_mcp.prompts import register_prompts
 from financial_portfolios_ai_mcp.resources import register_resources
@@ -55,12 +56,19 @@ Authorization header, or via FINANCIAL_PORTFOLIOS_API_TOKEN for stdio.
 
 def create_mcp_server() -> MCPServer:
     """Create and configure a new MCPServer instance."""
+    settings = get_settings()
     kwargs: dict = {
         "name": "financial-portfolios-ai",
         "title": "Financial Portfolios AI",
-        "description": "Official Model Context Protocol (MCP) server for Financial Portfolios AI.",
+        # Human-facing: this is what a provider directory prints under the listing, so it
+        # describes the service and carries the disclosure. `instructions` below is the
+        # model-facing text and is never shown to someone browsing a directory.
+        "description": SERVICE_DESCRIPTION,
         "instructions": SERVER_INSTRUCTIONS.strip(),
-        "website_url": "https://financial-portfolios.ai",
+        # The portal site for THIS deployment - a dev server must not advertise the prod
+        # site. portal_base_url (not public_origin) because this is the website, which
+        # stays correct even when the MCP service answers on a hostname of its own.
+        "website_url": settings.portal_base_url.rstrip("/"),
         "version": "1.0.0",
     }
 
@@ -73,7 +81,7 @@ def create_mcp_server() -> MCPServer:
 
         icons = [
             Icon(src=spec["src"], mime_type=spec["mimeType"], sizes=spec["sizes"])
-            for spec in icon_specs(get_settings().public_origin())
+            for spec in icon_specs(settings.public_origin())
         ]
         server = MCPServer(icons=icons, **kwargs) if icons else MCPServer(**kwargs)
     except (ImportError, TypeError):
