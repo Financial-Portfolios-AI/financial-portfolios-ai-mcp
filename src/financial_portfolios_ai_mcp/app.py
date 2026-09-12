@@ -265,8 +265,12 @@ def create_app() -> FastAPI:
             },
         })
 
-    @app.get(MANIFEST_PATH + "/{filename}", summary="Provider connector manifest")
-    @app.get("/manifests/{filename}", include_in_schema=False)
+    @app.api_route(
+        MANIFEST_PATH + "/{filename}",
+        methods=["GET", "HEAD"],
+        summary="Provider connector manifest",
+    )
+    @app.api_route("/manifests/{filename}", methods=["GET", "HEAD"], include_in_schema=False)
     async def get_manifest(filename: str, request: Request) -> Response:
         # Rendered against the origin the request arrived on, so the dev and prod
         # deployments each hand out a manifest pointing at themselves.
@@ -275,8 +279,14 @@ def create_app() -> FastAPI:
             return PlainTextResponse("Not found", status_code=404)
         return JSONResponse(document)
 
-    @app.get(ASSET_PATH + "/{filename}", summary="Brand icon assets (PNG / ICO)")
-    @app.get("/assets/{filename}", include_in_schema=False)
+    # HEAD as well as GET: image fetchers and link-preview crawlers probe with HEAD,
+    # and FastAPI (unlike bare Starlette) does not add it to a GET route.
+    @app.api_route(
+        ASSET_PATH + "/{filename}",
+        methods=["GET", "HEAD"],
+        summary="Brand icon assets (PNG / ICO)",
+    )
+    @app.api_route("/assets/{filename}", methods=["GET", "HEAD"], include_in_schema=False)
     async def get_asset(filename: str) -> Response:
         # Public by design: connector directories and chat UIs fetch these
         # unauthenticated to render the server's logo.
@@ -291,7 +301,7 @@ def create_app() -> FastAPI:
             headers={"Cache-Control": _ASSET_CACHE_CONTROL},
         )
 
-    @app.get("/favicon.ico", summary="Favicon", include_in_schema=False)
+    @app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
     async def favicon() -> Response:
         raw = read_asset("favicon.ico")
         if raw is None:

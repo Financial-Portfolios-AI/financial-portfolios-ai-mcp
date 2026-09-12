@@ -249,3 +249,11 @@ def test_public_paths_under_mcp_are_not_oauth_challenged():
     assert client.get("/mcp/manifests/claude_connector.json").status_code == 200
     # The transport itself still challenges a tokenless request.
     assert client.get("/mcp/").status_code == 401
+
+
+def test_assets_answer_head_requests():
+    """Image fetchers probe with HEAD before GET."""
+    client = TestClient(create_app())
+    for path in ("/mcp/assets/icon-512.png", "/favicon.ico", "/mcp/manifests/claude_connector.json"):
+        resp = client.head(path)
+        assert resp.status_code == 200, path
