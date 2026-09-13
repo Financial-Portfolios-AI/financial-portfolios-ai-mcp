@@ -146,16 +146,49 @@
     ],
     "prompts": [
       {
+        "name": "my_portfolios",
+        "title": "My portfolios at a glance",
+        "description": "See which model portfolios you subscribe to and what each one holds right now, plus the other portfolios available on a delayed basis."
+      },
+      {
+        "name": "access_help",
+        "title": "My access and subscription",
+        "description": "Explains what your account can see: live vs 45-day-delayed holdings, which portfolios you subscribe to, and what needs a subscription."
+      },
+      {
         "name": "portfolio_review",
-        "description": "Comprehensive portfolio analysis prompt to evaluate asset allocation, risk profile, and position weights."
+        "title": "Review a model portfolio",
+        "description": "In-depth look at one model portfolio: holdings and weights, sector mix, concentration, and equity vs cash."
+      },
+      {
+        "name": "portfolio_changes",
+        "title": "What changed in a portfolio",
+        "description": "Shows how a model portfolio's holdings changed over a period: positions added, removed, and the biggest weight shifts."
+      },
+      {
+        "name": "compare_portfolios",
+        "title": "Compare model portfolios",
+        "description": "Side-by-side comparison of the model portfolios: risk level, holdings, sector mix, concentration, and overlap."
+      },
+      {
+        "name": "find_holding",
+        "title": "Which portfolios hold a stock",
+        "description": "Look up a stock across the model portfolios: which ones hold it, at what weight, and in which sector."
+      },
+      {
+        "name": "portfolio_report",
+        "title": "Interactive portfolio report",
+        "description": "Builds an interactive report for a model portfolio: sortable holdings, sector and concentration charts, and recent changes, as a shareable page."
       },
       {
         "name": "rebalance_advisor",
-        "description": "Guided assistant prompt for calculating and reviewing model alignment arithmetic for user holdings."
+        "title": "Align my holdings to a model",
+        "description": "Walks you through comparing your own holdings with a model portfolio and calculates the share differences. Requires a subscription to that portfolio."
       },
       {
         "name": "market_research_digest",
-        "description": "Synthesizes recent quantitative research articles and market commentaries into an executive summary."
+        "title": "Research digest",
+        "description": "Summarises the latest research articles and market commentary, optionally on one topic."
       }
     ]
   }

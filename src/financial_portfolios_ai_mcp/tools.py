@@ -450,13 +450,15 @@ def register_tools(server: Any) -> None:
 
     @server.tool(
         name="get_token_info",
-        title="API token and subscription status",
+        title="API token details",
         description=(
-            "Retrieve metadata about the currently configured API token, including use count, "
-            "rate limits, expiration, and subscription status."
+            "Retrieve metadata about the API token in use: its name, prefix, creation and "
+            "last-used times, and whether it is active. Applies to API-token clients only - a "
+            "connector signed in with OAuth has no API token. It does NOT report subscriptions: "
+            "use `list_portfolios`, whose `access` field shows what the user subscribes to."
         ),
         annotations=ToolAnnotations(
-            title='API token and subscription status',
+            title='API token details',
             read_only_hint=True,
             open_world_hint=True,
         ),

@@ -145,11 +145,19 @@ indistinguishable from an unknown code.
 
 ### 💡 Prompts
 
-| Prompt Name | Description | Parameters |
-| :--- | :--- | :--- |
-| `portfolio_review` | Step-by-step prompt guiding Claude to perform an in-depth analysis of risk, sector exposure, and top holdings. | `portfolio_code` (e.g. `AQA_AGGRESSIVE`) |
-| `rebalance_advisor` | Interactive workflow guiding the investor through comparing current holdings with target model and reviewing buy/sell orders. | `portfolio_code` (e.g. `AQA_AGGRESSIVE`) |
-| `market_research_digest` | Synthesizes recent quantitative research articles into an executive macro and factor summary. | None |
+Ready-made starters Claude lists in the connector. Portfolio-code inputs are optional - left blank, the prompt uses the portfolios you subscribe to - and autocomplete from your live portfolio list.
+
+| Prompt | Title | Description | Inputs |
+| :--- | :--- | :--- | :--- |
+| `my_portfolios` | My portfolios at a glance | See which model portfolios you subscribe to and what each one holds right now, plus the other portfolios available on a delayed basis. | — |
+| `access_help` | My access and subscription | Explains what your account can see: live vs 45-day-delayed holdings, which portfolios you subscribe to, and what needs a subscription. | — |
+| `portfolio_review` | Review a model portfolio | In-depth look at one model portfolio: holdings and weights, sector mix, concentration, and equity vs cash. | `portfolio_code` (optional) |
+| `portfolio_changes` | What changed in a portfolio | Shows how a model portfolio's holdings changed over a period: positions added, removed, and the biggest weight shifts. | `portfolio_code` (optional), `days` (optional) |
+| `compare_portfolios` | Compare model portfolios | Side-by-side comparison of the model portfolios: risk level, holdings, sector mix, concentration, and overlap. | `portfolio_codes` (optional) |
+| `find_holding` | Which portfolios hold a stock | Look up a stock across the model portfolios: which ones hold it, at what weight, and in which sector. | `ticker` |
+| `portfolio_report` | Interactive portfolio report | Builds an interactive report for a model portfolio: sortable holdings, sector and concentration charts, and recent changes, as a shareable page. | `portfolio_code` (optional), `days` (optional) |
+| `rebalance_advisor` | Align my holdings to a model | Walks you through comparing your own holdings with a model portfolio and calculates the share differences. Requires a subscription to that portfolio. | `portfolio_code` (optional) |
+| `market_research_digest` | Research digest | Summarises the latest research articles and market commentary, optionally on one topic. | `topic` (optional) |
 
 ---
 
