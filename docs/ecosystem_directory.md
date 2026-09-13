@@ -2,7 +2,7 @@
 
 Third-party MCP servers a customer can connect **alongside** the Financial Portfolios AI
 connector, to fill gaps our connector deliberately does not cover: prices, news,
-performance data, and order execution.
+performance data, a view of their own accounts, and order execution.
 
 **Status: internal draft for compliance review. Not customer-facing yet.** Read
 [Compliance review required](#compliance-review-required) before publishing any of this,
@@ -35,7 +35,7 @@ own account and API key. We never proxy, store or redistribute their data.
 | What does the model hold? How did it change? | ✅ | — |
 | Prices, charts, fundamentals, news on holdings | ❌ | [Market data](#market-data-providers) |
 | Performance of holdings or a benchmark | ❌ | Market data. See the note on [performance](#3-performance-computed-from-third-party-prices) |
-| View my brokerage account | ❌ | [Brokerage](#brokerage-firms) |
+| View my own accounts and holdings | ❌ | [Account aggregators](#account-aggregators-read-only), read-only and preferred, or [Brokerage](#brokerage-firms) |
 | Place trades | ❌ | [Brokerage](#brokerage-firms). See the [compliance boundary](#1-publisher-exclusion-listing-vs-integrating) |
 
 ---
@@ -65,6 +65,38 @@ FactSet, S&P Global (Capital IQ / Kensho), LSEG, Morningstar and MSCI offer offi
 Claude connectors, but require an enterprise data licence. They are relevant only for
 institutional or advisor customers who already hold that licence, not for retail
 subscribers.
+
+---
+
+## Account aggregators (read-only)
+
+These connect a customer's existing accounts, often several brokerages at once, and
+expose them to the AI **strictly read-only**. Neither can place trades, move money or
+change account settings; both say so explicitly. For a customer who wants to see their
+real holdings next to our models, this is the lower-risk route: it gives the view
+without the execution. See compliance point 6 below.
+
+| Aggregator | Official | How to connect | Auth | What it returns | Accounts covered | Cost |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **SnapTrade** | ✅ [SnapTrade MCP docs](https://docs.snaptrade.com/docs/mcp-server) | `https://mcp.snaptrade.com/mcp` | **OAuth 2.0 with PKCE** and dynamic client registration; short-lived, read-scoped tokens; brokerage credentials never reach the AI | Connections, accounts, balances, positions, orders, historical activity, reference data; can also generate a link to connect a new brokerage | Brokerage accounts. The MCP doc does not enumerate which brokerages, so confirm against SnapTrade's supported list before publishing | Free **SnapTrade Personal** account with at least one linked brokerage. Aimed at individuals, not developer API keys |
+| **Truthifi** | ✅ [truthifi.com/features/mcp](https://truthifi.com/features/mcp) | Server URL issued during setup; ⚠️ **not published on the page** | ⚠️ **Not stated** on the page | Holdings, balances, performance, returns, fees, allocation and composition, tax opportunities | "18,000+" providers: brokerages, banks, retirement accounts. Named guides include Fidelity, Schwab, Merrill, Robinhood, Chase, Bank of America, Capital One, Citibank | Included in paid memberships; a standalone MCP option (Truthifi Connect) is marketed as free to start |
+
+Quoted safeguards:
+- SnapTrade: "The MCP server is **read-only**. It can retrieve account data and generate a
+  link to connect a new brokerage, but it cannot place trades, move money, or change
+  account settings."
+- Truthifi: "Your AI can retrieve and reason about your financial data, but it cannot move
+  money, place trades, execute transactions, or modify your accounts in any way."
+
+**Gaps to close before publishing:**
+- **Truthifi:** endpoint, authentication method and how account credentials are held
+  (which underlying aggregator, and whether credentials are stored) are not on its MCP
+  page. Get them from Truthifi in writing.
+- **Both:** neither page states regional availability.
+
+Worth noting for customers: aggregators also cover **Fidelity, Schwab and Merrill**,
+which have no official MCP server of their own. For many customers an aggregator is the
+*only* official way to bring those accounts into Claude.
 
 ---
 
@@ -141,14 +173,28 @@ Most brokers here are US-only, and several require minimums, specific account ty
 paid AI plans. A customer-facing version must state availability and must not suggest
 any broker suits a particular customer.
 
+
+
+### 6. Real holdings next to our models, even without execution
+Read-only aggregators remove the execution risk in points 1 and 4, but not all of the
+advice question. With one connected, Claude can see a customer's actual positions and set
+them against our model, which is exactly the individualized comparison that
+`rebalance_advisor` already frames carefully as "alignment arithmetic". Counsel should
+confirm that framing still holds when the customer's real account data arrives
+automatically rather than being typed in, and whether our prompts need an explicit rule
+for when an aggregator is present.
+
 ---
 
 ## Recommended rollout
 
 1. **Market data section**: publish after a light compliance read. Low risk; the
    customer uses their own key and data, and nothing executes.
-2. **Brokerage section**: hold until counsel answers points 1, 2 and 4.
-3. **Integration of any kind** (prompts or tools that reach into these servers): only
+2. **Account aggregators**: publish once counsel confirms point 6, and after Truthifi's
+   missing details are filled in. This is the recommended way to give customers an
+   account view: read-only, and it covers brokerages with no MCP of their own.
+3. **Brokerage section**: hold until counsel answers points 1, 2 and 4.
+4. **Integration of any kind** (prompts or tools that reach into these servers): only
    after counsel defines the boundary in point 1, and never the rebalance-to-order path
    without explicit sign-off.
 
@@ -164,4 +210,6 @@ any broker suits a particular customer.
 - [Interactive Brokers MCP announcement, 2026-07-28](https://www.interactivebrokers.com/en/general/about/mediaRelations/7-28-26.php)
 - [Webull MCP server (GitHub)](https://github.com/webull-inc/webull-mcp-server)
 - [StockBrokers.com: Best Brokers for AI Trading Agents, MCP tested (updated 2026-07-31)](https://www.stockbrokers.com/guides/ai-agent-brokers)
+- [SnapTrade MCP server docs](https://docs.snaptrade.com/docs/mcp-server)
+- [Truthifi MCP](https://truthifi.com/features/mcp)
 - [Anthropic: Agents for financial services](https://www.anthropic.com/news/finance-agents)
