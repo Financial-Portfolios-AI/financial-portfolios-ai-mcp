@@ -290,9 +290,12 @@ async def test_every_tool_is_annotated_for_directory_review():
         assert tool.title, f"{tool.name} has no title"
         assert tool.annotations is not None, f"{tool.name} has no annotations"
         assert tool.annotations.read_only_hint is not None, f"{tool.name} has no readOnlyHint"
-        # Nothing here mutates state, and everything calls the portal API.
+        # Nothing here mutates state.
         assert tool.annotations.read_only_hint is True
-        assert tool.annotations.open_world_hint is True
+        # Model-facing tools all call the portal API; page-only tools (visibility "app")
+        # are internal to the Explorer and don't.
+        page_only = (tool.meta or {}).get("ui", {}).get("visibility") == ["app"]
+        assert tool.annotations.open_world_hint is (not page_only), tool.name
 
 
 def test_registry_server_json_matches_registry_constraints():

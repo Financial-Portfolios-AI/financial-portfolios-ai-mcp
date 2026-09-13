@@ -65,6 +65,40 @@ def _pick_initial(portfolios: list[dict[str, Any]], requested: str) -> str | Non
     return portfolios[0]["code"] if portfolios else None
 
 
+# Only these host-context fields are recorded: enough to know what to build, and nothing
+# that identifies the user (no locale, time zone or dimensions).
+_CONTEXT_FIELDS = ("theme", "displayMode", "availableDisplayModes", "platform", "deviceCapabilities")
+
+
+def summarize_host(
+    capabilities: dict[str, Any] | None,
+    context: dict[str, Any] | None,
+    info: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Reduce a host's self-description to feature flags safe to log.
+
+    Capabilities are recorded as which flags are present (and one level of their keys),
+    never as full values; context keeps only `_CONTEXT_FIELDS`, plus whether the host
+    supplies theme variables and how many; host info keeps name and version.
+    """
+    caps = capabilities if isinstance(capabilities, dict) else {}
+    ctx = context if isinstance(context, dict) else {}
+    meta = info if isinstance(info, dict) else {}
+
+    flags = {
+        str(name)[:64]: sorted(str(k)[:64] for k in value)[:20] if isinstance(value, dict) else bool(value)
+        for name, value in list(caps.items())[:30]
+    }
+    styles = ctx.get("styles")
+    variables = styles.get("variables") if isinstance(styles, dict) else None
+    return {
+        "host": {k: str(meta.get(k))[:64] for k in ("name", "version") if meta.get(k) is not None},
+        "capabilities": flags,
+        "context": {k: ctx[k] for k in _CONTEXT_FIELDS if k in ctx},
+        "style_variables": len(variables) if isinstance(variables, dict) else 0,
+    }
+
+
 def build_explorer() -> Apps:
     """Build the Apps extension carrying the Portfolio Explorer tool and its UI."""
     apps = Apps()
@@ -117,6 +151,32 @@ def build_explorer() -> Apps:
             indent=2,
             default=str,
         )
+
+    @apps.tool(
+        resource_uri=EXPLORER_URI,
+        visibility=["app"],
+        name="report_explorer_host",
+        title="Explorer host capabilities (internal)",
+        description=(
+            "Internal: called by the Portfolio Explorer page to record which MCP Apps features "
+            "the host supports. Not for use in conversation."
+        ),
+        annotations=ToolAnnotations(
+            title="Explorer host capabilities (internal)",
+            read_only_hint=True,
+            open_world_hint=False,
+        ),
+    )
+    async def report_explorer_host(
+        host_capabilities: dict[str, Any] | None = None,
+        host_context: dict[str, Any] | None = None,
+        host_info: dict[str, Any] | None = None,
+    ) -> str:
+        # Page-only (visibility "app"): the host hides it from the model. It records which
+        # optional MCP Apps features each host advertises, so the Explorer is built against
+        # what Claude and ChatGPT actually support rather than what the spec allows.
+        logger.info("explorer_host_report %s", json.dumps(summarize_host(host_capabilities, host_context, host_info)))
+        return json.dumps({"recorded": True})
 
     apps.add_html_resource(
         EXPLORER_URI,

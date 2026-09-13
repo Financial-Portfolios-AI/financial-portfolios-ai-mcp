@@ -179,7 +179,11 @@ async def test_connector_manifest_lists_exactly_the_served_tools():
 
     manifest = json.loads((Path(__file__).resolve().parent.parent / "claude_connector.json").read_text(encoding="utf-8"))
     listed = {t["name"] for t in manifest["capabilities"]["tools"]}
-    served = {t.name for t in await mcp_server.list_tools()}
+    # The manifest describes what a user or model can use; page-only tools are internal.
+    served = {
+        t.name for t in await mcp_server.list_tools()
+        if (t.meta or {}).get("ui", {}).get("visibility") != ["app"]
+    }
     assert listed == served
 
 

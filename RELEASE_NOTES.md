@@ -9,6 +9,21 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.2.0 — September 2026
+
+- **Ask about this.** A button in the Portfolio Explorer sends a question about what
+  you're looking at - a portfolio's holdings, its recent changes, a comparison, or a
+  stock search - straight into the conversation.
+- **The assistant knows what you're viewing.** Questions like "why did this change?" work
+  without describing the screen.
+- **Expand.** Open the Explorer full screen for more room on the holdings and comparison
+  tables.
+- **Looks at home.** The Explorer now matches your assistant's own fonts and colours.
+
+These appear only where your assistant supports them.
+
+---
+
 ## Version 1.1.1 — September 2026
 
 - The Portfolio Explorer no longer leaves a large empty area below its content when you

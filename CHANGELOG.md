@@ -9,6 +9,31 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-13
+
+### Added
+
+- **Ask about this** in the Portfolio Explorer: posts a follow-up into the conversation
+  (`ui/message`) describing the current view - a portfolio's holdings, its changes over
+  the chosen period, a comparison, or a stock search. The wording is a neutral request to
+  describe what is on screen, and a test rejects advice-like terms.
+- **Model context**: the Explorer tells the assistant what the user is looking at
+  (`ui/update-model-context`), so follow-up questions need no restating.
+- **Expand / Exit full screen** (`ui/request-display-mode`) where the host offers
+  fullscreen.
+- **Host theming**: surface colours and font follow the host's theme variables
+  (`hostContext.styles`), with the Explorer's own values as fallbacks and brand accents
+  unchanged. Variables are validated before use.
+- **Host logging**: the Explorer's errors are sent to the host's logs
+  (`notifications/message`).
+- `report_explorer_host`, a page-only tool (`visibility: ["app"]`, hidden from the model)
+  that records which optional MCP Apps features each host advertises. It logs feature
+  flags, display modes and host name/version only - never locale, time zone,
+  dimensions, or theme values.
+
+Every feature above is feature-detected: a host that does not advertise it simply does
+not show the corresponding control.
+
 ## [1.1.1] - 2026-09-13
 
 ### Fixed
@@ -97,7 +122,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/releases/tag/v1.0.0

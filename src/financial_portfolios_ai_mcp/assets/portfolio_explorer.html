@@ -5,21 +5,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Portfolio Explorer</title>
 <style>
+  /* Surface colours and font follow the host's theme variables when it supplies them
+     (hostContext.styles.variables), so the Explorer looks native in Claude and ChatGPT.
+     Brand accents stay ours. */
   :root {
-    --bg: #ffffff; --panel: #f6f7fb; --line: #e3e6ef; --text: #16182b; --muted: #5d6275;
+    --bg: var(--color-background-primary, #ffffff); --panel: var(--color-background-secondary, #f6f7fb);
+    --line: var(--color-border-primary, #e3e6ef); --text: var(--color-text-primary, #16182b);
+    --muted: var(--color-text-secondary, #5d6275);
     --accent: #0e9fb0; --accent-soft: rgba(14,159,176,.12); --violet: #6a4bd6;
     --warn-bg: #fff5e6; --warn-text: #8a4b00; --warn-line: #f3c98b;
     --up: #0f8a5f; --down: #c0392b;
   }
   :root[data-theme="dark"] {
-    --bg: #111322; --panel: #181b2e; --line: #2a2e47; --text: #e9ebf5; --muted: #9aa0b8;
+    --bg: var(--color-background-primary, #111322); --panel: var(--color-background-secondary, #181b2e);
+    --line: var(--color-border-primary, #2a2e47); --text: var(--color-text-primary, #e9ebf5);
+    --muted: var(--color-text-secondary, #9aa0b8);
     --accent: #3ee6f0; --accent-soft: rgba(62,230,240,.12); --violet: #9b85ff;
     --warn-bg: #2b2111; --warn-text: #f5c77e; --warn-line: #5a4320;
     --up: #45d39b; --down: #ff7a6b;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text);
-    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    font: 14px/1.45 var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .action { font: inherit; font-size: 12.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  .action:hover { border-color: var(--accent); }
+  /* Floats over the page: appearing must not reflow the header under the user's finger. */
+  .toast { position: fixed; right: 12px; bottom: 12px; font-size: 12px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; }
+  .toast:empty { display: none; }
   .wrap { padding: 16px; }
   header { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
   h1 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: .2px; }
@@ -82,6 +97,11 @@
     <select id="portfolio" aria-label="Choose a portfolio" disabled><option>Loading…</option></select>
     <span id="access"></span>
     <span id="asof" class="meta"></span>
+    <div class="actions">
+      <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      <button id="ask" class="action" type="button" hidden>Ask about this</button>
+      <button id="expand" class="action" type="button" hidden>Expand</button>
+    </div>
   </header>
   <div id="banner" class="banner" hidden></div>
   <div id="cards" class="cards"></div>
@@ -178,10 +198,32 @@
     }
   });
 
+  // What the host advertised in ui/initialize, and its context as it changes.
+  let hostCaps = {};
+  const hostCtx = {};
+
   function applyContext(ctx) {
-    if (ctx && (ctx.theme === "dark" || ctx.theme === "light")) {
+    if (!ctx) return;
+    Object.assign(hostCtx, ctx);
+    if (ctx.theme === "dark" || ctx.theme === "light") {
       document.documentElement.dataset.theme = ctx.theme;
     }
+    // Host theme variables (--color-*, --font-*, ...). Only well-formed custom properties
+    // with plain values are applied.
+    const vars = ctx.styles && ctx.styles.variables;
+    if (vars && typeof vars === "object") {
+      Object.entries(vars).forEach(([name, value]) => {
+        if (/^--[a-z0-9-]{1,64}$/.test(name) && typeof value === "string" && value.length < 200 && !/url\(|expression\(/i.test(value)) {
+          document.documentElement.style.setProperty(name, value);
+        }
+      });
+    }
+    if (typeof renderActions === "function") renderActions();
+  }
+
+  // Send the page's errors to the host's logs when it accepts them.
+  function logToHost(level, message) {
+    if (hostCaps.logging) notify("notifications/message", { level, message: String(message).slice(0, 500) });
   }
 
   // Our tools return a JSON string. The SDK sends it twice: as a text content block,
@@ -206,7 +248,12 @@
 
   async function callTool(name, args) {
     if (!canCallTools) throw new Error("This app can't fetch more data in this client.");
-    return parseResult(await request("tools/call", { name, arguments: args }));
+    try {
+      return parseResult(await request("tools/call", { name, arguments: args }));
+    } catch (err) {
+      logToHost("error", `${name} failed: ${err.message}`);
+      throw err;
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -381,6 +428,10 @@
   }
 
   function renderAll() {
+    // Buttons depend on the data (nothing to ask about before a portfolio loads), so they
+    // re-evaluate whenever the view does - not only at the handshake.
+    renderActions();
+    contextChanged();
     const a = state.allocation;
     renderPicker();
     renderHeader(a);
@@ -399,7 +450,111 @@
   function showError(message) {
     $("holdings").innerHTML = `<tbody><tr><td class="error">${esc(message)}</td></tr></tbody>`;
     $("sectors").innerHTML = `<div class="error">${esc(message)}</div>`;
+    logToHost("error", message);
   }
+
+  // ---------------------------------------------------------------------------
+  // What the user is looking at: shared by model context and the Ask button
+  // ---------------------------------------------------------------------------
+  let currentTab = "holdings";
+  let lastFind = null;
+
+  function describeView() {
+    const a = state.allocation;
+    const name = a ? nameOf(state.selected) : null;
+    const book = a ? `${a.delayed ? "public book delayed about 45 days" : "latest book"}, as of ${dateOf(a)}` : "";
+    const lines = [];
+    const structured = { tab: currentTab, portfolio: state.selected, access: a ? (a.delayed ? "public_delayed" : "subscribed") : null, as_of: a ? dateOf(a) : null };
+    if (a) lines.push(`The user has the Portfolio Explorer open on ${name} (${state.selected}), ${book}.`);
+    if (currentTab === "holdings") {
+      const q = $("filter").value.trim();
+      lines.push(`They are viewing its holdings table${q ? `, filtered by "${q}"` : ""}.`);
+      structured.filter = q || null;
+    } else if (currentTab === "sectors") {
+      lines.push("They are viewing its sector weights and concentration.");
+    } else if (currentTab === "changes") {
+      lines.push(`They are viewing its changes over the last ${$("days").value} days.`);
+      structured.days = Number($("days").value);
+    } else if (currentTab === "compare") {
+      lines.push(`They are comparing ${state.compare.map(nameOf).join(", ")}.`);
+      structured.compare = state.compare.slice();
+    } else if (currentTab === "find") {
+      if (lastFind) {
+        lines.push(`They searched for ${lastFind.ticker}, which is held in ${lastFind.held} of ${lastFind.total} portfolios.`);
+        structured.ticker = lastFind.ticker;
+      } else {
+        lines.push("They are on the stock search.");
+      }
+    }
+    return { text: lines.join(" "), structured };
+  }
+
+  // Keep the model aware of the current view, so "why did this change?" needs no restating.
+  let contextTimer = null;
+  function contextChanged() {
+    if (!hostCaps.updateModelContext) return;
+    clearTimeout(contextTimer);
+    contextTimer = setTimeout(() => {
+      const view = describeView();
+      if (!view.text) return;
+      request("ui/update-model-context", { content: [{ type: "text", text: view.text }], structuredContent: view.structured })
+        .catch((err) => logToHost("warning", `update-model-context failed: ${err.message}`));
+    }, 600);
+  }
+
+  // The follow-up the Ask button posts into the conversation. Worded as a neutral request
+  // to describe what is on screen - never a request for advice.
+  function askText() {
+    const a = state.allocation;
+    if (!a) return null;
+    const name = `${nameOf(state.selected)} (${state.selected})`;
+    const dated = a.delayed ? `, noting that this is the delayed book as of ${dateOf(a)}` : "";
+    switch (currentTab) {
+      case "changes":
+        return `Using the Portfolio Explorer, explain what changed in the ${name} model portfolio over the last ${$("days").value} days${dated}.`;
+      case "compare":
+        return state.compare.length >= 2
+          ? `Using the Portfolio Explorer, summarise the differences between the ${state.compare.map(nameOf).join(", ")} model portfolios, noting where the books are from different dates.`
+          : null;
+      case "find":
+        return lastFind
+          ? `Using the Portfolio Explorer, describe how ${lastFind.ticker} is weighted across the model portfolios.`
+          : null;
+      case "sectors":
+        return `Using the Portfolio Explorer, describe the sector weights and concentration of the ${name} model portfolio${dated}.`;
+      default:
+        return `Using the Portfolio Explorer, describe the holdings and sector mix of the ${name} model portfolio${dated}.`;
+    }
+  }
+
+  function toast(message) {
+    $("toast").textContent = message;
+    setTimeout(() => { if ($("toast").textContent === message) $("toast").textContent = ""; }, 3000);
+  }
+
+  function renderActions() {
+    const ask = $("ask");
+    ask.hidden = !hostCaps.message || !askText();
+    const modes = hostCtx.availableDisplayModes || [];
+    const expand = $("expand");
+    expand.hidden = !modes.includes("fullscreen");
+    expand.textContent = hostCtx.displayMode === "fullscreen" ? "Exit full screen" : "Expand";
+  }
+
+  $("ask").addEventListener("click", () => {
+    const text = askText();
+    if (!text) return;
+    request("ui/message", { role: "user", content: { type: "text", text } })
+      .then(() => toast("Sent to the conversation"))
+      .catch((err) => { toast("Couldn't send"); logToHost("error", `ui/message failed: ${err.message}`); });
+  });
+
+  $("expand").addEventListener("click", () => {
+    const mode = hostCtx.displayMode === "fullscreen" ? "inline" : "fullscreen";
+    request("ui/request-display-mode", { mode })
+      .then((r) => { hostCtx.displayMode = (r && r.mode) || mode; renderActions(); })
+      .catch((err) => logToHost("warning", `request-display-mode failed: ${err.message}`));
+  });
 
   // ---------------------------------------------------------------------------
   // Compare
@@ -425,6 +580,8 @@
       else if (state.compare.length < 3) state.compare = [...state.compare, code];
       renderComparePicks();
       loadCompare();
+      renderActions();
+      contextChanged();
     }));
   }
 
@@ -533,6 +690,9 @@
       else notHeld.push({ p, a });
     });
     held.sort((x, y) => y.pos.weight - x.pos.weight);
+    lastFind = { ticker: q, held: held.length, total: ok.length };
+    renderActions();
+    contextChanged();
 
     let html = "";
     if (held.length) {
@@ -599,13 +759,16 @@
   });
 
   $("filter").addEventListener("input", renderHoldings);
-  $("days").addEventListener("change", loadChanges);
+  $("days").addEventListener("change", () => { loadChanges(); contextChanged(); });
   $("ticker").addEventListener("input", () => { clearTimeout(findTimer); findTimer = setTimeout(runFind, 350); });
 
   const TABS = ["holdings", "sectors", "changes", "compare", "find"];
   document.querySelectorAll("nav button").forEach((btn) => btn.addEventListener("click", () => {
     document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
     TABS.forEach((t) => { $("tab-" + t).hidden = t !== btn.dataset.tab; });
+    currentTab = btn.dataset.tab;
+    renderActions();
+    contextChanged();
     if (btn.dataset.tab === "changes") loadChanges();
     if (btn.dataset.tab === "compare") { renderComparePicks(); loadCompare(); }
     if (btn.dataset.tab === "find") { $("ticker").focus(); if ($("ticker").value.trim()) runFind(); }
@@ -655,6 +818,23 @@
     }
   }
 
+  // Record which optional features this host supports (page-only tool, hidden from the
+  // model). Sends feature flags and display modes only: no locale, time zone, sizes, or the
+  // theme variables' values.
+  function reportHost(init) {
+    if (!canCallTools || !init) return;
+    const ctx = init.hostContext || {};
+    const vars = ctx.styles && ctx.styles.variables;
+    const context = {};
+    ["theme", "displayMode", "availableDisplayModes", "platform", "deviceCapabilities"].forEach((k) => { if (k in ctx) context[k] = ctx[k]; });
+    if (vars && typeof vars === "object") context.styles = { variables: Object.fromEntries(Object.keys(vars).map((k) => [k, ""])) };
+    request("tools/call", { name: "report_explorer_host", arguments: {
+      host_capabilities: init.hostCapabilities || {},
+      host_context: context,
+      host_info: init.hostInfo || null,
+    } }).catch(() => {});
+  }
+
   $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading portfolios…</td></tr></tbody>`;
 
   request("ui/initialize", {
@@ -662,10 +842,13 @@
     appInfo: { name: "financial-portfolios-ai-explorer", version: "__APP_VERSION__" },
     appCapabilities: {},
   }).then((init) => {
+    hostCaps = (init && init.hostCapabilities) || {};
     applyContext(init && init.hostContext);
-    canCallTools = !!(init && init.hostCapabilities && init.hostCapabilities.serverTools);
+    canCallTools = !!hostCaps.serverTools;
     notify("ui/notifications/initialized", {});
     reportSize(true);
+    renderActions();
+    reportHost(init);
     setTimeout(bootstrap, 2500);
   }).catch(() => {
     notify("ui/notifications/initialized", {});
