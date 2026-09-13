@@ -4,6 +4,7 @@ import logging
 
 from mcp.server import MCPServer
 
+from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
 from financial_portfolios_ai_mcp.explorer import build_explorer
@@ -79,7 +80,7 @@ def create_mcp_server() -> MCPServer:
         # site. portal_base_url (not public_origin) because this is the website, which
         # stays correct even when the MCP service answers on a hostname of its own.
         "website_url": settings.portal_base_url.rstrip("/"),
-        "version": "1.0.0",
+        "version": __version__,
         # MCP Apps: the Portfolio Explorer, an interactive UI a supporting host renders
         # inline. Hosts without Apps support still get the tool's JSON result.
         "extensions": [build_explorer()],

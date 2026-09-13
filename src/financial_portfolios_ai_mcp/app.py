@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from mcp.server.transport_security import TransportSecuritySettings
 
+from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.icons import ASSET_PATH, icon_specs, media_type, read_asset
@@ -226,7 +227,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Financial Portfolios AI MCP Server",
         description="Remote Model Context Protocol (MCP) server for Claude Connectors, ChatGPT, and Gemini.",
-        version="1.0.0",
+        version=__version__,
         lifespan=combined_lifespan,
     )
 
@@ -249,7 +250,7 @@ def create_app() -> FastAPI:
         # deployments each advertise their own /assets without separate config.
         return JSONResponse({
             "service": "financial-portfolios-ai-mcp",
-            "version": "1.0.0",
+            "version": __version__,
             "portal": settings.portal_base_url,
             "status": "online",
             "transports": {

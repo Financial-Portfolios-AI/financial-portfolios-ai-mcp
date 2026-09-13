@@ -649,7 +649,7 @@
 
   request("ui/initialize", {
     protocolVersion: "2025-06-18",
-    appInfo: { name: "financial-portfolios-ai-explorer", version: "1.0.0" },
+    appInfo: { name: "financial-portfolios-ai-explorer", version: "__APP_VERSION__" },
     appCapabilities: {},
   }).then((init) => {
     applyContext(init && init.hostContext);

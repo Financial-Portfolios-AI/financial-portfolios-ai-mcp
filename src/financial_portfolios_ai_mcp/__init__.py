@@ -6,10 +6,10 @@ with quantitative portfolios, target asset allocations, rebalancing engine,
 and market research from Financial Portfolios AI (https://financial-portfolios.ai).
 """
 
+from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.config import Settings, get_settings
 from financial_portfolios_ai_mcp.server import create_mcp_server, mcp_server
 
-__version__ = "1.0.0"
 __all__ = [
     "Settings",
     "__version__",

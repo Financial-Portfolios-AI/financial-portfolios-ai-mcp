@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
+from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.app import create_app
 from financial_portfolios_ai_mcp.auth import resolve_api_token
 from financial_portfolios_ai_mcp.config import get_settings
@@ -21,7 +22,7 @@ def test_server_metadata():
     assert mcp_server.name == "financial-portfolios-ai"
     assert mcp_server.title == "Financial Portfolios AI"
     assert mcp_server.website_url == "https://financial-portfolios.ai"
-    assert mcp_server.version == "1.0.0"
+    assert mcp_server.version == __version__
 
 
 @pytest.mark.asyncio

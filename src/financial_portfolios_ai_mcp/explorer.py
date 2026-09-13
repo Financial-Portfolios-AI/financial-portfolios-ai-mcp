@@ -26,6 +26,7 @@ from financial_portfolios_ai.exceptions import FinancialPortfoliosAIError
 from mcp.server.apps import Apps
 from mcp.types import ToolAnnotations
 
+from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.auth import get_async_client
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
 
@@ -35,7 +36,11 @@ EXPLORER_URI = "ui://financial-portfolios-ai/portfolio-explorer.html"
 EXPLORER_HTML = "portfolio_explorer.html"
 
 
-def _load_html() -> str:
+# Placeholder in the page, replaced with the server version when the page is loaded.
+VERSION_PLACEHOLDER = "__APP_VERSION__"
+
+
+def _read_html() -> str:
     try:
         traversable = importlib.resources.files("financial_portfolios_ai_mcp") / "assets" / EXPLORER_HTML
         if traversable.is_file():
@@ -43,6 +48,10 @@ def _load_html() -> str:
     except (FileNotFoundError, ModuleNotFoundError, TypeError, ValueError, OSError) as exc:
         logger.debug("Packaged explorer HTML not resolvable: %s", exc)
     return (Path(__file__).resolve().parent / "assets" / EXPLORER_HTML).read_text(encoding="utf-8")
+
+
+def _load_html() -> str:
+    return _read_html().replace(VERSION_PLACEHOLDER, __version__)
 
 
 def _pick_initial(portfolios: list[dict[str, Any]], requested: str) -> str | None:
