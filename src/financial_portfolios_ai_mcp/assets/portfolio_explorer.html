@@ -36,9 +36,18 @@
   .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
   .card .k { color: var(--muted); font-size: 11.5px; }
   .card .v { font-size: 18px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
-  nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); }
+  nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
   nav button { font: inherit; background: none; border: 0; color: var(--muted); padding: 8px 12px;
-    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex: 0 0 auto; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .chip { font: inherit; font-size: 12.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .chip[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  .mini { display: block; height: 5px; border-radius: 3px; margin-top: 3px; min-width: 2px; }
+  .note { color: var(--muted); font-size: 11.5px; margin-top: 8px; }
   nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
   section { padding-top: 12px; }
   .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
@@ -79,8 +88,10 @@
 
   <nav role="tablist">
     <button role="tab" data-tab="holdings" aria-selected="true">Holdings</button>
-    <button role="tab" data-tab="sectors" aria-selected="false">Sectors &amp; concentration</button>
+    <button role="tab" data-tab="sectors" aria-selected="false">Sectors</button>
     <button role="tab" data-tab="changes" aria-selected="false">Changes</button>
+    <button role="tab" data-tab="compare" aria-selected="false">Compare</button>
+    <button role="tab" data-tab="find" aria-selected="false">Find a stock</button>
   </nav>
 
   <section id="tab-holdings">
@@ -109,6 +120,20 @@
       <span id="changes-note" class="meta"></span>
     </div>
     <div id="changes"></div>
+  </section>
+
+  <section id="tab-compare" hidden>
+    <div class="meta">Choose two or three portfolios.</div>
+    <div id="compare-picks" class="chips" role="group" aria-label="Portfolios to compare"></div>
+    <div id="compare"></div>
+  </section>
+
+  <section id="tab-find" hidden>
+    <div class="toolbar">
+      <input id="ticker" type="search" placeholder="Ticker, e.g. NVDA" aria-label="Find a stock across portfolios"
+        autocapitalize="characters" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="find"><div class="note">See which portfolios hold a stock, at what weight and rank.</div></div>
   </section>
 
   <footer id="disclaimer"></footer>
@@ -187,7 +212,16 @@
   // ---------------------------------------------------------------------------
   // State and helpers
   // ---------------------------------------------------------------------------
-  const state = { portfolios: [], selected: null, allocation: null, sortKey: "weight", sortDir: -1 };
+  const state = { portfolios: [], selected: null, allocation: null, sortKey: "weight", sortDir: -1, compare: [] };
+
+  // Allocations are fetched once per portfolio and reused by Holdings, Compare and Find.
+  const cache = new Map();
+  async function allocationFor(code) {
+    if (cache.has(code)) return cache.get(code);
+    const a = await callTool("get_portfolio_allocation", { portfolio_code: code });
+    cache.set(code, a);
+    return a;
+  }
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const isNum = (v) => typeof v === "number" && isFinite(v);
@@ -368,6 +402,174 @@
   }
 
   // ---------------------------------------------------------------------------
+  // Compare
+  // ---------------------------------------------------------------------------
+  const SERIES = ["var(--accent)", "var(--violet)", "#e0913a"];
+  const nameOf = (code) => { const p = state.portfolios.find((x) => x.code === code); return (p && p.product_name) || code; };
+  const dateOf = (a) => String(a.as_of || a.date || "").slice(0, 10);
+  const accessBadge = (a) => a.delayed
+    ? `<span class="badge delayed">Delayed</span>` : `<span class="badge live">Live</span>`;
+
+  function renderComparePicks() {
+    if (!state.compare.length) {
+      // Start from the portfolio on screen, then fill up to three.
+      const codes = state.portfolios.map((p) => p.code);
+      state.compare = [state.selected, ...codes.filter((c) => c !== state.selected)].filter(Boolean).slice(0, 3);
+    }
+    $("compare-picks").innerHTML = state.portfolios.map((p) =>
+      `<button class="chip" aria-pressed="${state.compare.includes(p.code)}" data-code="${esc(p.code)}">${esc(p.product_name || p.code)}</button>`
+    ).join("");
+    $("compare-picks").querySelectorAll(".chip").forEach((chip) => chip.addEventListener("click", () => {
+      const code = chip.dataset.code;
+      if (state.compare.includes(code)) state.compare = state.compare.filter((c) => c !== code);
+      else if (state.compare.length < 3) state.compare = [...state.compare, code];
+      renderComparePicks();
+      loadCompare();
+    }));
+  }
+
+  let compareSeq = 0;
+  async function loadCompare() {
+    const box = $("compare");
+    const codes = state.compare.slice(0, 3);
+    if (codes.length < 2) { box.innerHTML = `<div class="empty">Choose at least two portfolios to compare.</div>`; return; }
+    const seq = ++compareSeq;
+    box.innerHTML = `<div class="empty">Loading…</div>`;
+    let books;
+    try {
+      books = await Promise.all(codes.map(allocationFor));
+    } catch (err) {
+      if (seq === compareSeq) box.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+      return;
+    }
+    if (seq !== compareSeq) return;
+
+    const cols = codes.map((code, i) => ({ code, a: books[i], color: SERIES[i] }));
+    calibrate(cols.flatMap((c) => c.a.positions || []));
+
+    const stats = (a) => {
+      const pos = a.positions || [];
+      const ws = pos.map((p) => p.weight).filter(isNum).sort((x, y) => y - x);
+      const top = (n) => ws.slice(0, n).reduce((s, w) => s + w, 0);
+      const sectors = new Map();
+      pos.forEach((p) => isNum(p.weight) && sectors.set(p.sector || "Unclassified", (sectors.get(p.sector || "Unclassified") || 0) + p.weight));
+      const lead = [...sectors.entries()].sort((x, y) => y[1] - x[1])[0];
+      return { pos, top5: top(5), top10: top(10), sectors, lead };
+    };
+    cols.forEach((c) => { c.s = stats(c.a); });
+
+    // Different dates, or live next to delayed, are not like-for-like.
+    const dates = new Set(cols.map((c) => dateOf(c.a)));
+    const mixed = new Set(cols.map((c) => !!c.a.delayed)).size > 1;
+    const warning = dates.size > 1 || mixed
+      ? `<div class="banner">These books are from different dates (${[...dates].map(esc).join(", ")})${mixed ? ", and some are delayed about 45 days" : ""}. Differences partly reflect timing, not only the models, so this is not a like-for-like comparison.</div>`
+      : "";
+
+    const head = `<th></th>` + cols.map((c) => `<th><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("");
+    const row = (label, fn) => `<tr><td class="meta">${label}</td>${cols.map((c) => `<td>${fn(c)}</td>`).join("")}</tr>`;
+    const summary = `<div class="tablebox"><table><thead><tr>${head}</tr></thead><tbody>`
+      + row("Access", (c) => accessBadge(c.a))
+      + row("As of", (c) => esc(dateOf(c.a)))
+      + row("Risk level", (c) => { const p = state.portfolios.find((x) => x.code === c.code); return esc((p && p.risk_level) || "—"); })
+      + row("Positions", (c) => esc(c.a.total_positions ?? c.s.pos.length))
+      + row("Top 5 weight", (c) => pct(c.s.top5, 1))
+      + row("Top 10 weight", (c) => pct(c.s.top10, 1))
+      + row("Largest sector", (c) => c.s.lead ? `${esc(c.s.lead[0])} · ${pct(c.s.lead[1], 1)}` : "—")
+      + row("Effective N", (c) => isNum(c.a.effective_n) ? c.a.effective_n.toFixed(1) : "—")
+      + row("Equity / cash", (c) => isNum(c.a.equity_exposure) ? `${pct(c.a.equity_exposure, 0)} / ${pct(c.a.cash_allocation, 0)}` : "—")
+      + `</tbody></table></div>`;
+
+    const allSectors = [...new Set(cols.flatMap((c) => [...c.s.sectors.keys()]))]
+      .sort((x, y) => Math.max(...cols.map((c) => c.s.sectors.get(y) || 0)) - Math.max(...cols.map((c) => c.s.sectors.get(x) || 0)));
+    const maxSector = Math.max(0.0001, ...cols.flatMap((c) => [...c.s.sectors.values()]));
+    const sectorTable = `<div class="tablebox"><table><thead><tr><th>Sector</th>${cols.map((c) => `<th class="num"><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("")}</tr></thead><tbody>`
+      + allSectors.map((sec) => `<tr><td>${esc(sec)}</td>${cols.map((c) => {
+          const w = c.s.sectors.get(sec) || 0;
+          return w ? `<td class="num">${pct(w, 1)}<span class="mini" style="width:${(w / maxSector) * 100}%;background:${c.color}"></span></td>` : `<td class="num">—</td>`;
+        }).join("")}</tr>`).join("")
+      + `</tbody></table></div>`;
+
+    const byTicker = new Map();
+    cols.forEach((c, i) => c.s.pos.forEach((p) => {
+      const key = String(p.ticker).toUpperCase();
+      if (!byTicker.has(key)) byTicker.set(key, { ticker: p.ticker, sector: p.sector, weights: [] });
+      byTicker.get(key).weights[i] = p.weight;
+    }));
+    const shared = [...byTicker.values()].filter((t) => t.weights.filter(isNum).length > 1)
+      .sort((x, y) => y.weights.filter(isNum).reduce((s, w) => s + w, 0) - x.weights.filter(isNum).reduce((s, w) => s + w, 0));
+    const overlap = shared.length
+      ? `<div class="meta">${shared.length} holding${shared.length === 1 ? "" : "s"} appear in more than one of these portfolios.</div>`
+        + `<div class="tablebox" style="margin-top:6px"><table><thead><tr><th>Ticker</th><th>Sector</th>${cols.map((c) => `<th class="num"><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("")}</tr></thead><tbody>`
+        + shared.map((t) => `<tr><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.sector || "—")}</td>${cols.map((_, i) => `<td class="num">${isNum(t.weights[i]) ? pct(t.weights[i]) : "—"}</td>`).join("")}</tr>`).join("")
+        + `</tbody></table></div>`
+      : `<div class="empty">These portfolios have no holdings in common.</div>`;
+
+    box.innerHTML = warning + `<h2>Summary</h2>` + summary + `<h2>Sector mix</h2>` + sectorTable + `<h2>Shared holdings</h2>` + overlap
+      + `<div class="note">Describes differences in the model data only. It is not a recommendation of any portfolio, and no suitability assessment has been performed.</div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Find a stock
+  // ---------------------------------------------------------------------------
+  let findSeq = 0, findTimer = null;
+  async function runFind() {
+    const box = $("find");
+    const q = $("ticker").value.trim().toUpperCase();
+    if (!q) { box.innerHTML = `<div class="note">See which portfolios hold a stock, at what weight and rank.</div>`; return; }
+    const seq = ++findSeq;
+    box.innerHTML = `<div class="empty">Searching…</div>`;
+
+    const results = await Promise.all(state.portfolios.map((p) =>
+      allocationFor(p.code).then((a) => ({ p, a })).catch((err) => ({ p, err }))));
+    if (seq !== findSeq) return;
+
+    const ok = results.filter((r) => r.a);
+    calibrate(ok.flatMap((r) => r.a.positions || []));
+    const held = [], notHeld = [];
+    ok.forEach(({ p, a }) => {
+      const ranked = (a.positions || []).filter((x) => isNum(x.weight)).sort((x, y) => y.weight - x.weight);
+      const i = ranked.findIndex((x) => String(x.ticker).toUpperCase() === q);
+      if (i >= 0) held.push({ p, a, pos: ranked[i], rank: i + 1, of: ranked.length });
+      else notHeld.push({ p, a });
+    });
+    held.sort((x, y) => y.pos.weight - x.pos.weight);
+
+    let html = "";
+    if (held.length) {
+      html += `<h2>${esc(q)} is held in ${held.length} of ${ok.length} portfolios</h2>`
+        + `<div class="tablebox"><table><thead><tr><th>Portfolio</th><th class="num">Weight</th><th>Sector</th><th class="num">Rank</th><th>As of</th></tr></thead><tbody>`
+        + held.map((h) => `<tr><td>${esc(h.p.product_name || h.p.code)} ${accessBadge(h.a)}</td><td class="num">${pct(h.pos.weight)}</td>`
+          + `<td>${esc(h.pos.sector || "—")}</td><td class="num">${h.rank} of ${h.of}</td><td>${esc(dateOf(h.a))}</td></tr>`).join("")
+        + `</tbody></table></div>`;
+    } else {
+      html += `<div class="empty">${esc(q)} is not held in any portfolio.</div>`;
+      // Offer close tickers rather than guessing which one was meant.
+      const near = [...new Set(ok.flatMap((r) => (r.a.positions || []).map((x) => String(x.ticker).toUpperCase())))]
+        .filter((t) => t.startsWith(q) || q.startsWith(t)).slice(0, 8);
+      if (near.length) {
+        html += `<div class="meta">Similar tickers held:</div><div class="chips">`
+          + near.map((t) => `<button class="chip" data-ticker="${esc(t)}">${esc(t)}</button>`).join("") + `</div>`;
+      }
+    }
+    if (held.length && notHeld.length) {
+      html += `<div class="note">Not held in: ${notHeld.map((r) => esc(r.p.product_name || r.p.code)).join(", ")}.</div>`;
+    }
+    if (notHeld.some((r) => r.a.delayed)) {
+      html += `<div class="note">A delayed book is about 45 days old, so a recently added position would not show there yet.</div>`;
+    }
+    const failed = results.filter((r) => r.err);
+    if (failed.length) {
+      html += `<div class="note" style="color:var(--down)">Could not check: ${failed.map((r) => esc(r.p.product_name || r.p.code)).join(", ")}.</div>`;
+    }
+    html += `<div class="note">A stock's presence in a model is not a recommendation to own it.</div>`;
+    box.innerHTML = html;
+    box.querySelectorAll("[data-ticker]").forEach((chip) => chip.addEventListener("click", () => {
+      $("ticker").value = chip.dataset.ticker;
+      runFind();
+    }));
+  }
+
+  // ---------------------------------------------------------------------------
   // Events
   // ---------------------------------------------------------------------------
   function onToolResult(result) {
@@ -377,6 +579,7 @@
       state.portfolios = data.portfolios || [];
       state.selected = data.selected || null;
       state.allocation = data.allocation || null;
+      if (state.selected && state.allocation) cache.set(state.selected, state.allocation);
       if (data.disclaimer) $("disclaimer").textContent = data.disclaimer;
       renderAll();
     } catch (err) {
@@ -388,7 +591,7 @@
     state.selected = e.target.value;
     $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading…</td></tr></tbody>`;
     try {
-      state.allocation = await callTool("get_portfolio_allocation", { portfolio_code: state.selected });
+      state.allocation = await allocationFor(state.selected);
       renderAll();
     } catch (err) {
       showError(err.message);
@@ -397,11 +600,15 @@
 
   $("filter").addEventListener("input", renderHoldings);
   $("days").addEventListener("change", loadChanges);
+  $("ticker").addEventListener("input", () => { clearTimeout(findTimer); findTimer = setTimeout(runFind, 350); });
 
+  const TABS = ["holdings", "sectors", "changes", "compare", "find"];
   document.querySelectorAll("nav button").forEach((btn) => btn.addEventListener("click", () => {
     document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
-    ["holdings", "sectors", "changes"].forEach((t) => { $("tab-" + t).hidden = t !== btn.dataset.tab; });
+    TABS.forEach((t) => { $("tab-" + t).hidden = t !== btn.dataset.tab; });
     if (btn.dataset.tab === "changes") loadChanges();
+    if (btn.dataset.tab === "compare") { renderComparePicks(); loadCompare(); }
+    if (btn.dataset.tab === "find") { $("ticker").focus(); if ($("ticker").value.trim()) runFind(); }
   }));
 
   // Keep the host's iframe sized to the content.
@@ -420,7 +627,7 @@
   async function bootstrap() {
     if (gotToolResult) return;
     if (!canCallTools) {
-      showError("No portfolio data was received from the host. Ask Claude to open the Portfolio Explorer again.");
+      showError("No portfolio data was received. Ask the assistant to open the Portfolio Explorer again.");
       return;
     }
     try {

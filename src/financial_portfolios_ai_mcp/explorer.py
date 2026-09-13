@@ -66,9 +66,11 @@ def build_explorer() -> Apps:
         title="Portfolio Explorer",
         description=(
             "Open the interactive Portfolio Explorer: a dropdown of the user's model portfolios, "
-            "a sortable holdings table, sector and concentration charts, and changes over time. "
-            "Use it when the user wants to browse, explore, visualise or switch between portfolios "
-            "rather than read a single answer. Optionally pass `portfolio_code` to open on a "
+            "a sortable holdings table, sector and concentration charts, changes over time, a "
+            "side-by-side comparison of two or three portfolios (sector mix and shared holdings), "
+            "and a search showing which portfolios hold a given stock. Use it when the user wants to "
+            "browse, explore, visualise, compare or search across portfolios interactively rather "
+            "than read a single answer. Optionally pass `portfolio_code` to open on a "
             "specific portfolio; otherwise it opens on the user's first subscribed portfolio. "
             "Informational only: it displays model data and makes no recommendations."
         ),

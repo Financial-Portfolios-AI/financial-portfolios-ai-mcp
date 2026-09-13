@@ -246,3 +246,16 @@ def test_page_parser_reads_the_real_wire_result(tmp_path):
     )
     out = subprocess.run(["node", str(script)], capture_output=True, text=True, check=True).stdout
     assert json.loads(out) == ["AQA_DEFENSIVE", "AQA_DEFENSIVE"]
+
+
+@pytest.mark.asyncio
+async def test_ui_offers_compare_and_find_with_their_guardrails():
+    html, _ = await _html()
+    for tab in ('data-tab="compare"', 'data-tab="find"'):
+        assert tab in html
+    # Compare must warn when books differ in date or access, and must not rank portfolios.
+    assert "not a like-for-like comparison" in html
+    assert "not a recommendation of any portfolio" in html
+    # Find must not read presence in a model as advice, and must explain delayed gaps.
+    assert "not a recommendation to own it" in html
+    assert "a recently added position would not show there yet" in html

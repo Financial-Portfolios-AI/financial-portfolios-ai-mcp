@@ -94,7 +94,7 @@
     "tools": [
       {
         "name": "open_portfolio_explorer",
-        "description": "Open the interactive Portfolio Explorer (MCP App): a portfolio dropdown, sortable holdings, sector and concentration charts, and changes over time. Renders inline in hosts that support MCP Apps."
+        "description": "Open the interactive Portfolio Explorer (MCP App): a portfolio dropdown, sortable holdings, sector and concentration charts, changes over time, a side-by-side comparison of two or three portfolios, and a search for which portfolios hold a stock. Renders inline in hosts that support MCP Apps."
       },
       {
         "name": "list_portfolios",
