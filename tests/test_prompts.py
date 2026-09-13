@@ -102,7 +102,7 @@ async def test_blank_code_uses_subscribed_portfolios_not_a_fixed_default(name):
 
 @pytest.mark.asyncio
 async def test_explicit_code_is_used_directly():
-    text = await _render("portfolio_review", {"portfolio_code": "AQA_DEFENSIVE"})
+    text = await _render("portfolio_review", {"portfolio": "AQA_DEFENSIVE"})
     assert "Portfolio: 'AQA_DEFENSIVE'. Use this code directly." in text
 
 
@@ -125,7 +125,7 @@ async def test_portfolio_changes_rejects_an_invalid_window(days):
 
 @pytest.mark.asyncio
 async def test_compare_portfolios_parses_the_code_list():
-    text = await _render("compare_portfolios", {"portfolio_codes": " AQA_DEFENSIVE, AQA_BALANCED ,"})
+    text = await _render("compare_portfolios", {"portfolios": " AQA_DEFENSIVE, AQA_BALANCED ,"})
     assert "Compare these portfolios: 'AQA_DEFENSIVE', 'AQA_BALANCED'." in text
     assert "not a like-for-like comparison" in text
 
@@ -144,7 +144,7 @@ async def test_find_holding_normalises_the_ticker_and_requires_it():
 @pytest.mark.asyncio
 async def test_rebalance_checks_entitlement_before_collecting_holdings():
     """A non-subscriber must not be asked to hand over holdings that will be refused."""
-    text = await _render("rebalance_advisor", {"portfolio_code": "AQA_BALANCED"})
+    text = await _render("rebalance_advisor", {"portfolio": "AQA_BALANCED"})
     check = text.index("Confirm access before asking for any holdings")
     ask = text.index("Ask for the user's current holdings")
     assert check < ask
@@ -193,7 +193,7 @@ def _client_returning(catalog=None, error=None):
 async def test_completion_suggests_live_codes_subscribed_first():
     ref = PromptReference(type="ref/prompt", name="portfolio_review")
     with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
-        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio_code", value=""), None)
+        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value=""), None)
     assert result.values[0] == "AQA_DEFENSIVE"
     assert set(result.values) == {"AQA_DEFENSIVE", "AQA_BALANCED", "AQA_AGGRESSIVE"}
 
@@ -202,7 +202,7 @@ async def test_completion_suggests_live_codes_subscribed_first():
 async def test_completion_filters_by_what_was_typed_case_insensitively():
     ref = PromptReference(type="ref/prompt", name="portfolio_changes")
     with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
-        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio_code", value="aqa_ag"), None)
+        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value="aqa_ag"), None)
     assert result.values == ["AQA_AGGRESSIVE"]
 
 
@@ -221,14 +221,14 @@ async def test_completion_failure_returns_no_suggestions_instead_of_an_error():
     ref = PromptReference(type="ref/prompt", name="portfolio_review")
     failing = _client_returning(error=RuntimeError("portal unreachable"))
     with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=failing):
-        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio_code", value=""), None)
+        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value=""), None)
     assert result.values == []
 
 
 @pytest.mark.asyncio
 async def test_report_never_fabricates_performance():
     """No price or return data exists behind this connector; a report must not invent any."""
-    text = await _render("portfolio_report", {"portfolio_code": "AQA_DEFENSIVE", "days": "30"})
+    text = await _render("portfolio_report", {"portfolio": "AQA_DEFENSIVE", "days": "30"})
     assert "days=30" in text
     assert "do not compute, estimate or chart returns, performance" in text
     assert "not from other sources" in text
@@ -252,3 +252,30 @@ async def test_connector_manifest_lists_exactly_the_served_prompts():
     listed = {p["name"]: p.get("title") for p in manifest["capabilities"]["prompts"]}
     served = {p.name: p.title for p in await mcp_server.list_prompts()}
     assert listed == served
+
+
+@pytest.mark.asyncio
+async def test_input_names_read_as_labels():
+    """Claude shows the capitalised input name, so names must read as labels."""
+    names = {a.name for p in await mcp_server.list_prompts() for a in (p.arguments or [])}
+    assert names == {"portfolio", "portfolios", "days", "ticker", "topic"}
+    assert not any("_" in n for n in names)
+
+
+@pytest.mark.asyncio
+async def test_multi_portfolio_completion_extends_the_list_without_repeats():
+    """Suggestions are full values: what was entered, plus the code being typed."""
+    ref = PromptReference(type="ref/prompt", name="compare_portfolios")
+    with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
+        first = await complete_portfolio_code(ref, CompletionArgument(name="portfolios", value=""), None)
+        second = await complete_portfolio_code(
+            ref, CompletionArgument(name="portfolios", value="AQA_DEFENSIVE, aqa_b"), None
+        )
+        rest = await complete_portfolio_code(
+            ref, CompletionArgument(name="portfolios", value="AQA_DEFENSIVE, "), None
+        )
+
+    assert first.values[0] == "AQA_DEFENSIVE"
+    assert second.values == ["AQA_DEFENSIVE, AQA_BALANCED"]
+    # Already-chosen codes are not offered again.
+    assert rest.values == ["AQA_DEFENSIVE, AQA_BALANCED", "AQA_DEFENSIVE, AQA_AGGRESSIVE"]

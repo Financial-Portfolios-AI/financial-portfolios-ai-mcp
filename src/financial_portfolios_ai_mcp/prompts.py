@@ -23,7 +23,10 @@ from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER_TEXT
 
 # Arguments whose values are portfolio codes, for live autocompletion.
-PORTFOLIO_CODE_ARGUMENTS = frozenset({"portfolio_code"})
+# Input names double as the labels Claude shows ("portfolio" -> "Portfolio"): the SDK does
+# not pass an argument title through, so a readable name is the only way to get a readable label.
+SINGLE_PORTFOLIO_ARGUMENTS = frozenset({"portfolio"})
+MULTI_PORTFOLIO_ARGUMENTS = frozenset({"portfolios"})
 
 PortfolioCode = Annotated[
     str,
@@ -56,8 +59,8 @@ portfolio suits them - no suitability assessment has been performed. If asked, s
 and point them to a licensed adviser."""
 
 
-def _code_or_subscribed(portfolio_code: str) -> str:
-    code = (portfolio_code or "").strip()
+def _code_or_subscribed(portfolio: str) -> str:
+    code = (portfolio or "").strip()
     if code:
         return f"Portfolio: '{code}'. Use this code directly."
     return _RESOLVE_PORTFOLIOS
@@ -65,26 +68,43 @@ def _code_or_subscribed(portfolio_code: str) -> str:
 
 
 async def complete_portfolio_code(ref: Any, argument: CompletionArgument, context: Any) -> Completion | None:
-    """Suggest the user's live portfolio codes for any portfolio-code argument.
+    """Suggest the user's live portfolio codes for portfolio inputs.
+
+    `portfolio` takes one code. `portfolios` takes a comma-separated list, so the
+    suggestion completes the fragment after the last comma and keeps what was already
+    entered, leaving out codes already chosen - a client replaces the whole value with
+    the suggestion, so each suggestion must be the full value.
 
     Subscribed portfolios come first. Any failure - no credential yet, portal
     unreachable - yields no suggestions rather than an error, since completion is a
     typing aid and must never break the prompt dialog.
     """
-    if not isinstance(ref, PromptReference) or argument.name not in PORTFOLIO_CODE_ARGUMENTS:
+    if not isinstance(ref, PromptReference):
+        return None
+    name = argument.name
+    if name not in SINGLE_PORTFOLIO_ARGUMENTS and name not in MULTI_PORTFOLIO_ARGUMENTS:
         return None
 
-    typed = (argument.value or "").strip().upper()
+    value = argument.value or ""
+    if name in MULTI_PORTFOLIO_ARGUMENTS:
+        *chosen, fragment = value.split(",")
+        chosen = [c.strip() for c in chosen if c.strip()]
+    else:
+        chosen, fragment = [], value
+    typed = fragment.strip().upper()
+
     try:
         async with get_async_client() as client:
             result = await client.list_portfolios()
     except Exception:  # noqa: BLE001 - completion is best-effort by design
         return Completion(values=[], total=0, has_more=False)
 
+    taken = {c.upper() for c in chosen}
     ranked = sorted(result.portfolios, key=lambda p: p.access != "subscribed")
-    values = [p.code for p in ranked if p.code.upper().startswith(typed)]
+    codes = [p.code for p in ranked if p.code.upper().startswith(typed) and p.code.upper() not in taken]
+    prefix = ", ".join(chosen)
+    values = [f"{prefix}, {code}" if prefix else code for code in codes]
     return Completion(values=values[:100], total=len(values), has_more=len(values) > 100)
-
 
 def register_prompts(server: Any) -> None:
     """Register MCP prompt templates and argument completion with the server."""
@@ -155,12 +175,12 @@ End with the disclaimer."""
             "concentration, and equity vs cash."
         ),
     )
-    def portfolio_review(portfolio_code: PortfolioCode = "") -> str:
+    def portfolio_review(portfolio: PortfolioCode = "") -> str:
         return f"""You are an educational quantitative portfolio analyst for Financial Portfolios AI.
 
 {DISCLAIMER_TEXT}
 
-{_code_or_subscribed(portfolio_code)}
+{_code_or_subscribed(portfolio)}
 
 For each portfolio:
 1. Call `get_portfolio_allocation`.
@@ -185,7 +205,7 @@ End with the disclaimer."""
         ),
     )
     def portfolio_changes(
-        portfolio_code: PortfolioCode = "",
+        portfolio: PortfolioCode = "",
         days: Annotated[
             int,
             Field(description="How many days back to look, from 1 to 365. Defaults to 30.", ge=1, le=365),
@@ -195,7 +215,7 @@ End with the disclaimer."""
 
 {DISCLAIMER_TEXT}
 
-{_code_or_subscribed(portfolio_code)}
+{_code_or_subscribed(portfolio)}
 
 For each portfolio:
 1. Call `get_portfolio_history` with days={days}.
@@ -224,7 +244,7 @@ End with the disclaimer."""
         ),
     )
     def compare_portfolios(
-        portfolio_codes: Annotated[
+        portfolios: Annotated[
             str,
             Field(
                 description=(
@@ -234,7 +254,7 @@ End with the disclaimer."""
             ),
         ] = "",
     ) -> str:
-        codes = [c.strip() for c in (portfolio_codes or "").split(",") if c.strip()]
+        codes = [c.strip() for c in (portfolios or "").split(",") if c.strip()]
         which = (
             "Compare these portfolios: " + ", ".join(f"'{c}'" for c in codes) + "."
             if codes
@@ -295,7 +315,7 @@ End with the disclaimer."""
         ),
     )
     def portfolio_report(
-        portfolio_code: PortfolioCode = "",
+        portfolio: PortfolioCode = "",
         days: Annotated[
             int,
             Field(description="Days of history to show changes for, from 1 to 365. Defaults to 90.", ge=1, le=365),
@@ -305,7 +325,7 @@ End with the disclaimer."""
 
 {DISCLAIMER_TEXT}
 
-{_code_or_subscribed(portfolio_code)}
+{_code_or_subscribed(portfolio)}
 
 Gather the data first:
 1. Call `get_portfolio_allocation` for the portfolio.
@@ -337,13 +357,13 @@ Use only numbers returned by the tools. This connector provides no prices, retur
             "calculates the share differences. Requires a subscription to that portfolio."
         ),
     )
-    def rebalance_advisor(portfolio_code: PortfolioCode = "") -> str:
+    def rebalance_advisor(portfolio: PortfolioCode = "") -> str:
         return f"""You are an educational assistant for Financial Portfolios AI. Guide the user through model alignment arithmetic: the share-quantity differences between their holdings and a target model.
 
 {DISCLAIMER_TEXT}
 These calculations are target-model alignment arithmetic only - not trade execution and not individualized advice.
 
-{_code_or_subscribed(portfolio_code)}
+{_code_or_subscribed(portfolio)}
 
 1. Confirm access before asking for any holdings: call `list_portfolios` and check the target has `access: "subscribed"`. Alignment calculations require a subscription. If the target is not subscribed, explain that and stop - do not collect the user's holdings.
 2. Ask for the user's current holdings: ticker, share quantity, and cash, or a CSV file. Limits: 200 rows, 512 KB.

@@ -74,7 +74,7 @@ async def test_latest_research_resource(mock_blog_posts):
 async def test_portfolio_review_prompt():
     """Test generating portfolio_review prompt."""
     prompt_result = await mcp_server.get_prompt(
-        "portfolio_review", {"portfolio_code": "AQA_BALANCED"}
+        "portfolio_review", {"portfolio": "AQA_BALANCED"}
     )
     assert prompt_result is not None
     msg_text = (
@@ -87,7 +87,7 @@ async def test_portfolio_review_prompt():
 async def test_rebalance_advisor_prompt():
     """Test generating rebalance_advisor prompt."""
     prompt_result = await mcp_server.get_prompt(
-        "rebalance_advisor", {"portfolio_code": "AQA_AGGRESSIVE"}
+        "rebalance_advisor", {"portfolio": "AQA_AGGRESSIVE"}
     )
     assert prompt_result is not None
     msg_text = (
