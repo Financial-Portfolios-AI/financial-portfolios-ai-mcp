@@ -45,6 +45,15 @@ When `delayed` is true, tell the user the book is delayed and give its effective
 presenting it as the current allocation. A portfolio code that is not an active public product
 returns "not found".
 
+What This Connector Does Not Provide:
+There is no price, return or performance data behind any tool. Never offer, compute, estimate or
+chart performance, returns, gains, drawdowns, best or worst contributors, or benchmark comparisons
+for these model portfolios - not even approximately, and not by pricing the holdings with data from
+another source. Doing so would present hypothetical model performance, which this service does not
+publish. If the user asks for performance, say it is not available through this connector.
+Suggest only follow-ups the tools actually support: holdings, sector mix, concentration, changes
+over time, comparisons between portfolios, and research.
+
 Authentication:
 Remote connectors (Claude web/desktop) sign in with OAuth 2.1: a tokenless request is answered
 with a 401 and WWW-Authenticate: Bearer resource_metadata=... (RFC 9728), and the client completes

@@ -309,3 +309,11 @@ def test_registry_server_json_matches_registry_constraints():
     assert meta["developer"]["name"]
     assert meta["categories"]
     assert meta["disclosure"] == DISCLAIMER
+
+
+def test_instructions_rule_out_performance():
+    """Every model reads the instructions, prompt or not; ChatGPT offered 'Performance' unprompted."""
+    text = mcp_server.instructions
+    assert "no price, return or performance data" in text
+    assert "best or worst contributors" in text
+    assert "not by pricing the holdings with data from\nanother source" in text
