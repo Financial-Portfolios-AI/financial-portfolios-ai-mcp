@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Explorer</title>
+<style>
+  :root {
+    --bg: #ffffff; --panel: #f6f7fb; --line: #e3e6ef; --text: #16182b; --muted: #5d6275;
+    --accent: #0e9fb0; --accent-soft: rgba(14,159,176,.12); --violet: #6a4bd6;
+    --warn-bg: #fff5e6; --warn-text: #8a4b00; --warn-line: #f3c98b;
+    --up: #0f8a5f; --down: #c0392b;
+  }
+  :root[data-theme="dark"] {
+    --bg: #111322; --panel: #181b2e; --line: #2a2e47; --text: #e9ebf5; --muted: #9aa0b8;
+    --accent: #3ee6f0; --accent-soft: rgba(62,230,240,.12); --violet: #9b85ff;
+    --warn-bg: #2b2111; --warn-text: #f5c77e; --warn-line: #5a4320;
+    --up: #45d39b; --down: #ff7a6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  h1 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  select, input { font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  select:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.live { background: var(--accent-soft); color: var(--accent); }
+  .badge.delayed { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .meta { color: var(--muted); font-size: 12px; }
+  .banner { margin-top: 12px; padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+    background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-top: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .card .k { color: var(--muted); font-size: 11.5px; }
+  .card .v { font-size: 18px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line); }
+  nav button { font: inherit; background: none; border: 0; color: var(--muted); padding: 8px 12px;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  section { padding-top: 12px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--panel); position: sticky; top: 0; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--text); }
+  td.num, th.num { text-align: right; }
+  tr:last-child td { border-bottom: 0; }
+  .wbar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: middle; margin-left: 8px; opacity: .75; }
+  .bars { display: grid; gap: 7px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 30%) 1fr 58px; gap: 10px; align-items: center; }
+  .bar-track { background: var(--panel); border-radius: 5px; height: 12px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--violet)); border-radius: 5px; }
+  .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .right { text-align: right; font-variant-numeric: tabular-nums; }
+  h2 { font-size: 13px; margin: 18px 0 8px; font-weight: 650; }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .empty, .error { padding: 18px; text-align: center; color: var(--muted); }
+  .error { color: var(--down); }
+  footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; }
+  svg text { fill: var(--muted); font-size: 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Portfolio Explorer</h1>
+    <label class="meta" for="portfolio">Portfolio</label>
+    <select id="portfolio" aria-label="Choose a portfolio" disabled><option>Loading…</option></select>
+    <span id="access"></span>
+    <span id="asof" class="meta"></span>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <div id="cards" class="cards"></div>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="holdings" aria-selected="true">Holdings</button>
+    <button role="tab" data-tab="sectors" aria-selected="false">Sectors &amp; concentration</button>
+    <button role="tab" data-tab="changes" aria-selected="false">Changes</button>
+  </nav>
+
+  <section id="tab-holdings">
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="Filter by ticker or sector" aria-label="Filter holdings">
+      <span id="count" class="meta"></span>
+    </div>
+    <div class="tablebox"><table id="holdings"></table></div>
+  </section>
+
+  <section id="tab-sectors" hidden>
+    <h2>Weight by sector</h2>
+    <div id="sectors" class="bars"></div>
+    <h2>Concentration</h2>
+    <div class="meta">Cumulative weight by holding rank.</div>
+    <div id="concentration"></div>
+  </section>
+
+  <section id="tab-changes" hidden>
+    <div class="toolbar">
+      <label class="meta" for="days">Period</label>
+      <select id="days" aria-label="Period">
+        <option value="30">30 days</option><option value="90" selected>90 days</option>
+        <option value="180">180 days</option><option value="365">1 year</option>
+      </select>
+      <span id="changes-note" class="meta"></span>
+    </div>
+    <div id="changes"></div>
+  </section>
+
+  <footer id="disclaimer"></footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Host bridge: MCP Apps JSON-RPC over postMessage (ext-apps spec).
+  // ---------------------------------------------------------------------------
+  let nextId = 1;
+  const pending = new Map();
+  let canCallTools = false;
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+  function request(method, params) {
+    const id = nextId++;
+    send({ jsonrpc: "2.0", id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  function notify(method, params) { send({ jsonrpc: "2.0", method, params }); }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent) return;
+    const m = event.data;
+    if (!m || m.jsonrpc !== "2.0") return;
+
+    if (m.id !== undefined && pending.has(m.id) && !m.method) {
+      const { resolve, reject } = pending.get(m.id);
+      pending.delete(m.id);
+      m.error ? reject(new Error(m.error.message || "Host error")) : resolve(m.result);
+      return;
+    }
+    switch (m.method) {
+      case "ui/notifications/tool-result": onToolResult(m.params); break;
+      case "ui/notifications/host-context-changed": applyContext(m.params); break;
+      default:
+        // Any host request we don't handle (e.g. teardown) gets an empty success.
+        if (m.id !== undefined && m.method) send({ jsonrpc: "2.0", id: m.id, result: {} });
+    }
+  });
+
+  function applyContext(ctx) {
+    if (ctx && (ctx.theme === "dark" || ctx.theme === "light")) {
+      document.documentElement.dataset.theme = ctx.theme;
+    }
+  }
+
+  // Tools return JSON text; parse the first text block of a CallToolResult.
+  function parseResult(result) {
+    if (!result) throw new Error("No result");
+    if (result.structuredContent) return result.structuredContent;
+    const block = (result.content || []).find((c) => c.type === "text");
+    if (!block) throw new Error("Empty result");
+    const data = JSON.parse(block.text);
+    if (result.isError || data.error) throw new Error(data.message || data.error || "Request failed");
+    return data;
+  }
+
+  async function callTool(name, args) {
+    if (!canCallTools) throw new Error("This app can't fetch more data in this client.");
+    return parseResult(await request("tools/call", { name, arguments: args }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // State and helpers
+  // ---------------------------------------------------------------------------
+  const state = { portfolios: [], selected: null, allocation: null, sortKey: "weight", sortDir: -1 };
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+
+  // Weights arrive as fractions (0.15); tolerate percentages if a series exceeds 1.
+  let weightScale = 100;
+  const pct = (w, d = 2) => isNum(w) ? (w * weightScale).toFixed(d) + "%" : "—";
+  const pp = (w) => isNum(w) ? (w * weightScale >= 0 ? "+" : "") + (w * weightScale).toFixed(2) + " pp" : "—";
+  function calibrate(positions) {
+    const max = Math.max(0, ...positions.map((p) => p.weight).filter(isNum));
+    weightScale = max > 1.5 ? 1 : 100;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------------
+  function renderPicker() {
+    const sel = $("portfolio");
+    sel.innerHTML = state.portfolios.map((p) => {
+      const tag = p.access === "subscribed" ? "Live" : "Delayed";
+      const label = `${p.product_name || p.code} (${p.code}) · ${tag}`;
+      return `<option value="${esc(p.code)}"${p.code === state.selected ? " selected" : ""}>${esc(label)}</option>`;
+    }).join("");
+    sel.disabled = state.portfolios.length === 0 || !canCallTools;
+    if (!canCallTools && state.portfolios.length) sel.title = "Switching portfolios isn't available in this client.";
+  }
+
+  function renderHeader(a) {
+    const live = a && !a.delayed;
+    $("access").innerHTML = a ? `<span class="badge ${live ? "live" : "delayed"}">${live ? "Live book" : "Holdings delayed ~45 days"}</span>` : "";
+    const date = a && (a.as_of || a.date);
+    $("asof").textContent = date ? `As of ${String(date).slice(0, 10)}` : "";
+    const banner = $("banner");
+    if (a && a.delayed) {
+      banner.hidden = false;
+      banner.textContent = "You're viewing the public book, delayed about 45 days. It is not the current allocation. Expected return, volatility, equity exposure, cash and effective N are only shown for portfolios you subscribe to.";
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  function renderCards(a) {
+    const pos = a.positions || [];
+    const sorted = pos.map((p) => p.weight).filter(isNum).sort((x, y) => y - x);
+    const top = (n) => sorted.slice(0, n).reduce((s, w) => s + w, 0);
+    const cards = [
+      ["Positions", String(a.total_positions ?? pos.length)],
+      ["Top 5 weight", pct(top(5), 1)],
+      ["Top 10 weight", pct(top(10), 1)],
+    ];
+    // Omit null metrics rather than showing zero: they are null on the delayed book.
+    if (isNum(a.effective_n)) cards.push(["Effective N", a.effective_n.toFixed(1)]);
+    if (isNum(a.equity_exposure)) cards.push(["Equity exposure", pct(a.equity_exposure, 1)]);
+    if (isNum(a.cash_allocation)) cards.push(["Cash", pct(a.cash_allocation, 1)]);
+    $("cards").innerHTML = cards.map(([k, v]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
+  }
+
+  function renderHoldings() {
+    const a = state.allocation;
+    const all = (a && a.positions) || [];
+    const hasSignals = all.some((p) => isNum(p.expected_return) || isNum(p.expected_volatility));
+    const q = $("filter").value.trim().toLowerCase();
+    const rows = all
+      .filter((p) => !q || String(p.ticker).toLowerCase().includes(q) || String(p.sector || "").toLowerCase().includes(q))
+      .sort((x, y) => {
+        const k = state.sortKey, va = x[k], vb = y[k];
+        if (isNum(va) || isNum(vb)) return ((isNum(va) ? va : -Infinity) - (isNum(vb) ? vb : -Infinity)) * state.sortDir;
+        return String(va ?? "").localeCompare(String(vb ?? "")) * state.sortDir;
+      });
+    const maxW = Math.max(0.0001, ...all.map((p) => p.weight).filter(isNum));
+
+    const cols = [["ticker", "Ticker", false], ["sector", "Sector", false], ["weight", "Weight", true]];
+    if (hasSignals) cols.push(["expected_return", "Exp. return", true], ["expected_volatility", "Exp. volatility", true]);
+    const arrow = (k) => state.sortKey === k ? (state.sortDir < 0 ? " ▾" : " ▴") : "";
+    const head = `<thead><tr>${cols.map(([k, label, num]) => `<th class="sortable${num ? " num" : ""}" data-key="${k}">${label}${arrow(k)}</th>`).join("")}</tr></thead>`;
+    const body = rows.length
+      ? rows.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td>`
+          + `<td class="num">${pct(p.weight)}<span class="wbar" style="width:${Math.round((p.weight / maxW) * 60)}px"></span></td>`
+          + (hasSignals ? `<td class="num">${pct(p.expected_return, 1)}</td><td class="num">${pct(p.expected_volatility, 1)}</td>` : "")
+          + `</tr>`).join("")
+      : `<tr><td colspan="${cols.length}" class="empty">No holdings match.</td></tr>`;
+    $("holdings").innerHTML = head + `<tbody>${body}</tbody>`;
+    $("count").textContent = `${rows.length} of ${all.length} holdings`;
+    $("holdings").querySelectorAll("th.sortable").forEach((th) => th.addEventListener("click", () => {
+      const k = th.dataset.key;
+      state.sortDir = state.sortKey === k ? -state.sortDir : (k === "ticker" || k === "sector" ? 1 : -1);
+      state.sortKey = k;
+      renderHoldings();
+    }));
+  }
+
+  function renderSectors() {
+    const pos = (state.allocation && state.allocation.positions) || [];
+    const bySector = new Map();
+    pos.forEach((p) => { if (isNum(p.weight)) bySector.set(p.sector || "Unclassified", (bySector.get(p.sector || "Unclassified") || 0) + p.weight); });
+    const rows = [...bySector.entries()].sort((a, b) => b[1] - a[1]);
+    const max = Math.max(0.0001, ...rows.map((r) => r[1]));
+    $("sectors").innerHTML = rows.length
+      ? rows.map(([s, w]) => `<div class="bar-row"><div class="label" title="${esc(s)}">${esc(s)}</div>`
+          + `<div class="bar-track"><div class="bar-fill" style="width:${(w / max) * 100}%"></div></div>`
+          + `<div class="right">${pct(w, 1)}</div></div>`).join("")
+      : `<div class="empty">No sector data.</div>`;
+
+    // Cumulative weight curve.
+    const weights = pos.map((p) => p.weight).filter(isNum).sort((a, b) => b - a);
+    if (!weights.length) { $("concentration").innerHTML = ""; return; }
+    const total = weights.reduce((s, w) => s + w, 0) || 1;
+    let run = 0;
+    const cum = weights.map((w) => (run += w) / total);
+    const W = 560, H = 150, P = 26;
+    const x = (i) => P + (i / Math.max(1, cum.length - 1)) * (W - P * 2);
+    const y = (v) => H - P + 4 - v * (H - P * 2);
+    const line = cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const area = `${x(0)},${y(0)} ${line} ${x(cum.length - 1)},${y(0)}`;
+    const grid = [0, 0.5, 1].map((v) => `<line x1="${P}" x2="${W - P}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="2" y="${y(v) + 3}">${Math.round(v * 100)}%</text>`).join("");
+    $("concentration").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cumulative weight by holding rank">
+      ${grid}
+      <polygon points="${area}" fill="var(--accent-soft)"/>
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="${P}" y="${H - 4}">1</text><text x="${W - P - 10}" y="${H - 4}">${cum.length}</text>
+    </svg>`;
+  }
+
+  async function loadChanges() {
+    const box = $("changes"), note = $("changes-note");
+    if (!state.selected) return;
+    box.innerHTML = `<div class="empty">Loading history…</div>`;
+    note.textContent = "";
+    try {
+      const h = await callTool("get_portfolio_history", { portfolio_code: state.selected, days: Number($("days").value) });
+      const snaps = (h.snapshots || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      if (h.delayed) note.textContent = "Delayed history ends about 45 days ago, so recent changes are not shown.";
+      if (snaps.length < 2) {
+        box.innerHTML = `<div class="empty">Fewer than two snapshots in this period, so there is nothing to compare. Try a longer period.</div>`;
+        return;
+      }
+      const first = snaps[0], last = snaps[snaps.length - 1];
+      const map = (s) => new Map((s.positions || []).map((p) => [p.ticker, p]));
+      const a = map(first), b = map(last);
+      const added = [...b.values()].filter((p) => !a.has(p.ticker)).sort((x, y) => y.weight - x.weight);
+      const removed = [...a.values()].filter((p) => !b.has(p.ticker)).sort((x, y) => y.weight - x.weight);
+      const shifts = [...b.values()].filter((p) => a.has(p.ticker))
+        .map((p) => ({ ticker: p.ticker, sector: p.sector, from: a.get(p.ticker).weight, to: p.weight, d: p.weight - a.get(p.ticker).weight }))
+        .filter((r) => isNum(r.d) && Math.abs(r.d) > 1e-9)
+        .sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 12);
+
+      const table = (title, rowsHtml, headers) => `<h2>${title}</h2><div class="tablebox"><table><thead><tr>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+      const none = (n) => `<tr><td colspan="${n}" class="empty">None.</td></tr>`;
+      box.innerHTML =
+        `<div class="meta">Comparing ${esc(String(first.date).slice(0, 10))} with ${esc(String(last.date).slice(0, 10))} (${snaps.length} snapshots).</div>`
+        + table(`Added (${added.length})`, added.length ? added.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td><td class="num">${pct(p.weight)}</td></tr>`).join("") : none(3), `<th>Ticker</th><th>Sector</th><th class="num">Weight</th>`)
+        + table(`Removed (${removed.length})`, removed.length ? removed.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td><td class="num">${pct(p.weight)}</td></tr>`).join("") : none(3), `<th>Ticker</th><th>Sector</th><th class="num">Previous weight</th>`)
+        + table("Largest weight shifts", shifts.length ? shifts.map((r) => `<tr><td><strong>${esc(r.ticker)}</strong></td><td>${esc(r.sector || "—")}</td><td class="num">${pct(r.from)}</td><td class="num">${pct(r.to)}</td><td class="num ${r.d > 0 ? "up" : "down"}">${pp(r.d)}</td></tr>`).join("") : none(5), `<th>Ticker</th><th>Sector</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th>`);
+    } catch (err) {
+      box.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+    }
+  }
+
+  function renderAll() {
+    const a = state.allocation;
+    renderPicker();
+    renderHeader(a);
+    if (!a) {
+      $("cards").innerHTML = "";
+      $("holdings").innerHTML = `<tbody><tr><td class="empty">No portfolio selected.</td></tr></tbody>`;
+      return;
+    }
+    calibrate(a.positions || []);
+    renderCards(a);
+    renderHoldings();
+    renderSectors();
+    if (!$("tab-changes").hidden) loadChanges();
+  }
+
+  function showError(message) {
+    $("holdings").innerHTML = `<tbody><tr><td class="error">${esc(message)}</td></tr></tbody>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Events
+  // ---------------------------------------------------------------------------
+  function onToolResult(result) {
+    try {
+      const data = parseResult(result);
+      state.portfolios = data.portfolios || [];
+      state.selected = data.selected || null;
+      state.allocation = data.allocation || null;
+      if (data.disclaimer) $("disclaimer").textContent = data.disclaimer;
+      renderAll();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  $("portfolio").addEventListener("change", async (e) => {
+    state.selected = e.target.value;
+    $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading…</td></tr></tbody>`;
+    try {
+      state.allocation = await callTool("get_portfolio_allocation", { portfolio_code: state.selected });
+      renderAll();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  $("filter").addEventListener("input", renderHoldings);
+  $("days").addEventListener("change", loadChanges);
+
+  document.querySelectorAll("nav button").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+    ["holdings", "sectors", "changes"].forEach((t) => { $("tab-" + t).hidden = t !== btn.dataset.tab; });
+    if (btn.dataset.tab === "changes") loadChanges();
+  }));
+
+  // Keep the host's iframe sized to the content.
+  new ResizeObserver(() => {
+    notify("ui/notifications/size-changed", { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight });
+  }).observe(document.body);
+
+  // ---------------------------------------------------------------------------
+  // Handshake
+  // ---------------------------------------------------------------------------
+  $("disclaimer").textContent = "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed.";
+
+  request("ui/initialize", {
+    protocolVersion: "2025-06-18",
+    appInfo: { name: "financial-portfolios-ai-explorer", version: "1.0.0" },
+    appCapabilities: {},
+  }).then((init) => {
+    applyContext(init && init.hostContext);
+    canCallTools = !!(init && init.hostCapabilities && init.hostCapabilities.serverTools);
+    notify("ui/notifications/initialized", {});
+  }).catch(() => {
+    notify("ui/notifications/initialized", {});
+  });
+})();
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ from mcp.server import MCPServer
 
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
+from financial_portfolios_ai_mcp.explorer import build_explorer
 from financial_portfolios_ai_mcp.icons import icon_specs
 from financial_portfolios_ai_mcp.prompts import register_prompts
 from financial_portfolios_ai_mcp.resources import register_resources
@@ -70,6 +71,9 @@ def create_mcp_server() -> MCPServer:
         # stays correct even when the MCP service answers on a hostname of its own.
         "website_url": settings.portal_base_url.rstrip("/"),
         "version": "1.0.0",
+        # MCP Apps: the Portfolio Explorer, an interactive UI a supporting host renders
+        # inline. Hosts without Apps support still get the tool's JSON result.
+        "extensions": [build_explorer()],
     }
 
     # Brand icons surfaced by LLM providers in connector pickers and tool-call UI.

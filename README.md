@@ -111,6 +111,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
 
 | Tool Name | Description | Arguments |
 | :--- | :--- | :--- |
+| `open_portfolio_explorer` | **Interactive (MCP App).** Portfolio dropdown, sortable holdings, sector and concentration charts, and changes over time, rendered inline in Claude. | `portfolio_code` (optional) |
 | `list_portfolios` | List every active quantitative portfolio, each marked `access` = `subscribed` or `public_delayed`. | `api_token` (optional) |
 | `get_portfolio_allocation` | Retrieve a target allocation snapshot: the latest book when subscribed, otherwise the public book delayed ~45 days. | `portfolio_code`, `as_of` (optional), `api_token` (optional) |
 | `get_portfolio_history` | Retrieve historical allocation timeline for up to 365 days (delayed entries only for non-subscribers). | `portfolio_code`, `days` (1-365), `api_token` (optional) |

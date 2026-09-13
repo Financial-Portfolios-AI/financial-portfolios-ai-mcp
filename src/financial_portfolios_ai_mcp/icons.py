@@ -53,7 +53,13 @@ def media_type(filename: str) -> str:
 
 
 def read_asset(filename: str) -> bytes | None:
-    """Read the raw bytes of a packaged asset, or None when it is missing."""
+    """Read a packaged icon asset, or None when it is missing or not an icon.
+
+    Only image types are served: the assets directory also holds MCP App HTML, which
+    reaches hosts over MCP and has no business being fetchable over plain HTTP.
+    """
+    if Path(filename).suffix.lower() not in _MEDIA_TYPES:
+        return None
     path = asset_path(filename)
     return path.read_bytes() if path else None
 
