@@ -2,6 +2,7 @@
 
 import json
 import re
+from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
@@ -69,7 +70,7 @@ async def test_ui_is_self_contained():
 async def test_ui_only_calls_read_only_tools():
     html, _ = await _html()
     called = set(re.findall(r'callTool\("([a-z_]+)"', html))
-    assert called == {"get_portfolio_allocation", "get_portfolio_history"}
+    assert called == {"list_portfolios", "get_portfolio_allocation", "get_portfolio_history"}
 
 
 @pytest.mark.asyncio
@@ -180,3 +181,68 @@ async def test_connector_manifest_lists_exactly_the_served_tools():
     listed = {t["name"] for t in manifest["capabilities"]["tools"]}
     served = {t.name for t in await mcp_server.list_tools()}
     assert listed == served
+
+
+
+# --------------------------------------------------------------------------- #
+# Regression: the page must read the result the SDK actually sends
+# --------------------------------------------------------------------------- #
+def _wire_result(tool: str, arguments: dict, client) -> dict:
+    """Call a tool over real HTTP and return the exact CallToolResult a host receives."""
+    headers = {
+        "X-API-Key": "aqat_v1_test",
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+        "MCP-Protocol-Version": "2025-11-25",
+    }
+    with (
+        patch("financial_portfolios_ai_mcp.explorer.get_async_client", return_value=client),
+        TestClient(create_app(), base_url="http://localhost") as http,
+    ):
+        http.post("/mcp", headers=headers, json={"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+            "protocolVersion": "2025-11-25", "capabilities": {}, "clientInfo": {"name": "t", "version": "1"}}})
+        r = http.post("/mcp", headers=headers, json={"jsonrpc": "2.0", "id": 2, "method": "tools/call",
+                                                    "params": {"name": tool, "arguments": arguments}})
+    match = re.search(r"^data: (.*)$", r.text, re.MULTILINE)
+    return json.loads(match.group(1) if match else r.text)["result"]
+
+
+def _explorer_client():
+    listing = PortfolioListResponse(
+        total=1, portfolios=[PortfolioSummary(code="AQA_DEFENSIVE", product_name="Defensive", access="subscribed")]
+    )
+    snapshot = PortfolioSnapshot(
+        portfolio_code="AQA_DEFENSIVE", date="2026-09-10T00:00:00", total_positions=1,
+        positions=[Position(ticker="MSFT", weight=1.0, sector="Technology")],
+    )
+    return _client(listing, snapshot)
+
+
+def test_sdk_wraps_string_results_in_structured_content():
+    """Documents the envelope that broke the first release: structuredContent is
+    {"result": "<json string>"}, not the payload itself."""
+    result = _wire_result("open_portfolio_explorer", {}, _explorer_client())
+    assert isinstance(result["structuredContent"]["result"], str)
+    assert json.loads(result["structuredContent"]["result"]) == json.loads(result["content"][0]["text"])
+
+
+@pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node not installed")
+def test_page_parser_reads_the_real_wire_result(tmp_path):
+    """Run the page's own parseResult against real server output, in both shapes a host may send."""
+    import subprocess
+
+    html = (Path(__file__).resolve().parent.parent / "src/financial_portfolios_ai_mcp/assets/portfolio_explorer.html").read_text(encoding="utf-8")
+    parser = re.search(r"(function parseResult\(result\) \{.*?\n  \})", html, re.DOTALL).group(1)
+    wire = _wire_result("open_portfolio_explorer", {}, _explorer_client())
+    structured_only = {"structuredContent": wire["structuredContent"]}
+
+    cases = json.dumps([wire, structured_only])
+    script = tmp_path / "parse.js"
+    script.write_text(
+        f"{parser}\n"
+        f"const out = {cases}.map((r) => parseResult(r).selected);\n"
+        "process.stdout.write(JSON.stringify(out));\n",
+        encoding="utf-8",
+    )
+    out = subprocess.run(["node", str(script)], capture_output=True, text=True, check=True).stdout
+    assert json.loads(out) == ["AQA_DEFENSIVE", "AQA_DEFENSIVE"]

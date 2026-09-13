@@ -159,13 +159,22 @@
     }
   }
 
-  // Tools return JSON text; parse the first text block of a CallToolResult.
+  // Our tools return a JSON string. The SDK sends it twice: as a text content block,
+  // and wrapped as structuredContent {"result": "<the same JSON string>"}. Read the
+  // text block first; fall back to unwrapping structuredContent. Reading
+  // structuredContent as-is yields {result: "..."} - an object with no portfolios.
   function parseResult(result) {
     if (!result) throw new Error("No result");
-    if (result.structuredContent) return result.structuredContent;
-    const block = (result.content || []).find((c) => c.type === "text");
-    if (!block) throw new Error("Empty result");
-    const data = JSON.parse(block.text);
+    let data = null;
+    const block = (result.content || []).find((c) => c.type === "text" && typeof c.text === "string");
+    if (block) {
+      try { data = JSON.parse(block.text); } catch (_) { data = null; }
+    }
+    if (data === null && result.structuredContent) {
+      const sc = result.structuredContent;
+      data = typeof sc.result === "string" ? JSON.parse(sc.result) : sc;
+    }
+    if (data === null) throw new Error(block ? block.text : "Empty result");
     if (result.isError || data.error) throw new Error(data.message || data.error || "Request failed");
     return data;
   }
@@ -355,12 +364,14 @@
 
   function showError(message) {
     $("holdings").innerHTML = `<tbody><tr><td class="error">${esc(message)}</td></tr></tbody>`;
+    $("sectors").innerHTML = `<div class="error">${esc(message)}</div>`;
   }
 
   // ---------------------------------------------------------------------------
   // Events
   // ---------------------------------------------------------------------------
   function onToolResult(result) {
+    gotToolResult = true;
     try {
       const data = parseResult(result);
       state.portfolios = data.portfolios || [];
@@ -403,6 +414,32 @@
   // ---------------------------------------------------------------------------
   $("disclaimer").textContent = "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed.";
 
+  // If the host never delivers the tool result (or delivers it before we listen),
+  // load the data ourselves rather than sitting on an empty page.
+  let gotToolResult = false;
+  async function bootstrap() {
+    if (gotToolResult) return;
+    if (!canCallTools) {
+      showError("No portfolio data was received from the host. Ask Claude to open the Portfolio Explorer again.");
+      return;
+    }
+    try {
+      const listing = await callTool("list_portfolios", {});
+      if (gotToolResult) return;
+      const portfolios = listing.portfolios || [];
+      const first = portfolios.find((p) => p.access === "subscribed") || portfolios[0];
+      const allocation = first ? await callTool("get_portfolio_allocation", { portfolio_code: first.code }) : null;
+      if (gotToolResult) return;
+      onToolResult({ content: [{ type: "text", text: JSON.stringify({
+        portfolios, selected: first ? first.code : null, allocation, disclaimer: listing.disclaimer,
+      }) }] });
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading portfolios…</td></tr></tbody>`;
+
   request("ui/initialize", {
     protocolVersion: "2025-06-18",
     appInfo: { name: "financial-portfolios-ai-explorer", version: "1.0.0" },
@@ -411,6 +448,7 @@
     applyContext(init && init.hostContext);
     canCallTools = !!(init && init.hostCapabilities && init.hostCapabilities.serverTools);
     notify("ui/notifications/initialized", {});
+    setTimeout(bootstrap, 2500);
   }).catch(() => {
     notify("ui/notifications/initialized", {});
   });
