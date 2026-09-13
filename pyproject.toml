@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "financial-portfolios-ai-mcp"
-version = "1.1.0"
+version = "1.1.1"
 description = "Model Context Protocol (MCP) server for Financial Portfolios AI (Claude Connectors, Claude Desktop & Claude Code)"
 readme = "README.md"
 requires-python = ">=3.10"

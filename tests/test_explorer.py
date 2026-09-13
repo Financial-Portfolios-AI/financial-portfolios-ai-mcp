@@ -259,3 +259,17 @@ async def test_ui_offers_compare_and_find_with_their_guardrails():
     # Find must not read presence in a model as advice, and must explain delayed gaps.
     assert "not a recommendation to own it" in html
     assert "a recently added position would not show there yet" in html
+
+
+@pytest.mark.asyncio
+async def test_ui_reports_content_height_not_document_height():
+    """A document is at least as tall as its iframe, so reporting documentElement.scrollHeight
+    lets the host's frame grow but never shrink - it left empty space under short tabs."""
+    html, _ = await _html()
+    size_code = html[html.index("Keep the host's iframe sized"):]
+    assert "wrap.getBoundingClientRect()" in size_code
+    # Check code only: the comment explaining the bug names the old approach.
+    code = "\n".join(line for line in html.splitlines() if not line.strip().startswith("//"))
+    assert "documentElement.scrollHeight" not in code
+    # Re-sent after the handshake in case the host ignored an earlier report.
+    assert "reportSize(true)" in html

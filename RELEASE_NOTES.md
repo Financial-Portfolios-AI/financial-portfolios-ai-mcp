@@ -9,6 +9,13 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.1.1 — September 2026
+
+- The Portfolio Explorer no longer leaves a large empty area below its content when you
+  switch between tabs.
+
+---
+
 ## Version 1.1.0 — September 2026
 
 ### Explore your portfolios interactively

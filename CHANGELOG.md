@@ -9,6 +9,17 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-09-13
+
+### Fixed
+
+- The Portfolio Explorer left empty space below its content. It reported the document's
+  `scrollHeight` as its size, and a document is at least as tall as the frame the host
+  gives it, so the frame could grow but never shrink - switching from a long tab such as
+  Compare back to Holdings kept the taller frame. It now measures its content, and
+  re-sends its size once the host handshake completes, in case the host dropped an
+  earlier report.
+
 ## [1.1.0] - 2026-09-12
 
 ### Added
@@ -86,6 +97,7 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/releases/tag/v1.0.0

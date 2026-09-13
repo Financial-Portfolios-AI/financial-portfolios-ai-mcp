@@ -611,10 +611,20 @@
     if (btn.dataset.tab === "find") { $("ticker").focus(); if ($("ticker").value.trim()) runFind(); }
   }));
 
-  // Keep the host's iframe sized to the content.
-  new ResizeObserver(() => {
-    notify("ui/notifications/size-changed", { width: document.documentElement.scrollWidth, height: document.documentElement.scrollHeight });
-  }).observe(document.body);
+  // Keep the host's iframe sized to the content. Measure the content wrapper, not the
+  // document: the host sizes the iframe from what we report, and a document is at least
+  // as tall as its iframe, so reporting documentElement.scrollHeight can grow the frame
+  // but never shrink it - switching from a long tab to a short one left empty space.
+  const wrap = document.querySelector(".wrap");
+  let reported = { width: 0, height: 0 };
+  function reportSize(force) {
+    const box = wrap.getBoundingClientRect();
+    const size = { width: Math.ceil(box.width), height: Math.ceil(box.height) };
+    if (!force && Math.abs(size.height - reported.height) < 2 && Math.abs(size.width - reported.width) < 2) return;
+    reported = size;
+    notify("ui/notifications/size-changed", size);
+  }
+  new ResizeObserver(() => reportSize(false)).observe(wrap);
 
   // ---------------------------------------------------------------------------
   // Handshake
@@ -655,6 +665,7 @@
     applyContext(init && init.hostContext);
     canCallTools = !!(init && init.hostCapabilities && init.hostCapabilities.serverTools);
     notify("ui/notifications/initialized", {});
+    reportSize(true);
     setTimeout(bootstrap, 2500);
   }).catch(() => {
     notify("ui/notifications/initialized", {});
