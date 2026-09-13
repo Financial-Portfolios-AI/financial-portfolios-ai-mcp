@@ -1,4 +1,4 @@
-# Ecosystem directory: market data and brokerage MCP servers
+# Ecosystem directory: market data, account aggregator and brokerage MCP servers
 
 Third-party MCP servers a customer can connect **alongside** the Financial Portfolios AI
 connector, to fill gaps our connector deliberately does not cover: prices, news,
@@ -94,9 +94,10 @@ Quoted safeguards:
   page. Get them from Truthifi in writing.
 - **Both:** neither page states regional availability.
 
-Worth noting for customers: aggregators also cover **Fidelity, Schwab and Merrill**,
-which have no official MCP server of their own. For many customers an aggregator is the
-*only* official way to bring those accounts into Claude.
+Worth noting for customers: Truthifi's connection guides include **Fidelity, Schwab and
+Merrill**, which have no official MCP server of their own, so for customers at those firms
+an aggregator may be the only official way to bring their accounts into Claude. Whether
+SnapTrade covers them is unconfirmed; its MCP doc does not list brokerages.
 
 ---
 
