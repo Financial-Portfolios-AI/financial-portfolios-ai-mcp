@@ -9,6 +9,15 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.2.1 — September 2026
+
+- The assistant no longer mistakes a working sign-in for a connection problem.
+- You will not be asked for an API token in the conversation. If an assistant ever
+  asks you to paste a token or password into a chat, don't - reconnect the connector
+  and sign in instead.
+
+---
+
 ## Version 1.2.0 — September 2026
 
 - **Ask about this.** A button in the Portfolio Explorer sends a question about what

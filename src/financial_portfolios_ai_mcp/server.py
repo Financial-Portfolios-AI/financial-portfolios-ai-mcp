@@ -46,6 +46,12 @@ When `delayed` is true, tell the user the book is delayed and give its effective
 presenting it as the current allocation. A portfolio code that is not an active public product
 returns "not found".
 
+Credentials:
+Never ask the user to share, paste or type an API token, password or other credential in the
+conversation. If a tool reports an authentication problem, tell the user to reconnect the connector
+and sign in. To check whether the connection works, call `list_portfolios`: `get_token_info`
+describes personal API tokens only, and an OAuth-connected client has none.
+
 What This Connector Does Not Provide:
 There is no price, return or performance data behind any tool. Never offer, compute, estimate or
 chart performance, returns, gains, drawdowns, best or worst contributors, or benchmark comparisons

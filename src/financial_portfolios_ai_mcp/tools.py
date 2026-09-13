@@ -13,10 +13,13 @@ from financial_portfolios_ai.exceptions import (
 )
 from mcp.types import ToolAnnotations
 
-from financial_portfolios_ai_mcp.auth import get_async_client
+from financial_portfolios_ai_mcp.auth import get_async_client, resolve_api_token
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
 
 logger = logging.getLogger(__name__)
+
+# Personal API tokens carry this prefix; any other bearer credential is an OAuth access token.
+API_TOKEN_PREFIX = "aqat_v1_"
 
 
 
@@ -452,10 +455,12 @@ def register_tools(server: Any) -> None:
         name="get_token_info",
         title="API token details",
         description=(
-            "Retrieve metadata about the API token in use: its name, prefix, creation and "
-            "last-used times, and whether it is active. Applies to API-token clients only - a "
-            "connector signed in with OAuth has no API token. It does NOT report subscriptions: "
-            "use `list_portfolios`, whose `access` field shows what the user subscribes to."
+            "Retrieve metadata about the personal API token in use: its name, prefix, creation "
+            "and last-used times, and whether it is active. Only meaningful for clients configured "
+            "with an API token (command-line and local stdio). A connector signed in with OAuth "
+            "has no API token, and this tool says so - that is normal, not an error. Do NOT use "
+            "this to check whether the connection works: call `list_portfolios` for that. It does "
+            "not report subscriptions either; `list_portfolios` shows those in its `access` field."
         ),
         annotations=ToolAnnotations(
             title='API token details',
@@ -466,7 +471,41 @@ def register_tools(server: Any) -> None:
     async def get_token_info() -> str:
         """
         Get API token metadata.
+
+        `/api/tokens/me` only understands personal API tokens, so an OAuth-connected
+        client gets a 403 that reads like a broken connection - and a model reading it
+        will ask the user to paste a token into the chat. Answer those cases here
+        instead of calling the portal.
         """
+        token = resolve_api_token()
+        if not token:
+            return json.dumps(
+                {
+                    "connected": False,
+                    "authentication": "none",
+                    "message": (
+                        "This connection is not signed in. Ask the user to reconnect the "
+                        "connector and sign in when prompted. Never ask the user to paste a "
+                        "token or password into the conversation."
+                    ),
+                    "disclaimer": DISCLAIMER,
+                },
+                indent=2,
+            )
+        if not token.startswith(API_TOKEN_PREFIX):
+            return json.dumps(
+                {
+                    "connected": True,
+                    "authentication": "oauth",
+                    "message": (
+                        "This connection uses OAuth sign-in, so there is no personal API token "
+                        "to describe. That is expected and does not indicate a problem. To check "
+                        "what the account can access, call list_portfolios."
+                    ),
+                    "disclaimer": DISCLAIMER,
+                },
+                indent=2,
+            )
         try:
             async with get_async_client() as client:
                 info = await client.get_api_token_info()
@@ -476,9 +515,14 @@ def register_tools(server: Any) -> None:
         except AuthenticationError as e:
             return json.dumps(
                 {
-                    "error": "Invalid or missing API token",
+                    "error": "API token rejected",
                     "message": str(e),
-                    "hint": "Provide a valid personal API token (aqat_v1_...) generated via https://financial-portfolios.ai/settings/api-tokens",
+                    "hint": (
+                        "The personal API token configured in this client was rejected. The user "
+                        "can generate a new one under Settings > API Tokens on the portal and "
+                        "update their client configuration themselves. Never ask the user to "
+                        "paste a token into the conversation."
+                    ),
                     "disclaimer": DISCLAIMER,
                 },
                 indent=2,

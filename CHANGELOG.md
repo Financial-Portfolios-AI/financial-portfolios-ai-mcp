@@ -9,6 +9,25 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-09-13
+
+### Fixed
+
+- `get_token_info` made a working OAuth connection look broken. It always called the
+  portal's `/api/tokens/me`, which only understands personal API tokens, so an
+  OAuth-connected client got a `403 Not authenticated`. ChatGPT used the tool to check
+  its connection, reported authentication as failing, and asked the user to paste an
+  API token into the chat - moments after the same session had fetched portfolios
+  successfully. The tool now reports an OAuth connection as connected, without calling
+  the portal, and reports a missing credential as "reconnect and sign in".
+
+### Security
+
+- Tool hints and server instructions tell the model never to ask the user to share,
+  paste or type an API token, password or other credential in the conversation. The
+  old `get_token_info` hint read "Provide a valid personal API token", which is what
+  prompted the request.
+
 ## [1.2.0] - 2026-09-13
 
 ### Added
@@ -122,7 +141,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.0.0...v1.1.0

@@ -154,14 +154,20 @@ async def test_get_blog_post_tool(mock_single_blog_post):
 
 @pytest.mark.asyncio
 async def test_get_token_info_tool(mock_token_info):
-    """Test get_token_info tool execution."""
+    """Test get_token_info tool execution for a client configured with a personal API token."""
+    from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
+
+    ctx = set_request_token("aqat_v1_test_token")
     with patch("financial_portfolios_ai_mcp.tools.get_async_client") as mock_client_factory:
         mock_client = AsyncMock()
         mock_client.get_api_token_info.return_value = mock_token_info
         mock_client.__aenter__.return_value = mock_client
         mock_client_factory.return_value = mock_client
 
-        result_raw = await mcp_server.call_tool("get_token_info", {})
+        try:
+            result_raw = await mcp_server.call_tool("get_token_info", {})
+        finally:
+            reset_request_token(ctx)
         data = json.loads(_extract_text(result_raw))
         assert data["name"] == "Claude Connector Key"
         assert data["is_active"] is True
