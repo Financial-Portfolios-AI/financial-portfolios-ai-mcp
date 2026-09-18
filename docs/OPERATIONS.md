@@ -42,6 +42,10 @@ that path is public and returns `200`, while a tokenless `/mcp` correctly return
 
 Recreate them with:
 
+Run these from PowerShell, not Git Bash: Git Bash rewrites a `/`-prefixed `--path`
+into a Windows path, which silently pointed the first attempt at
+`/C:/Program Files/Git/.well-known/...`.
+
 ```bash
 gcloud monitoring uptime create "MCP dev - protected resource metadata" \
   --project financial-portfolios-dev --resource-type=uptime-url \
