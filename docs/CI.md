@@ -17,10 +17,15 @@ repository alone and cannot read the SDK.
 
 1. Create a **fine-grained personal access token** with `Contents: read` on
    `Financial-Portfolios-AI/financial-portfolios-ai-sdk`.
-2. Add it as a secret named `SDK_READ_TOKEN`, on this repository or the organisation.
+2. Add it as a secret named `SDK_READ_TOKEN` under **Settings → Secrets and variables →
+   Actions**, on this repository or the organisation.
+3. Add the same value under **Dependabot** in that screen. Workflows on a Dependabot pull
+   request read Dependabot's secrets, not Actions', so without this copy every Dependabot
+   PR fails its checkout while pushes to `main` pass.
 
-Without it the "Check out the SDK" step fails, which is the first thing to check on a red
-first run.
+Without it the "Check out the SDK" step fails with `Input required and not supplied:
+token` - which is exactly how the first run after this landed failed, and the first thing
+to check on a red run.
 
 ## What the smoke test covers
 
