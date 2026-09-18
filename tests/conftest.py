@@ -3,6 +3,17 @@
 from datetime import datetime, timezone
 
 import pytest
+
+from financial_portfolios_ai_mcp.portal import clear_cache
+
+
+@pytest.fixture(autouse=True)
+def _isolate_portal_cache():
+    """Portal reads are cached per credential for up to two minutes, and tests share a
+    process: without clearing, one test's cached portfolios answer the next test."""
+    clear_cache()
+    yield
+    clear_cache()
 from financial_portfolios_ai.models import (
     APITokenInfo,
     BlogPost,

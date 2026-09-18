@@ -9,6 +9,37 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-17
+
+### Added
+
+- **Retries for transient portal failures.** `500`, `502`, `503`, `504` and connection or
+  timeout errors are retried twice by default with exponential backoff and jitter; a `4xx`
+  is never retried, because it is an answer. Previously one dropped connection surfaced to
+  the user as a failed tool.
+- **Short per-credential caching of portal reads** (portfolio list 30 s, allocation 60 s,
+  history 120 s, research 120 s; each `0` to disable). The cache key hashes the caller's
+  credential - the portal answers differently per subscriber - and concurrent reads of one
+  key share a single fetch, which matters because the Explorer's stock search reads every
+  portfolio at once. The Explorer and the tools share the cache.
+- **Monitoring** in `financial-portfolios-dev`: an uptime check on the public
+  protected-resource metadata, log metrics for errors and retries, and three alert policies
+  (endpoint down, error logs, 5xx) notifying the existing ops email. Policy definitions are
+  checked into `ops/monitoring`, and `docs/OPERATIONS.md` documents the log filters.
+
+### Changed
+
+- **Tools return objects, so `structuredContent` is the data.** A string return was wrapped
+  by the SDK as `structuredContent: {"result": "<the json as a string>"}` - the envelope
+  that left the Explorer blank on Claude mobile, and the field ChatGPT's widget guidance
+  tells clients to render from. Each tool also declares an output schema now. The text
+  content block still carries the same JSON, so clients reading only text are unaffected.
+- **Logging is configured for the served app**, as one JSON object per line with a
+  `severity` field. The container runs uvicorn directly, so nothing had configured the root
+  logger: records reached Cloud Logging through the MCP SDK's console formatter, wrapped at
+  console width, and a single report arrived split across a dozen entries. `httpx`'s
+  per-request INFO logs are quietened.
+
 ## [1.2.1] - 2026-09-13
 
 ### Fixed
@@ -141,7 +172,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...v1.2.0
 [1.1.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.0...v1.1.1

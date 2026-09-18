@@ -1,0 +1,30 @@
+{
+  "displayName": "MCP dev - endpoint down",
+  "documentation": {
+    "content": "The MCP server's public metadata endpoint (https://dev.financial-portfolios.ai/.well-known/oauth-protected-resource) stopped answering 2xx. Connectors cannot sign in or call tools while this is failing.\n\nCheck: Cloud Run service financial-portfolios-ai-mcp (dev), its latest revision's logs, and whether the portal load balancer still routes /mcp and /.well-known/oauth-protected-resource to it.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Uptime check failing",
+      "conditionThreshold": {
+        "filter": "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" AND resource.type=\"uptime_url\" AND metric.label.check_id=\"mcp-dev-protected-resource-metadata-E0Mi60K_e7U\"",
+        "aggregations": [
+          {
+            "alignmentPeriod": "300s",
+            "perSeriesAligner": "ALIGN_NEXT_OLDER",
+            "crossSeriesReducer": "REDUCE_COUNT_FALSE",
+            "groupByFields": ["resource.label.host"]
+          }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 1,
+        "duration": "60s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "notificationChannels": ["projects/financial-portfolios-dev/notificationChannels/11904494302861136424"],
+  "enabled": true
+}

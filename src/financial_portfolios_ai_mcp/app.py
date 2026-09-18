@@ -15,6 +15,7 @@ from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.icons import ASSET_PATH, icon_specs, media_type, read_asset
+from financial_portfolios_ai_mcp.logging_setup import configure_logging
 from financial_portfolios_ai_mcp.manifests import MANIFEST_PATH, MANIFESTS
 from financial_portfolios_ai_mcp.manifests import render as render_manifest
 from financial_portfolios_ai_mcp.server import mcp_server
@@ -171,6 +172,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 def create_app() -> FastAPI:
     """Create FastAPI application with MCP endpoints, auth middleware, and health checks."""
     settings = get_settings()
+    # The container runs uvicorn directly, so this is where logging gets configured:
+    # without it records reach Cloud Logging through the SDK's console formatter, wrapped
+    # at console width and split across entries.
+    configure_logging(settings.log_level)
 
     # Build the transport sub-apps with ROOT internal paths so that mounting at
     # /mcp and /sse yields the advertised public URLs (default path is /mcp, which

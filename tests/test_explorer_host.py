@@ -59,11 +59,11 @@ async def test_capability_report_is_logged(caplog):
             "host_context": {"theme": "light", "locale": "fr-FR"},
             "host_info": {"name": "ChatGPT"},
         })
-    record = next(r for r in caplog.records if r.getMessage().startswith("explorer_host_report "))
-    logged = json.loads(record.getMessage().split(" ", 1)[1])
-    assert logged["host"] == {"name": "ChatGPT"}
-    assert logged["capabilities"] == {"updateModelContext": ["text"]}
-    assert "fr-FR" not in record.getMessage()
+    record = next(r for r in caplog.records if r.getMessage() == "explorer_host_report")
+    # Fields ride on the record (structured logging), not inside the message text.
+    assert record.host == {"name": "ChatGPT"}
+    assert record.capabilities == {"updateModelContext": ["text"]}
+    assert "fr-FR" not in json.dumps({"context": record.context, "host": record.host})
 
 
 # --------------------------------------------------------------------------- #

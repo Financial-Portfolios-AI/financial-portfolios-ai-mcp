@@ -222,12 +222,17 @@ def _explorer_client():
     return _client(listing, snapshot)
 
 
-def test_sdk_wraps_string_results_in_structured_content():
-    """Documents the envelope that broke the first release: structuredContent is
-    {"result": "<json string>"}, not the payload itself."""
+def test_structured_content_is_the_payload_itself():
+    """Tools return objects, so structuredContent is the data - not the
+    {"result": "<json string>"} envelope a string return produced, which is what left the
+    Explorer empty on Claude mobile. Clients such as ChatGPT widgets read this field."""
     result = _wire_result("open_portfolio_explorer", {}, _explorer_client())
-    assert isinstance(result["structuredContent"]["result"], str)
-    assert json.loads(result["structuredContent"]["result"]) == json.loads(result["content"][0]["text"])
+    structured = result["structuredContent"]
+    assert "result" not in structured
+    assert structured["selected"] == "AQA_DEFENSIVE"
+    assert structured["portfolios"][0]["code"] == "AQA_DEFENSIVE"
+    # The text block still carries the same JSON, for clients that read only content.
+    assert json.loads(result["content"][0]["text"]) == structured
 
 
 @pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node not installed")

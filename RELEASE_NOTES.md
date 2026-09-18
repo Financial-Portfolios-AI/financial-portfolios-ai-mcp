@@ -9,6 +9,17 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.3.0 — September 2026
+
+- **Fewer hiccups.** A brief glitch reaching the portal is now retried automatically
+  instead of surfacing as an error.
+- **Faster to browse.** Switching tabs and comparing portfolios in the Explorer reuses
+  data just fetched, so it responds more quickly.
+
+Nothing about your portfolios or what you can see has changed.
+
+---
+
 ## Version 1.2.1 — September 2026
 
 - The assistant no longer mistakes a working sign-in for a connection problem.

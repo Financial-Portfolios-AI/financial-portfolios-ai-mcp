@@ -1,0 +1,25 @@
+{
+  "displayName": "MCP dev - error logs",
+  "documentation": {
+    "content": "The MCP server logged ERROR or worse. Each record is one JSON line with a `severity` field, so filter:\n\n```\nresource.labels.service_name=\"financial-portfolios-ai-mcp\" AND severity>=ERROR\n```\n\nCommon causes: the portal returning 5xx after retries, an unexpected exception in a tool (logged with its traceback), or a failure while opening the Portfolio Explorer.",
+    "mimeType": "text/markdown"
+  },
+  "combiner": "OR",
+  "conditions": [
+    {
+      "displayName": "Any ERROR log in 5 minutes",
+      "conditionThreshold": {
+        "filter": "metric.type=\"logging.googleapis.com/user/mcp_error_logs\" AND resource.type=\"cloud_run_revision\"",
+        "aggregations": [
+          { "alignmentPeriod": "300s", "perSeriesAligner": "ALIGN_SUM" }
+        ],
+        "comparison": "COMPARISON_GT",
+        "thresholdValue": 0,
+        "duration": "0s",
+        "trigger": { "count": 1 }
+      }
+    }
+  ],
+  "notificationChannels": ["projects/financial-portfolios-dev/notificationChannels/11904494302861136424"],
+  "enabled": true
+}

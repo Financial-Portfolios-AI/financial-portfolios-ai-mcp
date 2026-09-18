@@ -1,6 +1,5 @@
 """Tool definitions for Financial Portfolios AI MCP Server."""
 
-import json
 import logging
 from typing import Any
 
@@ -13,14 +12,15 @@ from financial_portfolios_ai.exceptions import (
 )
 from mcp.types import ToolAnnotations
 
+from financial_portfolios_ai_mcp import portal
 from financial_portfolios_ai_mcp.auth import get_async_client, resolve_api_token
+from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
 
 logger = logging.getLogger(__name__)
 
 # Personal API tokens carry this prefix; any other bearer credential is an OAuth access token.
 API_TOKEN_PREFIX = "aqat_v1_"
-
 
 
 def register_tools(server: Any) -> None:
@@ -39,12 +39,12 @@ def register_tools(server: Any) -> None:
             "the `subscribed` ones when the user says 'my'."
         ),
         annotations=ToolAnnotations(
-            title='List model portfolios',
+            title="List model portfolios",
             read_only_hint=True,
             open_world_hint=True,
         ),
     )
-    async def list_portfolios() -> str:
+    async def list_portfolios() -> dict[str, Any]:
         """
         List every active quantitative investment portfolio.
 
@@ -54,35 +54,26 @@ def register_tools(server: Any) -> None:
         :return: JSON formatted list of portfolios with access level, risk level, theme, and description.
         """
         try:
-            async with get_async_client() as client:
-                result = await client.list_portfolios()
-                data = result.model_dump()
-                data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+            async def fetch() -> dict[str, Any]:
+                async with get_async_client() as client:
+                    return (await client.list_portfolios()).model_dump()
+
+            data = await portal.read("list_portfolios", get_settings().cache_ttl_portfolios, fetch)
+            return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication or Subscription required",
-                    "message": str(e),
-                    "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication or Subscription required",
+                "message": str(e),
+                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "disclaimer": DISCLAIMER,
+            }
         except RateLimitError as e:
-            return json.dumps(
-                {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER}
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in list_portfolios")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="get_portfolio_allocation",
@@ -105,7 +96,7 @@ def register_tools(server: Any) -> None:
             "allocation arithmetic, not personalized investment advice."
         ),
         annotations=ToolAnnotations(
-            title='Portfolio holdings and target allocation',
+            title="Portfolio holdings and target allocation",
             read_only_hint=True,
             open_world_hint=True,
         ),
@@ -113,7 +104,7 @@ def register_tools(server: Any) -> None:
     async def get_portfolio_allocation(
         portfolio_code: str,
         as_of: str | None = None,
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Get portfolio target allocation and risk metrics.
 
@@ -125,47 +116,42 @@ def register_tools(server: Any) -> None:
         :param as_of: Optional historical snapshot date (YYYY-MM-DD or ISO 8601 format)
         """
         try:
-            async with get_async_client() as client:
-                snapshot = await client.get_portfolio(portfolio_code=portfolio_code, as_of=as_of)
-                data = snapshot.model_dump()
-                data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+            async def fetch() -> dict[str, Any]:
+                async with get_async_client() as client:
+                    snapshot = await client.get_portfolio(portfolio_code=portfolio_code, as_of=as_of)
+                    return snapshot.model_dump()
+
+            data = await portal.read(
+                "get_portfolio_allocation",
+                get_settings().cache_ttl_allocation,
+                fetch,
+                portfolio_code=portfolio_code.upper(),
+                as_of=as_of,
+            )
+            return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication or subscription access denied",
-                    "portfolio": portfolio_code,
-                    "message": str(e),
-                    "hint": "Sign in and generate an API token at https://financial-portfolios.ai/settings/api-tokens. A valid token without a subscription still returns the public delayed book (~45 days) for active products.",
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication or subscription access denied",
+                "portfolio": portfolio_code,
+                "message": str(e),
+                "hint": "Sign in and generate an API token at https://financial-portfolios.ai/settings/api-tokens. A valid token without a subscription still returns the public delayed book (~45 days) for active products.",
+                "disclaimer": DISCLAIMER,
+            }
         except NotFoundError as e:
-            return json.dumps(
-                {
-                    "error": "Portfolio Not Found",
-                    "portfolio": portfolio_code,
-                    "message": str(e),
-                    "hint": "No active product with this code is available to you. Call `list_portfolios` for the codes that are.",
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Portfolio Not Found",
+                "portfolio": portfolio_code,
+                "message": str(e),
+                "hint": "No active product with this code is available to you. Call `list_portfolios` for the codes that are.",
+                "disclaimer": DISCLAIMER,
+            }
         except RateLimitError as e:
-            return json.dumps(
-                {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER}
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in get_portfolio_allocation")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="get_portfolio_history",
@@ -179,7 +165,7 @@ def register_tools(server: Any) -> None:
             "`lag_days` fields say which history was served."
         ),
         annotations=ToolAnnotations(
-            title='Allocation history',
+            title="Allocation history",
             read_only_hint=True,
             open_world_hint=True,
         ),
@@ -187,7 +173,7 @@ def register_tools(server: Any) -> None:
     async def get_portfolio_history(
         portfolio_code: str,
         days: int = 30,
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Get portfolio allocation history.
 
@@ -199,41 +185,36 @@ def register_tools(server: Any) -> None:
         :param days: Number of calendar days of history (1-365, default: 30)
         """
         try:
-            async with get_async_client() as client:
-                history = await client.get_portfolio_history(
-                    portfolio_code=portfolio_code, days=days
-                )
-                data = history.model_dump()
-                data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+            async def fetch() -> dict[str, Any]:
+                async with get_async_client() as client:
+                    history = await client.get_portfolio_history(
+                        portfolio_code=portfolio_code, days=days
+                    )
+                    return history.model_dump()
+
+            data = await portal.read(
+                "get_portfolio_history",
+                get_settings().cache_ttl_history,
+                fetch,
+                portfolio_code=portfolio_code.upper(),
+                days=days,
+            )
+            return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication or subscription required",
-                    "message": str(e),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication or subscription required",
+                "message": str(e),
+                "disclaimer": DISCLAIMER,
+            }
         except NotFoundError as e:
-            return json.dumps(
-                {"error": "Portfolio Not Found", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Portfolio Not Found", "message": str(e), "disclaimer": DISCLAIMER}
         except RateLimitError as e:
-            return json.dumps(
-                {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER}
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in get_portfolio_history")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="rebalance_portfolio",
@@ -249,7 +230,7 @@ def register_tools(server: Any) -> None:
             "Output represents mathematical calculations, not trade execution or individualized investment advice."
         ),
         annotations=ToolAnnotations(
-            title='Model alignment arithmetic',
+            title="Model alignment arithmetic",
             read_only_hint=True,
             open_world_hint=True,
         ),
@@ -258,7 +239,7 @@ def register_tools(server: Any) -> None:
         portfolio_code: str,
         holdings: list[dict[str, Any]] | str,
         as_of: str | None = None,
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         Calculate target-model alignment arithmetic for user holdings.
 
@@ -275,40 +256,26 @@ def register_tools(server: Any) -> None:
                 )
                 data = result.model_dump()
                 data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+                return data
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication or subscription required",
-                    "message": str(e),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication or subscription required",
+                "message": str(e),
+                "disclaimer": DISCLAIMER,
+            }
         except ValidationError as e:
-            return json.dumps(
-                {"error": "Invalid Holdings Format", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Invalid Holdings Format", "message": str(e), "disclaimer": DISCLAIMER}
         except RateLimitError as e:
-            return json.dumps(
-                {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Rate Limit Exceeded", "message": str(e), "disclaimer": DISCLAIMER}
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {
-                    "error": "Rebalancing Calculation Error",
-                    "message": str(e),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Rebalancing Calculation Error",
+                "message": str(e),
+                "disclaimer": DISCLAIMER,
+            }
         except Exception as e:
             logger.exception("Unexpected error in rebalance_portfolio")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="get_rebalance_template",
@@ -318,38 +285,32 @@ def register_tools(server: Any) -> None:
             "for model alignment calculations (limits: max 200 rows, max 512 KB)."
         ),
         annotations=ToolAnnotations(
-            title='Holdings CSV template',
+            title="Holdings CSV template",
             read_only_hint=True,
             open_world_hint=True,
         ),
     )
-    async def get_rebalance_template() -> str:
+    async def get_rebalance_template() -> dict[str, Any]:
         """
         Get holdings CSV template and limits.
         """
         try:
             async with get_async_client() as client:
                 template_csv = await client.get_rebalance_template()
-                return json.dumps(
-                    {
-                        "template_csv": template_csv,
-                        "required_columns": ["ticker", "quantity"],
-                        "optional_columns": ["price", "value"],
-                        "limits": {
-                            "max_rows": 200,
-                            "max_upload_size_kb": 512,
-                        },
-                        "notes": "Cash can be specified with ticker CASH or USD. Headers: ticker, quantity (or shares/units).",
-                        "disclaimer": DISCLAIMER,
+                return {
+                    "template_csv": template_csv,
+                    "required_columns": ["ticker", "quantity"],
+                    "optional_columns": ["price", "value"],
+                    "limits": {
+                        "max_rows": 200,
+                        "max_upload_size_kb": 512,
                     },
-                    indent=2,
-                )
+                    "notes": "Cash can be specified with ticker CASH or USD. Headers: ticker, quantity (or shares/units).",
+                    "disclaimer": DISCLAIMER,
+                }
         except Exception as e:
             logger.exception("Unexpected error in get_rebalance_template")
-            return json.dumps(
-                {"error": "Failed to get template", "message": str(e), "disclaimer": DISCLAIMER},
-                indent=2,
-            )
+            return {"error": "Failed to get template", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="list_blog_posts",
@@ -359,7 +320,7 @@ def register_tools(server: Any) -> None:
             "insights from Financial Portfolios AI."
         ),
         annotations=ToolAnnotations(
-            title='Search research and market commentary',
+            title="Search research and market commentary",
             read_only_hint=True,
             open_world_hint=True,
         ),
@@ -368,7 +329,7 @@ def register_tools(server: Any) -> None:
         page: int = 1,
         page_size: int = 20,
         search: str | None = None,
-    ) -> str:
+    ) -> dict[str, Any]:
         """
         List published research posts.
 
@@ -377,30 +338,32 @@ def register_tools(server: Any) -> None:
         :param search: Optional keyword search filter
         """
         try:
-            async with get_async_client() as client:
-                posts = await client.list_blog_posts(page=page, page_size=page_size, search=search)
-                data = posts.model_dump()
-                data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+            async def fetch() -> dict[str, Any]:
+                async with get_async_client() as client:
+                    posts = await client.list_blog_posts(page=page, page_size=page_size, search=search)
+                    return posts.model_dump()
+
+            data = await portal.read(
+                "list_blog_posts",
+                get_settings().cache_ttl_research,
+                fetch,
+                page=page,
+                page_size=page_size,
+                search=search,
+            )
+            return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication required",
-                    "message": str(e),
-                    "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication required",
+                "message": str(e),
+                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "disclaimer": DISCLAIMER,
+            }
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in list_blog_posts")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="get_blog_post",
@@ -410,46 +373,40 @@ def register_tools(server: Any) -> None:
             "by slug from Financial Portfolios AI."
         ),
         annotations=ToolAnnotations(
-            title='Read a research article',
+            title="Read a research article",
             read_only_hint=True,
             open_world_hint=True,
         ),
     )
-    async def get_blog_post(slug: str) -> str:
+    async def get_blog_post(slug: str) -> dict[str, Any]:
         """
         Get full blog post content.
 
         :param slug: Post slug identifier
         """
         try:
-            async with get_async_client() as client:
-                post = await client.get_blog_post(slug=slug)
-                data = post.model_dump()
-                data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+            async def fetch() -> dict[str, Any]:
+                async with get_async_client() as client:
+                    return (await client.get_blog_post(slug=slug)).model_dump()
+
+            data = await portal.read(
+                "get_blog_post", get_settings().cache_ttl_research, fetch, slug=slug
+            )
+            return {**data, "disclaimer": DISCLAIMER}
         except NotFoundError as e:
-            return json.dumps(
-                {"error": "Post Not Found", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Post Not Found", "message": str(e), "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "Authentication or active subscription required to read this post",
-                    "message": str(e),
-                    "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "Authentication or active subscription required to read this post",
+                "message": str(e),
+                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "disclaimer": DISCLAIMER,
+            }
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in get_blog_post")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
     @server.tool(
         name="get_token_info",
@@ -463,12 +420,12 @@ def register_tools(server: Any) -> None:
             "not report subscriptions either; `list_portfolios` shows those in its `access` field."
         ),
         annotations=ToolAnnotations(
-            title='API token details',
+            title="API token details",
             read_only_hint=True,
             open_world_hint=True,
         ),
     )
-    async def get_token_info() -> str:
+    async def get_token_info() -> dict[str, Any]:
         """
         Get API token metadata.
 
@@ -479,60 +436,47 @@ def register_tools(server: Any) -> None:
         """
         token = resolve_api_token()
         if not token:
-            return json.dumps(
-                {
-                    "connected": False,
-                    "authentication": "none",
-                    "message": (
-                        "This connection is not signed in. Ask the user to reconnect the "
-                        "connector and sign in when prompted. Never ask the user to paste a "
-                        "token or password into the conversation."
-                    ),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "connected": False,
+                "authentication": "none",
+                "message": (
+                    "This connection is not signed in. Ask the user to reconnect the "
+                    "connector and sign in when prompted. Never ask the user to paste a "
+                    "token or password into the conversation."
+                ),
+                "disclaimer": DISCLAIMER,
+            }
         if not token.startswith(API_TOKEN_PREFIX):
-            return json.dumps(
-                {
-                    "connected": True,
-                    "authentication": "oauth",
-                    "message": (
-                        "This connection uses OAuth sign-in, so there is no personal API token "
-                        "to describe. That is expected and does not indicate a problem. To check "
-                        "what the account can access, call list_portfolios."
-                    ),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "connected": True,
+                "authentication": "oauth",
+                "message": (
+                    "This connection uses OAuth sign-in, so there is no personal API token "
+                    "to describe. That is expected and does not indicate a problem. To check "
+                    "what the account can access, call list_portfolios."
+                ),
+                "disclaimer": DISCLAIMER,
+            }
         try:
             async with get_async_client() as client:
                 info = await client.get_api_token_info()
                 data = info.model_dump()
                 data["disclaimer"] = DISCLAIMER
-                return json.dumps(data, indent=2, default=str)
+                return data
         except AuthenticationError as e:
-            return json.dumps(
-                {
-                    "error": "API token rejected",
-                    "message": str(e),
-                    "hint": (
-                        "The personal API token configured in this client was rejected. The user "
-                        "can generate a new one under Settings > API Tokens on the portal and "
-                        "update their client configuration themselves. Never ask the user to "
-                        "paste a token into the conversation."
-                    ),
-                    "disclaimer": DISCLAIMER,
-                },
-                indent=2,
-            )
+            return {
+                "error": "API token rejected",
+                "message": str(e),
+                "hint": (
+                    "The personal API token configured in this client was rejected. The user "
+                    "can generate a new one under Settings > API Tokens on the portal and "
+                    "update their client configuration themselves. Never ask the user to "
+                    "paste a token into the conversation."
+                ),
+                "disclaimer": DISCLAIMER,
+            }
         except FinancialPortfoliosAIError as e:
-            return json.dumps(
-                {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Portal API Error", "message": str(e), "disclaimer": DISCLAIMER}
         except Exception as e:
             logger.exception("Unexpected error in get_token_info")
-            return json.dumps(
-                {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}, indent=2
-            )
+            return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}

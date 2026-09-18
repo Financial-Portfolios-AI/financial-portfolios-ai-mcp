@@ -73,6 +73,39 @@ class Settings(BaseSettings):
         validation_alias="MCP_PORT",
         description="Port to listen on",
     )
+    # Transient portal failures (5xx, dropped connections) are retried; 4xx never is.
+    portal_retries: int = Field(
+        default=2,
+        validation_alias="MCP_PORTAL_RETRIES",
+        description="Retries for a failed portal read (0 disables)",
+    )
+    portal_retry_base_delay: float = Field(
+        default=0.25,
+        validation_alias="MCP_PORTAL_RETRY_BASE_DELAY",
+        description="First retry delay in seconds; doubles per attempt, with jitter",
+    )
+    # Short per-credential caches. The Explorer reads every portfolio for its search and
+    # comparison views, and each tab switch would otherwise ask the portal again.
+    cache_ttl_portfolios: float = Field(
+        default=30.0,
+        validation_alias="MCP_CACHE_TTL_PORTFOLIOS",
+        description="Seconds to cache the portfolio list (0 disables)",
+    )
+    cache_ttl_allocation: float = Field(
+        default=60.0,
+        validation_alias="MCP_CACHE_TTL_ALLOCATION",
+        description="Seconds to cache an allocation snapshot (0 disables)",
+    )
+    cache_ttl_history: float = Field(
+        default=120.0,
+        validation_alias="MCP_CACHE_TTL_HISTORY",
+        description="Seconds to cache allocation history (0 disables)",
+    )
+    cache_ttl_research: float = Field(
+        default=120.0,
+        validation_alias="MCP_CACHE_TTL_RESEARCH",
+        description="Seconds to cache research listings and articles (0 disables)",
+    )
     log_level: str = Field(
         default="INFO",
         validation_alias="MCP_LOG_LEVEL",
