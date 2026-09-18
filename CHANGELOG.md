@@ -9,6 +9,17 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Added
+
+- **Continuous integration** (`.github/workflows/ci.yml`): `ruff check` and the full test
+  suite on Python 3.12, plus a job that builds the image, runs the container and drives a
+  real MCP client against it (`scripts/ci_smoke.py` - handshake, tool list and
+  annotations, the Explorer's UI resource, prompts, the tokenless `401` challenge, icons,
+  and that the Explorer's HTML is not downloadable over HTTP). Both jobs check out the SDK
+  alongside this repository, which needs an `SDK_READ_TOKEN` secret; see
+  [docs/CI.md](docs/CI.md).
+- Weekly Dependabot updates for Python packages and GitHub Actions.
+
 ## [1.3.0] - 2026-09-17
 
 ### Added

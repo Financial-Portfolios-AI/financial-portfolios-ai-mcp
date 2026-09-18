@@ -1,0 +1,16 @@
+version: 2
+updates:
+  # The SDK is a sibling path dependency, so Dependabot only sees third-party packages
+  # here; SDK changes come through its own repository and a version bump in pyproject.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      python-packages:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

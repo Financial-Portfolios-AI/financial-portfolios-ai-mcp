@@ -1,0 +1,119 @@
+name: CI
+
+# The server depends on the SDK through a local sibling path
+# ([tool.uv.sources] financial-portfolios-ai = ../financial-portfolios-ai-sdk), and the SDK
+# is a separate private repository, so every job checks out both into that layout - the same
+# one the Dockerfile builds from.
+#
+# Cross-repo checkout needs a token: the automatic GITHUB_TOKEN is scoped to this repository
+# only. Add a repository or organisation secret named SDK_READ_TOKEN - a fine-grained PAT
+# with Contents: read on financial-portfolios-ai-sdk. Without it the checkout step fails with
+# an explanatory message rather than a confusing 404.
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12" # matches the Dockerfile's base image
+
+jobs:
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the server
+        uses: actions/checkout@v4
+        with:
+          path: financial-portfolios-ai-mcp
+
+      - name: Check out the SDK
+        uses: actions/checkout@v4
+        with:
+          repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
+          path: financial-portfolios-ai-sdk
+          token: ${{ secrets.SDK_READ_TOKEN }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install ${{ env.PYTHON_VERSION }}
+
+      # Editable, as in local development: the version is read from pyproject.toml, and
+      # tests assert every surface agrees with it. The image job covers the installed layout.
+      - name: Install
+        run: |
+          uv venv --python ${{ env.PYTHON_VERSION }}
+          uv pip install -e ./financial-portfolios-ai-sdk
+          uv pip install -e "./financial-portfolios-ai-mcp[dev]"
+
+      # `ruff format --check` is not run: the repository predates it and 21 files would be
+      # reformatted. Worth doing as its own change, not as a CI gate added after the fact.
+      - name: Ruff
+        working-directory: financial-portfolios-ai-mcp
+        run: ../.venv/bin/ruff check src tests scripts
+
+      # Node runs the Explorer page's own parser against real server output; the runner
+      # has Node preinstalled, and the test skips itself if it is ever missing.
+      - name: Tests
+        working-directory: financial-portfolios-ai-mcp
+        run: ../.venv/bin/pytest -q
+
+  image:
+    name: Build image and smoke-test it
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the server
+        uses: actions/checkout@v4
+        with:
+          path: financial-portfolios-ai-mcp
+
+      - name: Check out the SDK
+        uses: actions/checkout@v4
+        with:
+          repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
+          path: financial-portfolios-ai-sdk
+          token: ${{ secrets.SDK_READ_TOKEN }}
+
+      # Context is the parent directory, as in cloudbuild.yaml, so the SDK is available
+      # to the build.
+      - name: Build
+        run: docker build -t fpai-mcp:ci -f financial-portfolios-ai-mcp/Dockerfile .
+
+      - name: Run
+        run: |
+          docker run -d --name fpai-mcp-ci -p 8080:8080 \
+            -e MCP_PUBLIC_URL=https://ci.invalid/mcp \
+            -e FINANCIAL_PORTFOLIOS_BASE_URL=https://ci.invalid \
+            -e MCP_ALLOWED_HOSTS=localhost,127.0.0.1,localhost:* \
+            fpai-mcp:ci
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8080/healthz >/dev/null && break
+            sleep 1
+          done
+
+      # What every client does first, and what several releases broke: the handshake, the
+      # tool list, the Explorer's UI resource, and the tokenless OAuth challenge.
+      - name: Smoke-test the MCP handshake
+        run: python financial-portfolios-ai-mcp/scripts/ci_smoke.py
+
+      - name: Container logs on failure
+        if: failure()
+        run: docker logs fpai-mcp-ci || true
+
+      - name: Stop
+        if: always()
+        run: docker rm -f fpai-mcp-ci || true
