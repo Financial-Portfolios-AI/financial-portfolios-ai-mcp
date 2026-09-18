@@ -33,12 +33,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the server
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: financial-portfolios-ai-mcp
 
       - name: Check out the SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
           path: financial-portfolios-ai-sdk
@@ -77,12 +77,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the server
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: financial-portfolios-ai-mcp
 
       - name: Check out the SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
           path: financial-portfolios-ai-sdk
