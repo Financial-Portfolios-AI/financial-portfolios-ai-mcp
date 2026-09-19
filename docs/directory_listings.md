@@ -74,9 +74,10 @@ Our [`gemini-extension.json`](../gemini-extension.json) is that format. It repla
 Vertex AI-style manifest that no Google surface read and whose product shuts down after
 2026-11-26; see [providers_and_automation.md](providers_and_automation.md).
 
-Publishing needs a **public** repository, because `gemini extensions install` clones one.
-This repository is private, so the manifest and its `GEMINI.md` have to be published
-somewhere public before anyone can install them.
+Published to the public marketplace repo (`financial-portfolios-ai-marketplace`), because
+`gemini extensions install` clones a public repository and this one is private. It points at
+the **dev** deployment: `https://financial-portfolios.ai/mcp` returns `404` today, so a
+production build would install cleanly and fail on every call.
 
 ---
 

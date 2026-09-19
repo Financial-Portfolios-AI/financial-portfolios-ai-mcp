@@ -137,9 +137,23 @@ Two details that are easy to get wrong:
   and `open_access_centre` stay, because their results are computed server-side and have no
   other source.
 
-**Still to do: publishing needs a public repository.** `gemini extensions install` clones one,
-and this repository is private. The manifest and `GEMINI.md` must be published somewhere public
-first - either a dedicated repo or alongside the existing public marketplace repo.
+**Published** to the public marketplace repo, since `gemini extensions install` clones one and
+this repository is private:
+
+```bash
+gemini extensions install https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-marketplace
+```
+
+**It points at dev, deliberately.** `https://financial-portfolios.ai/mcp` returns `404` - the apex
+domain still serves a placeholder page, and its `/.well-known/oauth-protected-resource` returns that
+page's HTML rather than metadata - while `https://dev.financial-portfolios.ai/mcp` answers a
+tokenless request with the correct `401`. Publishing against production would have installed cleanly
+and failed on every call.
+
+The same gap blocks the directory submissions in [directory_listings.md](directory_listings.md):
+`--env prod` currently renders all three manifests against a domain that serves none of this
+service, so any reviewer fetching those URLs would fail the listing. It is the portal's CP-3
+routing decision plus the domain not yet pointing at the portal.
 
 Remote MCP from the **Gemini API / Vertex** is blocked regardless: Google's own limitations page
 states "Gemini 3 does not support remote MCP, this is coming soon."
