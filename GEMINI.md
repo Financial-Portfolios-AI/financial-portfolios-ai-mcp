@@ -1,4 +1,8 @@
+<!-- Template: ${PUBLIC_ORIGIN} is substituted at publish time by
+     scripts/publish_marketplace.py. Do not hardcode an environment origin here. -->
 # Financial Portfolios AI
+
+Connects to `${PUBLIC_ORIGIN}/mcp`.
 
 Systematic, AI-driven model portfolios. This extension connects Gemini CLI to the Financial
 Portfolios AI MCP server so you can inspect published model portfolios, see how they change,
@@ -72,7 +76,7 @@ gemini extensions config financial-portfolios-ai
 ```
 
 It is stored in the extension's `.env` and sent as `X-API-Key`. Generate one at
-<https://financial-portfolios.ai/settings/api-tokens>. Without a token the server answers `401`
+<${PUBLIC_ORIGIN}/settings/api-tokens>. Without a token the server answers `401`
 and no portfolio is visible.
 
 ---

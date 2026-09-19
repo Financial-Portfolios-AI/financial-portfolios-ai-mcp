@@ -21,6 +21,14 @@ logger = logging.getLogger(__name__)
 
 PLACEHOLDER = "${PUBLIC_ORIGIN}"
 
+# The deployments this service is published for. Defined once: the manifest renderer, the
+# marketplace publisher and their tests must agree on what "dev" and "prod" mean, and a
+# second copy is how an artifact ends up pointing at the wrong environment.
+ENVIRONMENTS = {
+    "prod": "https://financial-portfolios.ai",
+    "dev": "https://dev.financial-portfolios.ai",
+}
+
 # Public path prefix for the manifest routes; see icons.ASSET_PATH for why /mcp.
 MANIFEST_PATH = "/mcp/manifests"
 

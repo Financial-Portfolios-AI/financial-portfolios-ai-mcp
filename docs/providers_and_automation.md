@@ -144,6 +144,24 @@ this repository is private:
 gemini extensions install https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-marketplace
 ```
 
+### Publishing is a command, not a hand edit
+
+Two public artifacts hardcode an endpoint - the Gemini extension and the Claude Code plugin's
+`.mcp.json` - and they live in a different repository from their templates. Retarget both with:
+
+```bash
+python scripts/publish_marketplace.py --env dev     # or --env prod
+python scripts/publish_marketplace.py --env dev --check   # verify, write nothing
+```
+
+It refuses to publish against an origin that is not serving MCP: a tokenless `POST /mcp` must
+answer `401` with an RFC 9728 challenge. Running it with `--env prod` today fails with
+`POST /mcp returned 404`, which is exactly the mistake that reached the published artifacts
+when they were edited by hand. `--no-verify` overrides it for a deployment that is not up yet.
+
+`ENVIRONMENTS` lives in `manifests.py` so the renderer, the publisher and their tests cannot
+disagree about what `dev` means.
+
 **It points at dev, deliberately.** `https://financial-portfolios.ai/mcp` returns `404` - the apex
 domain still serves a placeholder page, and its `/.well-known/oauth-protected-resource` returns that
 page's HTML rather than metadata - while `https://dev.financial-portfolios.ai/mcp` answers a

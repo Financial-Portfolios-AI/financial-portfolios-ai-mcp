@@ -59,6 +59,12 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Changed
 
+- **Publishing the client-install artifacts is parameterised** (`scripts/publish_marketplace.py
+  --env dev|prod`). The Gemini extension, its `GEMINI.md` context file and the Claude Code
+  plugin's `.mcp.json` all live in a public repository separate from their templates, and were
+  previously retargeted by hand. The script refuses to publish against an origin that is not
+  serving MCP - a tokenless `POST /mcp` must answer `401` with an RFC 9728 challenge - which is
+  the check that catches a published artifact pointing at a domain returning `404`.
 - **A real Gemini CLI extension.** `gemini_extension.json` used the legacy Vertex AI Extensions
   manifest, which no Google surface reads and whose product shuts down after 2026-11-26. It is
   replaced by [`gemini-extension.json`](gemini-extension.json) plus [`GEMINI.md`](GEMINI.md) in

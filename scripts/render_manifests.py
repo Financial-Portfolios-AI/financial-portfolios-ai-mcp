@@ -23,15 +23,11 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from financial_portfolios_ai_mcp.manifests import (
+    ENVIRONMENTS,
     MANIFESTS,
     PLACEHOLDER,
     render,
 )
-
-ENVIRONMENTS = {
-    "prod": "https://financial-portfolios.ai",
-    "dev": "https://dev.financial-portfolios.ai",
-}
 
 
 def main(argv: list[str] | None = None) -> int:
