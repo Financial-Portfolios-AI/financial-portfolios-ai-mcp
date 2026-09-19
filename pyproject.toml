@@ -77,7 +77,9 @@ packages = ["src/financial_portfolios_ai_mcp"]
 [tool.hatch.build.targets.wheel.force-include]
 "claude_connector.json" = "financial_portfolios_ai_mcp/manifests/claude_connector.json"
 "chatgpt_manifest.json" = "financial_portfolios_ai_mcp/manifests/chatgpt_manifest.json"
-"gemini_extension.json" = "financial_portfolios_ai_mcp/manifests/gemini_extension.json"
+"gemini-extension.json" = "financial_portfolios_ai_mcp/manifests/gemini-extension.json"
+# GEMINI.md is the Gemini CLI extension's context file; it travels with that manifest.
+"GEMINI.md" = "financial_portfolios_ai_mcp/manifests/GEMINI.md"
 # NOTE: openapi.yaml already ships inside the package at
 # src/financial_portfolios_ai_mcp/openapi.yaml (identical to the repo-root copy),
 # so a force-include of the root file to the same wheel path collides. Removed.

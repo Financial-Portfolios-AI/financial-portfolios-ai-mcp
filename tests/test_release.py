@@ -55,3 +55,21 @@ def test_release_notes_cover_this_version_without_performance_claims():
     # Customer notes must not promise what the connector cannot provide.
     lowered = notes.lower()
     assert "does not\n  provide prices, returns or performance" in lowered or "does not provide prices, returns or performance" in lowered
+
+def test_every_force_included_file_exists():
+    """A renamed packaged file must not be discoverable only by a failed image build.
+
+    `force-include` names files by path, and hatchling fails the wheel build when one is
+    missing - which surfaces inside `docker build`, minutes later and far from the rename.
+    This has now happened twice: once for chatgpt_manifest.json, once for
+    gemini_extension.json when it became gemini-extension.json.
+    """
+    import re
+
+    root = Path(__file__).resolve().parent.parent
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
+    block = text.split("[tool.hatch.build.targets.wheel.force-include]")[1].split("[tool.pytest")[0]
+    named = re.findall(r'^"([^"]+)"\s*=', block, re.MULTILINE)
+    assert named, "expected force-include entries"
+    missing = [name for name in named if not (root / name).is_file()]
+    assert not missing, f"force-include names files that do not exist: {missing}"
