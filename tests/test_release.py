@@ -73,3 +73,9 @@ def test_every_force_included_file_exists():
     assert named, "expected force-include entries"
     missing = [name for name in named if not (root / name).is_file()]
     assert not missing, f"force-include names files that do not exist: {missing}"
+
+    # And the image build needs them present in /app, which is the half that actually
+    # broke: the file existed in the repository but the Dockerfile never copied it.
+    dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
+    uncopied = [name for name in named if f"financial-portfolios-ai-mcp/{name}" not in dockerfile]
+    assert not uncopied, f"force-included but never COPYed into the image: {uncopied}"

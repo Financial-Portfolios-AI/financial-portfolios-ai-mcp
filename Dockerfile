@@ -24,7 +24,7 @@ COPY financial-portfolios-ai-mcp/src/ ./src/
 COPY financial-portfolios-ai-mcp/openapi.yaml ./openapi.yaml
 # All three provider manifest templates: pyproject force-includes them into the
 # wheel so the server can render them at /manifests/<name>.
-COPY financial-portfolios-ai-mcp/claude_connector.json financial-portfolios-ai-mcp/chatgpt_manifest.json financial-portfolios-ai-mcp/gemini-extension.json ./
+COPY financial-portfolios-ai-mcp/claude_connector.json financial-portfolios-ai-mcp/chatgpt_manifest.json financial-portfolios-ai-mcp/gemini-extension.json financial-portfolios-ai-mcp/GEMINI.md ./
 
 # Create virtualenv and install all dependencies
 RUN uv venv /app/.venv
