@@ -5,6 +5,7 @@ import logging
 from mcp.server import MCPServer
 
 from financial_portfolios_ai_mcp._version import __version__
+from financial_portfolios_ai_mcp.analysis import register_analysis_tools
 from financial_portfolios_ai_mcp.apps import build_apps
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
@@ -142,6 +143,7 @@ def create_mcp_server() -> MCPServer:
 
     # Register capabilities
     register_tools(server)
+    register_analysis_tools(server)
     register_resources(server)
     register_prompts(server)
 

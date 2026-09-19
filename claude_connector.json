@@ -125,6 +125,14 @@
         "description": "Retrieve historical allocation snapshots over a custom time window (up to 365 days). Non-subscribers receive only entries at or before today - 45 days, with null allocation metrics."
       },
       {
+        "name": "get_portfolio_metrics",
+        "description": "Concentration and sector mix for a model portfolio - top-5 and top-10 weight, largest holding, effective number of holdings, weight by sector and the dominant sector. Derived from published weights, so available on the delayed book too."
+      },
+      {
+        "name": "get_portfolio_changes",
+        "description": "What a model portfolio added, removed and re-weighted over a period, plus one-way turnover. Reports the model's own weight decisions, not returns."
+      },
+      {
         "name": "rebalance_portfolio",
         "description": "Calculate mathematical target-model alignment arithmetic (share quantity differences) given user holdings (max 200 rows, 512 KB). Requires an active subscription covering the target portfolio."
       },
