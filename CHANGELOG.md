@@ -11,6 +11,26 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Added
 
+- **Three new MCP Apps**, alongside the Portfolio Explorer:
+  - **Access & Connection** (`open_access_centre`) - which portfolios this account can see,
+    which are live versus delayed by about 45 days, exactly what the delayed book withholds,
+    and how the client is signed in. Answers "am I connected?" without the `/api/tokens/me`
+    403 that once prompted a model to ask the user to paste a token.
+  - **Rebalance Studio** (`open_rebalance_studio`) - holdings read from the user's brokerage
+    connector where they have one and passed in by the model, or pasted from a spreadsheet
+    or broker CSV. Shown in an editable table with per-row problems before anything is
+    calculated; export goes through `ui/download-file`, with the CSV shown to copy on hosts
+    that do not offer it.
+  - **Research Reader** (`open_research_reader`) - browse, search and read research in
+    place, with posts marked when they mention a ticker the user's portfolios hold.
+  - **Breadth Board** (`open_breadth_board`) - most widely held stocks across the user's
+    portfolios, pairwise overlap by name and by weight, and each book's dominant sector and
+    concentration.
+- **Derived metrics** (`metrics.py`): concentration and effective N, sector mix and dominant
+  sector, cross-portfolio breadth, overlap, and turnover and weight changes between
+  snapshots. Computed from weights alone, so they are available on the public delayed book -
+  where the portal sends `effective_n`, `equity_exposure` and `cash_allocation` as null.
+  Computed on the server, so hosts that do not render MCP Apps still receive every figure.
 - **Continuous integration** (`.github/workflows/ci.yml`): `ruff check` and the full test
   suite on Python 3.12, plus a job that builds the image, runs the container and drives a
   real MCP client against it (`scripts/ci_smoke.py` - handshake, tool list and
@@ -19,6 +39,27 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
   alongside this repository, which needs an `SDK_READ_TOKEN` secret; see
   [docs/CI.md](docs/CI.md).
 - Weekly Dependabot updates for Python packages and GitHub Actions.
+
+### Changed
+
+- **The Explorer is usable by touch.** Sortable columns advertised themselves only through a
+  hover colour, which the one host we have telemetry for (ChatGPT mobile) never shows; every
+  sortable column now carries a mark and `aria-sort`, headers are keyboard-reachable, and tap
+  targets go to ~44px under `pointer: coarse` or the host's own `deviceCapabilities`.
+- **The Explorer tells the model what is on screen.** `ui/update-model-context` previously
+  sent only the selection; it now sends the visible rows in their displayed order, the sort
+  column, concentration and dominant-sector figures, what changed between compared snapshots,
+  and the shared-holding count.
+- **Context from other connectors is explicitly allowed.** The instructions now permit
+  combining these holdings with market-data, company, filing and news tools the user has
+  connected, attributed to their source. The restriction is unchanged where it matters: no
+  return, gain, drawdown or benchmark comparison for these model portfolios, however the
+  prices are obtained.
+- **Holdings come from the user's brokerage connector first.** Retyping what another
+  connector already holds is now called out as the wrong path, and asking the user for
+  brokerage credentials is prohibited.
+- **The instructions lead with the three rules** - informational only, the delayed book, no
+  performance - because ChatGPT's guidance is to put what matters in the first 512 characters.
 
 ## [1.3.0] - 2026-09-17
 

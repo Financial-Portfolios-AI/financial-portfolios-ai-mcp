@@ -168,14 +168,22 @@ Ordered by evidence that they matter.
 
 ## 7. Order of work
 
-1. App items 1-2 - smallest change, aimed at the only client we have evidence about.
-2. Metrics from §3, computed server-side so prompts, tools and the app share one
-   implementation and one set of tests.
-3. Prompts and their tool twins from §4.
-4. App items 3-6.
+1. ~~App items 1-2~~ **done** - touch affordances, and the Explorer now sends what is on
+   screen rather than only the selection.
+2. ~~Metrics from §3~~ **done** - `metrics.py`, computed server-side so the apps, any future
+   tools and hosts that render nothing all share one implementation and one set of tests.
+3. **Prompts and their tool twins from §4** - still open. The provider research in
+   [providers_and_automation.md](providers_and_automation.md) strengthens the case: prompts
+   are effectively invisible in ChatGPT and disputed on claude.ai, so the tool half is what
+   customers will actually reach.
+4. ~~App items 3-6~~ mostly done through the three new apps (Access & Connection, Rebalance
+   Studio, Research Reader, Breadth Board). `openLinks` is now used by the Access panel;
+   selection-to-question and a saved app state remain open.
+5. **A digest tool** - "what changed since last week" as a single call, which is the shape a
+   scheduled task on either host needs.
 
 Verify before building anything provider-conditional: whether Claude reports a host context
-at all, and whether ChatGPT surfaces prompts.
+at all, and whether ChatGPT surfaces prompts. See §5 of the provider notes.
 
 ## 8. Open decisions
 
