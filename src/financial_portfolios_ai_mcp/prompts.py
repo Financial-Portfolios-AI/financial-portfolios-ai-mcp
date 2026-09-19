@@ -13,20 +13,28 @@ Every prompt stays inside what the tools can actually do, and none asks the mode
 recommend a security, a trade or a portfolio choice.
 """
 
+import logging
 from typing import Annotated, Any
 
-from mcp.types import Completion, CompletionArgument, PromptReference
+from mcp.types import Completion, CompletionArgument, PromptReference, ResourceTemplateReference
 from pydantic import Field
 
+from financial_portfolios_ai_mcp import portal
 from financial_portfolios_ai_mcp.auth import get_async_client
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER_TEXT
+
+logger = logging.getLogger(__name__)
 
 # Arguments whose values are portfolio codes, for live autocompletion.
 # Input names double as the labels Claude shows ("portfolio" -> "Portfolio"): the SDK does
 # not pass an argument title through, so a readable name is the only way to get a readable label.
 SINGLE_PORTFOLIO_ARGUMENTS = frozenset({"portfolio"})
 MULTI_PORTFOLIO_ARGUMENTS = frozenset({"portfolios"})
+# The variable in `portfolios://{portfolio_code}/allocation`. A resource template is
+# completed the same way a single-code prompt argument is.
+TEMPLATE_PORTFOLIO_ARGUMENTS = frozenset({"portfolio_code"})
+TICKER_ARGUMENTS = frozenset({"ticker"})
 
 PortfolioCode = Annotated[
     str,
@@ -67,6 +75,58 @@ def _code_or_subscribed(portfolio: str) -> str:
 
 
 
+async def _complete_ticker(value: str) -> Completion:
+    """Suggest tickers the user's portfolios actually hold.
+
+    `find_holding` asks which portfolios hold a stock, and the useful answers are the
+    tickers that are in a book at all - typing one that is held nowhere returns an empty
+    search. Reads go through the shared cache, so the suggestions cost nothing when the
+    portfolios have already been looked at.
+
+    Best-effort like the rest of completion: any failure yields no suggestions rather than
+    breaking the dialog, and a portfolio that cannot be read is skipped instead of losing
+    the ones that could.
+    """
+    typed = value.strip().upper()
+    settings = get_settings()
+    try:
+        async def fetch_list() -> dict[str, Any]:
+            async with get_async_client() as client:
+                return (await client.list_portfolios()).model_dump()
+
+        listing = await portal.read("list_portfolios", settings.cache_ttl_portfolios, fetch_list)
+    except Exception:  # noqa: BLE001 - completion is best-effort by design
+        return Completion(values=[], total=0, has_more=False)
+
+    tickers: set[str] = set()
+    for entry in listing.get("portfolios") or []:
+        code = entry.get("code")
+        if not code:
+            continue
+        try:
+            async def fetch_allocation(code: str = code) -> dict[str, Any]:
+                async with get_async_client() as client:
+                    return (await client.get_portfolio(portfolio_code=code)).model_dump()
+
+            allocation = await portal.read(
+                "get_portfolio_allocation",
+                settings.cache_ttl_allocation,
+                fetch_allocation,
+                portfolio_code=str(code).upper(),
+                as_of=None,
+            )
+        except Exception as exc:  # noqa: BLE001 - one unreadable book must not lose the others
+            logger.debug("ticker completion skipped %s: %s", code, exc)
+            continue
+        for position in allocation.get("positions") or []:
+            ticker = str(position.get("ticker") or "").upper()
+            if ticker:
+                tickers.add(ticker)
+
+    values = sorted(t for t in tickers if t.startswith(typed))
+    return Completion(values=values[:100], total=len(values), has_more=len(values) > 100)
+
+
 async def complete_portfolio_code(ref: Any, argument: CompletionArgument, context: Any) -> Completion | None:
     """Suggest the user's live portfolio codes for portfolio inputs.
 
@@ -79,18 +139,28 @@ async def complete_portfolio_code(ref: Any, argument: CompletionArgument, contex
     unreachable - yields no suggestions rather than an error, since completion is a
     typing aid and must never break the prompt dialog.
     """
-    if not isinstance(ref, PromptReference):
-        return None
     name = argument.name
-    if name not in SINGLE_PORTFOLIO_ARGUMENTS and name not in MULTI_PORTFOLIO_ARGUMENTS:
+    if isinstance(ref, ResourceTemplateReference):
+        # `portfolios://{portfolio_code}/allocation`. Hosts that offer a resource picker
+        # could not complete this at all before: only PromptReference was answered.
+        if name not in TEMPLATE_PORTFOLIO_ARGUMENTS:
+            return None
+        single = True
+    elif isinstance(ref, PromptReference):
+        if name in TICKER_ARGUMENTS:
+            return await _complete_ticker(argument.value or "")
+        if name not in SINGLE_PORTFOLIO_ARGUMENTS and name not in MULTI_PORTFOLIO_ARGUMENTS:
+            return None
+        single = name in SINGLE_PORTFOLIO_ARGUMENTS
+    else:
         return None
 
     value = argument.value or ""
-    if name in MULTI_PORTFOLIO_ARGUMENTS:
+    if single:
+        chosen, fragment = [], value
+    else:
         *chosen, fragment = value.split(",")
         chosen = [c.strip() for c in chosen if c.strip()]
-    else:
-        chosen, fragment = [], value
     typed = fragment.strip().upper()
 
     try:

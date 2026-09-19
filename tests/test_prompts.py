@@ -3,7 +3,12 @@
 from unittest.mock import AsyncMock, patch
 
 import pytest
-from financial_portfolios_ai.models import PortfolioListResponse, PortfolioSummary
+from financial_portfolios_ai.models import (
+    PortfolioListResponse,
+    PortfolioSnapshot,
+    PortfolioSummary,
+    Position,
+)
 from mcp.types import CompletionArgument, PromptReference, ResourceTemplateReference
 
 from financial_portfolios_ai_mcp.config import get_settings
@@ -206,13 +211,80 @@ async def test_completion_filters_by_what_was_typed_case_insensitively():
     assert result.values == ["AQA_AGGRESSIVE"]
 
 
-@pytest.mark.asyncio
-async def test_completion_ignores_other_arguments_and_resource_templates():
-    prompt_ref = PromptReference(type="ref/prompt", name="find_holding")
-    assert await complete_portfolio_code(prompt_ref, CompletionArgument(name="ticker", value="N"), None) is None
+def _client_with_books(books, failures=()):
+    """A client whose allocations differ per portfolio, so ticker completion has to read each."""
+    client = AsyncMock()
+    client.list_portfolios.return_value = _catalog()
 
+    async def get_portfolio(portfolio_code):
+        if portfolio_code in failures:
+            raise RuntimeError(f"{portfolio_code} unavailable")
+        return PortfolioSnapshot(
+            portfolio_code=portfolio_code, date="2026-09-10T00:00:00",
+            total_positions=len(books.get(portfolio_code, [])),
+            positions=[Position(ticker=t, weight=0.5, sector=None) for t in books.get(portfolio_code, [])],
+        )
+
+    client.get_portfolio.side_effect = get_portfolio
+    client.__aenter__.return_value = client
+    return client
+
+
+BOOKS = {"AQA_DEFENSIVE": ["MSFT", "NVDA"], "AQA_BALANCED": ["NVDA", "KO"], "AQA_AGGRESSIVE": ["AMD"]}
+
+
+@pytest.mark.asyncio
+async def test_ticker_completion_suggests_only_tickers_actually_held():
+    """`find_holding` had no autocomplete, so a user typed a ticker from memory.
+
+    A ticker held in no book returns an empty search, so the useful suggestions are the
+    union of what the portfolios hold - de-duplicated, since a name can be in several.
+    """
+    ref = PromptReference(type="ref/prompt", name="find_holding")
+    with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_with_books(BOOKS)):
+        result = await complete_portfolio_code(ref, CompletionArgument(name="ticker", value=""), None)
+    assert result.values == ["AMD", "KO", "MSFT", "NVDA"], "sorted and de-duplicated"
+
+
+@pytest.mark.asyncio
+async def test_ticker_completion_filters_by_what_was_typed():
+    ref = PromptReference(type="ref/prompt", name="find_holding")
+    with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_with_books(BOOKS)):
+        result = await complete_portfolio_code(ref, CompletionArgument(name="ticker", value="n"), None)
+    assert result.values == ["NVDA"], "case-insensitive prefix match"
+
+
+@pytest.mark.asyncio
+async def test_ticker_completion_survives_one_unreadable_portfolio():
+    """Completion is a typing aid: one failed read must not empty the whole list."""
+    client = _client_with_books(BOOKS, failures=("AQA_BALANCED",))
+    ref = PromptReference(type="ref/prompt", name="find_holding")
+    with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=client):
+        result = await complete_portfolio_code(ref, CompletionArgument(name="ticker", value=""), None)
+    assert result.values == ["AMD", "MSFT", "NVDA"], "KO is lost with its book, the rest survive"
+
+
+@pytest.mark.asyncio
+async def test_completion_answers_the_resource_template_too():
+    """`portfolios://{portfolio_code}/allocation` could not be completed at all before.
+
+    Only PromptReference was answered, so a host offering a resource picker left the user
+    typing a code from memory.
+    """
     template_ref = ResourceTemplateReference(type="ref/resource", uri="portfolios://{portfolio_code}/allocation")
-    assert await complete_portfolio_code(template_ref, CompletionArgument(name="portfolio_code", value=""), None) is None
+    with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
+        result = await complete_portfolio_code(template_ref, CompletionArgument(name="portfolio_code", value=""), None)
+    assert result.values[0] == "AQA_DEFENSIVE", "subscribed first, as for a prompt argument"
+    assert set(result.values) == {"AQA_DEFENSIVE", "AQA_BALANCED", "AQA_AGGRESSIVE"}
+
+
+@pytest.mark.asyncio
+async def test_completion_ignores_arguments_it_knows_nothing_about():
+    prompt_ref = PromptReference(type="ref/prompt", name="portfolio_changes")
+    assert await complete_portfolio_code(prompt_ref, CompletionArgument(name="days", value="3"), None) is None
+
+    template_ref = ResourceTemplateReference(type="ref/resource", uri="research://posts/latest")
+    assert await complete_portfolio_code(template_ref, CompletionArgument(name="slug", value="a"), None) is None
 
 
 @pytest.mark.asyncio
