@@ -398,6 +398,26 @@ def test_the_three_rules_survive_a_truncated_read():
     assert "disclaimer" in head
 
 
+def test_instructions_gate_order_placement_behind_confirmation():
+    """The propose-confirm rule has to live here, not only in a Claude Code plugin.
+
+    The broker-order-prep skill carries these rails for plugin users; claude.ai and ChatGPT
+    users reach the same connector with no plugin at all, so the server states them.
+    """
+    text = mcp_server.instructions
+    assert "places no orders" in text
+    assert "explicit confirmation of that specific" in text
+    # "Always rebalance me" is the phrasing that sounds like standing permission and is not.
+    assert "no standing authorization and no auto-execute" in text.lower()
+    assert "always rebalance me" in text
+    # A broker that allows unattended execution does not relax the rule.
+    assert "permit unattended execution" in text
+    # And the failure modes that produce a wrong order rather than no order.
+    assert "Never invent a price, balance, position or fill" in text
+    assert "Never silently substitute a symbol" in text
+    assert "Never ask for brokerage credentials" in text
+
+
 def test_instructions_allow_context_from_other_tools():
     """Users run this beside market-data and brokerage connectors, and should use them."""
     text = mcp_server.instructions

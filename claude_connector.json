@@ -240,6 +240,11 @@
         "name": "portfolio_digest",
         "title": "Recurring portfolio digest",
         "description": "A short, repeatable summary of what changed across your portfolios, written to be run on a schedule."
+      },
+      {
+        "name": "drift_check",
+        "title": "How far my account has drifted",
+        "description": "Compares your real holdings against a model portfolio and reports how far they have drifted. Reports only - it proposes no trades and places none."
       }
     ]
   }

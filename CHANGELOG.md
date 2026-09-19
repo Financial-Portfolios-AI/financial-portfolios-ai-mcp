@@ -11,6 +11,17 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Added
 
+- **Order-placement rails in the server instructions.** The connector places no orders, but a
+  model holding both this and a brokerage connector can prepare them - so the propose-confirm
+  rule now lives here rather than only in the Claude Code plugin's skill, where claude.ai and
+  ChatGPT users never see it: explicit confirmation per batch, no standing authorization, no
+  auto-execute however the user phrases it, no invented prices or balances, no silently
+  substituted symbols, and never a request for brokerage credentials. A broker that permits
+  unattended execution does not relax any of it.
+- **`drift_check`** - compares real holdings against a model and reports how far they have
+  drifted. Safe to schedule, because it deliberately stops short of proposing trades: turning
+  gaps into share quantities is the step that needs someone looking, and a scheduled run has
+  nobody looking.
 - **Three prompts** for capabilities that had none:
   - `portfolio_performance` - performance against the benchmark, risk statistics, and best and
     worst performers, with the rule that the disclosure travels with the figures.

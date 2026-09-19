@@ -28,6 +28,7 @@ EXPECTED_PROMPTS = {
     "portfolio_performance",
     "most_held_stocks",
     "portfolio_digest",
+    "drift_check",
     "portfolio_report",
 }
 
@@ -193,6 +194,21 @@ async def test_digest_is_written_to_run_unattended():
     assert "Do not ask the user questions" in text
     assert "A quiet period is a result" in text
     assert "get_portfolio_changes" in text
+
+
+@pytest.mark.asyncio
+async def test_drift_check_reports_without_proposing_trades():
+    """It is schedulable, so it must not drift into preparing orders unattended.
+
+    Turning gaps into share quantities is the step that needs a person looking at it, and a
+    scheduled run has nobody looking.
+    """
+    text = await _render("drift_check", {"portfolio": "AQA_BALANCED"})
+    assert "do not propose, prepare or place any order" in text
+    assert "Do not translate the gaps into share quantities" in text
+    assert "do not ask the user to type their holdings into a scheduled run" in text
+    # An aligned account is a result, not an empty report.
+    assert "Being aligned is a result worth reporting" in text
 
 
 @pytest.mark.asyncio

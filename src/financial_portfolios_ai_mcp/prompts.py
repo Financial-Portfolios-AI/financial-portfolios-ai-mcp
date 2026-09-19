@@ -604,4 +604,37 @@ Keep the whole digest under roughly 200 words per portfolio. Report only what th
 
 End with the disclaimer."""
 
+    @server.prompt(
+        name="drift_check",
+        title="How far my account has drifted",
+        description=(
+            "Compares your real holdings against a model portfolio and reports how far they "
+            "have drifted. Reports only - it proposes no trades and places none."
+        ),
+    )
+    def drift_check(portfolio: PortfolioCode = "") -> str:
+        return f"""You are reporting how far the user's own holdings have drifted from a Financial Portfolios AI model portfolio.
+
+{DISCLAIMER_TEXT}
+
+{_code_or_subscribed(portfolio)}
+
+This is a report, not a trade plan. It is safe to run on a schedule, so do not ask the user questions and do not propose, prepare or place any order. If they want to act on it, that is a separate, explicit request.
+
+1. Read the user's current positions from a brokerage, custodian or portfolio-tracking connector if one is available. Never ask for brokerage credentials or account numbers. If no such connector is there, say the check needs one and stop - do not ask the user to type their holdings into a scheduled run.
+2. Confirm the target has `access: "subscribed"` via `list_portfolios`. Alignment needs a subscription; if it is not subscribed, say so and stop.
+3. Call `rebalance_portfolio` with the target and those holdings.
+4. Report, in under 200 words:
+   - A one-line answer: roughly how far the account is from the model, and whether that has moved much.
+   - The largest gaps, by ticker: held weight versus target weight, in percentage points.
+   - Anything held that the model does not hold, and anything in the model not held at all.
+   - Any ticker that could not be matched between the broker and the model - say it was skipped rather than guessing a substitute.
+5. If the account already matches closely, say exactly that in one sentence. Being aligned is a result worth reporting.
+
+Do not translate the gaps into share quantities, order tickets or a suggestion to trade, and do not tell the user whether to act. Drift is arithmetic against a published model, not advice, and no suitability assessment has been performed.
+
+{_BOUNDARY}
+
+End with the disclaimer."""
+
     server.completion()(complete_portfolio_code)
