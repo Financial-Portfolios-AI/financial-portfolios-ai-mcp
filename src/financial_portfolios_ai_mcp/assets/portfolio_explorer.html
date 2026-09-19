@@ -30,7 +30,7 @@
   .actions { display: flex; gap: 6px; margin-left: auto; }
   .action { font: inherit; font-size: 12.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line);
     border-radius: 8px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
-  .action:hover { border-color: var(--accent); }
+  @media (hover: hover) { .action:hover { border-color: var(--accent); } }
   /* Floats over the page: appearing must not reflow the header under the user's finger. */
   .toast { position: fixed; right: 12px; bottom: 12px; font-size: 12px; color: var(--text); background: var(--panel);
     border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; }
@@ -71,7 +71,12 @@
   th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
   th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--panel); position: sticky; top: 0; }
   th.sortable { cursor: pointer; user-select: none; }
-  th.sortable:hover { color: var(--text); }
+  @media (hover: hover) { th.sortable:hover { color: var(--text); } }
+  /* The only affordance for "this sorts" used to be a hover colour, which a touch host
+     (chatgpt mobile reports hover: false) never shows. Every sortable column carries a
+     mark; the inactive ones are dimmed rather than absent. */
+  .sortmark { margin-left: 4px; opacity: .32; font-size: 10px; }
+  th[aria-sort] .sortmark { opacity: 1; color: var(--accent); }
   td.num, th.num { text-align: right; }
   tr:last-child td { border-bottom: 0; }
   .wbar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: middle; margin-left: 8px; opacity: .75; }
@@ -87,6 +92,23 @@
   .error { color: var(--down); }
   footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; }
   svg text { fill: var(--muted); font-size: 10px; }
+
+  /* Touch hosts. `pointer: coarse` covers most of it; `html[data-touch]` is set from the
+     host's own deviceCapabilities, because an iframe does not always inherit the query.
+     Targets go to ~44px, the usual floor for a finger. */
+  @media (pointer: coarse) {
+    .action, .chip, nav button, select, input { min-height: 44px; }
+    .action, .chip { padding: 10px 14px; }
+    nav button { padding: 12px 14px; }
+    select, input { padding: 10px 12px; }
+    th, td { padding: 11px 10px; }
+  }
+  html[data-touch="true"] .action, html[data-touch="true"] .chip,
+  html[data-touch="true"] nav button, html[data-touch="true"] select, html[data-touch="true"] input { min-height: 44px; }
+  html[data-touch="true"] .action, html[data-touch="true"] .chip { padding: 10px 14px; }
+  html[data-touch="true"] nav button { padding: 12px 14px; }
+  html[data-touch="true"] select, html[data-touch="true"] input { padding: 10px 12px; }
+  html[data-touch="true"] th, html[data-touch="true"] td { padding: 11px 10px; }
 </style>
 </head>
 <body>
@@ -207,6 +229,12 @@
     Object.assign(hostCtx, ctx);
     if (ctx.theme === "dark" || ctx.theme === "light") {
       document.documentElement.dataset.theme = ctx.theme;
+    }
+    // The host knows whether a finger is driving this better than the iframe's own media
+    // query does; chatgpt mobile reports touch: true, hover: false.
+    const device = ctx.deviceCapabilities;
+    if (device && typeof device === "object" && typeof device.touch === "boolean") {
+      document.documentElement.dataset.touch = String(device.touch);
     }
     // Host theme variables (--color-*, --font-*, ...). Only well-formed custom properties
     // with plain values are applied.
@@ -342,8 +370,9 @@
 
     const cols = [["ticker", "Ticker", false], ["sector", "Sector", false], ["weight", "Weight", true]];
     if (hasSignals) cols.push(["expected_return", "Exp. return", true], ["expected_volatility", "Exp. volatility", true]);
-    const arrow = (k) => state.sortKey === k ? (state.sortDir < 0 ? " ▾" : " ▴") : "";
-    const head = `<thead><tr>${cols.map(([k, label, num]) => `<th class="sortable${num ? " num" : ""}" data-key="${k}">${label}${arrow(k)}</th>`).join("")}</tr></thead>`;
+    const mark = (k) => `<span class="sortmark" aria-hidden="true">${state.sortKey === k ? (state.sortDir < 0 ? "▾" : "▴") : "⇅"}</span>`;
+    const sorted = (k) => state.sortKey === k ? ` aria-sort="${state.sortDir < 0 ? "descending" : "ascending"}"` : "";
+    const head = `<thead><tr>${cols.map(([k, label, num]) => `<th class="sortable${num ? " num" : ""}" data-key="${k}"${sorted(k)} tabindex="0" role="columnheader" title="Sort by ${label}">${label}${mark(k)}</th>`).join("")}</tr></thead>`;
     const body = rows.length
       ? rows.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td>`
           + `<td class="num">${pct(p.weight)}<span class="wbar" style="width:${Math.round((p.weight / maxW) * 60)}px"></span></td>`
@@ -352,12 +381,20 @@
       : `<tr><td colspan="${cols.length}" class="empty">No holdings match.</td></tr>`;
     $("holdings").innerHTML = head + `<tbody>${body}</tbody>`;
     $("count").textContent = `${rows.length} of ${all.length} holdings`;
-    $("holdings").querySelectorAll("th.sortable").forEach((th) => th.addEventListener("click", () => {
+    lastHoldings = { rows, total: all.length, filter: q, sortKey: state.sortKey, sortDir: state.sortDir };
+    const applySort = (th) => {
       const k = th.dataset.key;
       state.sortDir = state.sortKey === k ? -state.sortDir : (k === "ticker" || k === "sector" ? 1 : -1);
       state.sortKey = k;
       renderHoldings();
-    }));
+      contextChanged(); // the model should know what the user re-ordered the table by
+    };
+    $("holdings").querySelectorAll("th.sortable").forEach((th) => {
+      th.addEventListener("click", () => applySort(th));
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applySort(th); }
+      });
+    });
   }
 
   function renderSectors() {
@@ -415,6 +452,21 @@
         .filter((r) => isNum(r.d) && Math.abs(r.d) > 1e-9)
         .sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 12);
 
+      // One-way turnover: half the summed absolute weight change across the union of
+      // tickers, so an add and the sell that funded it count once between them.
+      let drift = 0;
+      new Set([...a.keys(), ...b.keys()]).forEach((t) => {
+        const from = a.has(t) && isNum(a.get(t).weight) ? a.get(t).weight : 0;
+        const to = b.has(t) && isNum(b.get(t).weight) ? b.get(t).weight : 0;
+        drift += Math.abs(to - from);
+      });
+      lastChanges = {
+        from: String(first.date).slice(0, 10), to: String(last.date).slice(0, 10), snapshots: snaps.length,
+        added: added.length, removed: removed.length, turnover_pct: asPct(drift / 2),
+        largest_moves: shifts.slice(0, 8).map((r) => ({ ticker: r.ticker, change_pp: asPct(r.d, 2), to_pct: asPct(r.to, 2) })),
+      };
+      contextChanged();
+
       const table = (title, rowsHtml, headers) => `<h2>${title}</h2><div class="tablebox"><table><thead><tr>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
       const none = (n) => `<tr><td colspan="${n}" class="empty">None.</td></tr>`;
       box.innerHTML =
@@ -444,6 +496,7 @@
     renderCards(a);
     renderHoldings();
     renderSectors();
+    lastChanges = null; // belongs to whichever book was loaded before this one
     if (!$("tab-changes").hidden) loadChanges();
   }
 
@@ -458,6 +511,43 @@
   // ---------------------------------------------------------------------------
   let currentTab = "holdings";
   let lastFind = null;
+  let lastHoldings = null;
+  let lastChanges = null;
+  let lastCompare = null;
+
+  // Concentration and sector figures computed from weights alone, so they are available on
+  // the delayed book too - where the portal sends null for effective_n and the rest.
+  function metricsOf(a) {
+    const weights = (a.positions || []).map((p) => p.weight).filter(isNum);
+    const total = weights.reduce((s, w) => s + w, 0);
+    if (!total) return null;
+    const ranked = weights.slice().sort((x, y) => y - x);
+    const sectors = new Map();
+    (a.positions || []).forEach((p) => {
+      if (!isNum(p.weight)) return;
+      const key = p.sector || "Unclassified";
+      sectors.set(key, (sectors.get(key) || 0) + p.weight);
+    });
+    const bySector = [...sectors.entries()].sort((x, y) => y[1] - x[1]);
+    // HHI needs weights that sum to 1; the book can sum to less than the whole portfolio
+    // when cash sits outside `positions`, so normalise here and only here. The headline
+    // percentages stay on the page's own scale, so they match what the user is reading.
+    const hhi = weights.reduce((s, w) => s + (w / total) ** 2, 0);
+    const sectorHhi = bySector.reduce((s, [, w]) => s + (w / total) ** 2, 0);
+    return {
+      top5: ranked.slice(0, 5).reduce((s, w) => s + w, 0),
+      top10: ranked.slice(0, 10).reduce((s, w) => s + w, 0),
+      effectiveN: hhi ? 1 / hhi : null,
+      largest: ranked[0] ?? null,
+      sectors: bySector,
+      dominant: bySector[0] || null,
+      effectiveSectors: sectorHhi ? 1 / sectorHhi : null,
+      unclassified: sectors.get("Unclassified") || 0,
+    };
+  }
+
+  // Percent on the same scale the page displays (`weightScale` detects fractions vs percent).
+  const asPct = (w, d = 1) => isNum(w) ? Number((w * weightScale).toFixed(d)) : null;
 
   function describeView() {
     const a = state.allocation;
@@ -466,18 +556,54 @@
     const lines = [];
     const structured = { tab: currentTab, portfolio: state.selected, access: a ? (a.delayed ? "public_delayed" : "subscribed") : null, as_of: a ? dateOf(a) : null };
     if (a) lines.push(`The user has the Portfolio Explorer open on ${name} (${state.selected}), ${book}.`);
+    const m = a ? metricsOf(a) : null;
+    if (m) {
+      structured.concentration = {
+        positions: a.total_positions ?? (a.positions || []).length,
+        top5_pct: asPct(m.top5), top10_pct: asPct(m.top10), largest_pct: asPct(m.largest, 2),
+        effective_n: m.effectiveN ? Number(m.effectiveN.toFixed(1)) : null,
+      };
+    }
     if (currentTab === "holdings") {
       const q = $("filter").value.trim();
       lines.push(`They are viewing its holdings table${q ? `, filtered by "${q}"` : ""}.`);
       structured.filter = q || null;
+      // The rows actually on screen, in the order they are on screen, so a question about
+      // "the third one" or "the biggest" resolves without the user restating anything.
+      if (lastHoldings) {
+        const shown = lastHoldings.rows.slice(0, 15);
+        structured.sorted_by = { column: lastHoldings.sortKey, direction: lastHoldings.sortDir < 0 ? "desc" : "asc" };
+        structured.visible_rows = { shown: shown.length, matching: lastHoldings.rows.length, total: lastHoldings.total };
+        structured.holdings = shown.map((p) => ({ ticker: p.ticker, weight_pct: asPct(p.weight, 2), sector: p.sector || null }));
+        lines.push(`The table is sorted by ${lastHoldings.sortKey} ${lastHoldings.sortDir < 0 ? "descending" : "ascending"}`
+          + `, showing ${lastHoldings.rows.length} of ${lastHoldings.total} holdings`
+          + `${shown.length < lastHoldings.rows.length ? ` (the first ${shown.length} are listed here)` : ""}.`);
+      }
     } else if (currentTab === "sectors") {
       lines.push("They are viewing its sector weights and concentration.");
+      if (m && m.dominant) {
+        structured.sectors = m.sectors.slice(0, 8).map(([sector, w]) => ({ sector, weight_pct: asPct(w) }));
+        structured.dominant_sector = { sector: m.dominant[0], weight_pct: asPct(m.dominant[1]) };
+        structured.effective_sectors = m.effectiveSectors ? Number(m.effectiveSectors.toFixed(1)) : null;
+        structured.unclassified_pct = asPct(m.unclassified);
+        lines.push(`Its largest sector is ${m.dominant[0]} at ${pct(m.dominant[1], 1)}`
+          + `${m.effectiveSectors ? `, and its weight is spread across the equivalent of ${m.effectiveSectors.toFixed(1)} equally sized sectors` : ""}.`);
+      }
     } else if (currentTab === "changes") {
       lines.push(`They are viewing its changes over the last ${$("days").value} days.`);
       structured.days = Number($("days").value);
+      if (lastChanges) {
+        structured.changes = lastChanges;
+        lines.push(`Between ${lastChanges.from} and ${lastChanges.to} the model added ${lastChanges.added} and removed ${lastChanges.removed} holdings`
+          + `${isNum(lastChanges.turnover_pct) ? `, moving about ${lastChanges.turnover_pct}% of the book` : ""}.`);
+      }
     } else if (currentTab === "compare") {
       lines.push(`They are comparing ${state.compare.map(nameOf).join(", ")}.`);
       structured.compare = state.compare.slice();
+      if (lastCompare) {
+        structured.comparison = lastCompare;
+        lines.push(`${lastCompare.shared_holdings} holding${lastCompare.shared_holdings === 1 ? "" : "s"} appear in more than one of them.`);
+      }
     } else if (currentTab === "find") {
       if (lastFind) {
         lines.push(`They searched for ${lastFind.ticker}, which is held in ${lastFind.held} of ${lastFind.total} portfolios.`);
@@ -660,6 +786,17 @@
         + shared.map((t) => `<tr><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.sector || "—")}</td>${cols.map((_, i) => `<td class="num">${isNum(t.weights[i]) ? pct(t.weights[i]) : "—"}</td>`).join("")}</tr>`).join("")
         + `</tbody></table></div>`
       : `<div class="empty">These portfolios have no holdings in common.</div>`;
+
+    lastCompare = {
+      portfolios: cols.map((c) => ({
+        code: c.code, as_of: dateOf(c.a), delayed: !!c.a.delayed,
+        positions: c.a.total_positions ?? c.s.pos.length,
+        top5_pct: asPct(c.s.top5), largest_sector: c.s.lead ? c.s.lead[0] : null,
+      })),
+      shared_holdings: shared.length,
+      mixed_dates: dates.size > 1 || mixed,
+    };
+    contextChanged();
 
     box.innerHTML = warning + `<h2>Summary</h2>` + summary + `<h2>Sector mix</h2>` + sectorTable + `<h2>Shared holdings</h2>` + overlap
       + `<div class="note">Describes differences in the model data only. It is not a recommendation of any portfolio, and no suitability assessment has been performed.</div>`;

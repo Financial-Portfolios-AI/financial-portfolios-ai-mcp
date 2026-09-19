@@ -257,6 +257,60 @@ def test_page_parser_reads_the_real_wire_result(tmp_path):
     assert json.loads(out) == ["AQA_DEFENSIVE", "AQA_DEFENSIVE"]
 
 
+@pytest.mark.skipif(__import__("shutil").which("node") is None, reason="node not installed")
+def test_page_metrics_are_scale_free_and_normalised(tmp_path):
+    """Run the page's own metricsOf over books the portal really produces.
+
+    The concentration figures are the reason these metrics exist at all: the portal sends
+    `effective_n` as null on the public delayed book, so the page derives it. Two things
+    are easy to get wrong and are pinned here - the HHI must be computed on weights
+    normalised to sum 1 (a book can sum to less than 1 when cash sits outside `positions`),
+    while the headline percentages must stay on the raw scale so they match the table the
+    user is reading.
+    """
+    import subprocess
+
+    html = (Path(__file__).resolve().parent.parent / "src/financial_portfolios_ai_mcp/assets/portfolio_explorer.html").read_text(encoding="utf-8")
+    fn = re.search(r"(function metricsOf\(a\) \{.*?\n  \})", html, re.DOTALL).group(1)
+
+    equal = {"positions": [{"ticker": t, "weight": 0.25, "sector": "Tech"} for t in "ABCD"]}
+    with_cash = {"positions": [{"ticker": "A", "weight": 0.45, "sector": "Tech"}, {"ticker": "B", "weight": 0.45, "sector": "Energy"}]}
+    unclassified = {"positions": [{"ticker": "A", "weight": 0.5, "sector": "Tech"}, {"ticker": "B", "weight": 0.5, "sector": None}]}
+
+    script = tmp_path / "metrics.js"
+    script.write_text(
+        'const isNum = (v) => typeof v === "number" && Number.isFinite(v);\n'
+        f"{fn}\n"
+        f"const books = {json.dumps([equal, with_cash, unclassified])};\n"
+        "const out = books.map((b) => { const m = metricsOf(b); return {\n"
+        "  effectiveN: Number(m.effectiveN.toFixed(4)), top5: Number(m.top5.toFixed(4)),\n"
+        "  largest: m.largest, dominant: m.dominant[0], dominantWeight: Number(m.dominant[1].toFixed(4)),\n"
+        "  effectiveSectors: Number(m.effectiveSectors.toFixed(4)), unclassified: m.unclassified }; });\n"
+        "process.stdout.write(JSON.stringify(out));\n",
+        encoding="utf-8",
+    )
+    equal_book, cash_book, unclassified_book = json.loads(
+        subprocess.run(["node", str(script)], capture_output=True, text=True, check=True).stdout
+    )
+
+    # Four equal weights are four effective holdings, and one sector.
+    assert equal_book["effectiveN"] == 4
+    assert equal_book["top5"] == 1
+    assert equal_book["effectiveSectors"] == 1
+
+    # Cash outside `positions` leaves the book summing to 0.9. Effective N must still be 2 -
+    # not 2.47, which is what an un-normalised HHI would give - while top 5 stays 90%,
+    # matching the page's own "Top 5 weight" card.
+    assert cash_book["effectiveN"] == 2
+    assert cash_book["top5"] == 0.9
+    assert cash_book["effectiveSectors"] == 2
+
+    # A null sector is reported as its own bucket rather than silently dropped: `sector` is
+    # frequently null, and a dominant-sector claim that ignored it would overstate.
+    assert unclassified_book["dominant"] in {"Tech", "Unclassified"}
+    assert unclassified_book["unclassified"] == 0.5
+
+
 @pytest.mark.asyncio
 async def test_ui_offers_compare_and_find_with_their_guardrails():
     html, _ = await _html()
