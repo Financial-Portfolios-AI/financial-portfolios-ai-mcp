@@ -22,6 +22,7 @@ from mcp.server.apps import Apps
 from financial_portfolios_ai_mcp.access_centre import register_access_centre
 from financial_portfolios_ai_mcp.explorer import build_explorer
 from financial_portfolios_ai_mcp.rebalance_studio import register_rebalance_studio
+from financial_portfolios_ai_mcp.research_reader import register_research_reader
 
 
 def build_apps() -> Apps:
@@ -29,4 +30,5 @@ def build_apps() -> Apps:
     apps = build_explorer()
     register_access_centre(apps)
     register_rebalance_studio(apps)
+    register_research_reader(apps)
     return apps
