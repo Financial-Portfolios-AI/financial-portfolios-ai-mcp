@@ -225,7 +225,7 @@ End with the disclaimer."""
    - Subscribed portfolios show the latest holdings, including expected return and risk metrics.
    - Other portfolios show the public book, with holdings delayed by about 45 days and without those premium metrics.
    - Model alignment calculations (`rebalance_portfolio`) are available only for subscribed portfolios.
-3. If the user is not subscribed to a portfolio they asked about, tell them live holdings for it come with a subscription, available from the Pricing section of the portal at {portal}/#pricing. Do not quote prices; you do not have them.
+3. If the user is not subscribed to a portfolio they asked about, tell them live holdings for it come with a subscription, available from the Pricing section of the portal at {portal}/#pricing. Do not quote share prices; you do not have them.
 4. If `list_portfolios` fails with an authentication error, the connection has lost its sign-in: tell the user to reconnect the connector and sign in again.
 
 Do not call `get_token_info` for this - it describes API tokens, not subscriptions.
@@ -410,7 +410,7 @@ Then build the report as a single self-contained interactive page (an artifact w
 - Changes over the period: positions added and removed, and the largest weight shifts between the first and last snapshot. Skip this section if there are fewer than two snapshots, and say why.
 - Footer: the full disclaimer text above, verbatim, visible on the page itself - the report may be shared without this conversation.
 
-Use only numbers returned by the tools. This connector provides no prices, returns or performance data, so do not compute, estimate or chart returns, performance, gains, drawdowns or benchmark comparisons - not even approximately, and not from other sources. If the user asks for performance, say it is not available through this connector.
+Use only numbers returned by the tools. Performance figures come from `get_portfolio_performance` and `get_portfolio_metrics` and are hypothetical and simulated; if you include any of them, show the `disclaimer` from that response with them, in full and unaltered. Never compute, estimate or chart a return, gain, drawdown or benchmark comparison yourself, and never from prices obtained elsewhere - a figure derived that way is not the publisher's and will not match the website.
 
 {_DELAYED_BOOK}
 

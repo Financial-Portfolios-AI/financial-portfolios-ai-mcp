@@ -26,7 +26,7 @@ and compare your own holdings against them.
 | `list_portfolios` | Every active model strategy, each marked `subscribed` or `public_delayed` |
 | `get_portfolio_allocation` | Target weights, tickers and sectors for one portfolio |
 | `get_portfolio_history` | Allocation snapshots over time (up to 365 days) |
-| `get_portfolio_metrics` | Concentration (top 5/10, largest, effective N), sector weights, dominant sector |
+| `get_portfolio_concentration` | Concentration (top 5/10, largest, effective N), sector weights, dominant sector |
 | `get_portfolio_changes` | What the model opened, closed, raised and cut, plus turnover |
 | `open_breadth_board` | Across all your portfolios: most widely held stocks, overlap, dominant sectors |
 | `open_access_centre` | What this account can see, what the delayed book withholds, connection state |
@@ -42,7 +42,7 @@ and compare your own holdings against them.
   text client cannot get elsewhere.
 - `expected_return` and `expected_volatility` are per-position model metadata and are `null`
   on the public delayed book, along with `effective_n`, `equity_exposure` and
-  `cash_allocation`. `get_portfolio_metrics` derives concentration and sector figures from the
+  `cash_allocation`. `get_portfolio_concentration` derives concentration and sector figures from the
   weights, so those remain available on a delayed book.
 
 ## Your own holdings

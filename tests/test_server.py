@@ -352,40 +352,55 @@ def test_registry_server_json_matches_registry_constraints():
     assert meta["disclosure"] == DISCLAIMER
 
 
-def test_instructions_rule_out_performance():
-    """Every model reads the instructions, prompt or not; ChatGPT offered 'Performance' unprompted."""
+def test_instructions_require_the_disclosure_to_travel_with_the_figures():
+    """Performance is published now, so the rule guards the disclosure instead of the subject.
+
+    The connector used to refuse performance outright, which was stricter than the product:
+    the website publishes these figures, disclosed as simulated. What must not happen is a
+    figure reaching a customer without that disclosure, or paraphrased into something
+    softer, so the instructions say relay it unaltered and what to do when it is missing.
+    """
     text = mcp_server.instructions
-    assert "no price, return or performance data" in text
-    assert "best or worst contributors" in text
-    assert "not by pricing the holdings with data from\nanother source" in text
+    assert "hypothetical and simulated" in text
+    assert "in full and unaltered" in text
+    assert "paraphrase it" in text
+    assert "treat the figures as unavailable" in text
+
+
+def test_instructions_still_forbid_computing_performance_from_another_source():
+    """The boundary moved from subject to authorship, and that half must survive.
+
+    A published figure is the publisher's, labelled and disclosed. One derived here from a
+    market-data connector's prices would be neither, and would disagree with the website -
+    so pricing the book yourself stays out of scope even though performance is now answerable.
+    """
+    text = mcp_server.instructions
+    assert "The boundary is authorship, not subject." in text
+    assert "Do not compute, estimate or chart a return" in text
+    assert "from prices obtained anywhere else" in text
+    # The worked example is the exact question that tempts a model to price the book.
+    assert "did best" in text and "not by pricing the book yourself" in text
+    # And the derived tools must not be mistaken for performance.
+    assert "are not performance" in text
 
 
 def test_the_three_rules_survive_a_truncated_read():
     """ChatGPT's guidance is to put what matters in the first 512 characters of `instructions`.
 
-    A model that reads no further must still not misdate a delayed book or invent
-    performance - the two mistakes this connector has actually seen in the wild.
+    A model that reads no further must still not misdate a delayed book, and must still know
+    the performance figures need their disclosure - the two mistakes this connector has
+    actually seen in the wild.
     """
     head = mcp_server.instructions[:512]
     assert "Informational and educational only" in head
     assert "delayed about 45 days" in head
-    assert "no price, return or performance data" in head
+    assert "hypothetical and simulated" in head
+    assert "disclaimer" in head
 
 
-def test_instructions_allow_context_from_other_tools_but_not_performance_maths():
-    """The line is arithmetic, not sources.
-
-    Users run this connector beside market-data and brokerage connectors, and the model
-    should use them for what a company is and what happened to it. What it must not do is
-    turn any of that into a return for one of these model portfolios - the restriction is
-    on the calculation, so it cannot be satisfied by sourcing the prices elsewhere.
-    """
+def test_instructions_allow_context_from_other_tools():
+    """Users run this beside market-data and brokerage connectors, and should use them."""
     text = mcp_server.instructions
     assert "Using Other Connected Tools" in text
-    assert "market data, company\nprofiles, filings, news" in text
-    assert "Say where each\noutside fact came from" in text
-    assert "The boundary is arithmetic, not sources." in text
-    # The worked example matters: it is the exact question that tempts a model to price the book.
-    assert "best month" in text and "stays unavailable" in text
-    # And it must say what to offer instead, or the model simply refuses and stops.
-    assert "which weights it raised and cut" in text
+    assert "market data, company" in text and "filings, news" in text
+    assert "outside fact came from" in text

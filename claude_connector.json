@@ -125,7 +125,15 @@
         "description": "Retrieve historical allocation snapshots over a custom time window (up to 365 days). Non-subscribers receive only entries at or before today - 45 days, with null allocation metrics."
       },
       {
+        "name": "get_portfolio_performance",
+        "description": "Hypothetical, simulated performance for a model portfolio: the indexed curve against its benchmark plus since-inception statistics (total and annualized return, volatility, Sharpe, Sortino, max drawdown, beta, alpha, information ratio, tracking error, correlation). Carries its own disclosure, which must be shown with the figures."
+      },
+      {
         "name": "get_portfolio_metrics",
+        "description": "Best and worst performing holdings with their simulated return, most-held names with company names and average weight, and win rates by name and by invested capital. Carries its own disclosure, which must be shown with the figures."
+      },
+      {
+        "name": "get_portfolio_concentration",
         "description": "Concentration and sector mix for a model portfolio - top-5 and top-10 weight, largest holding, effective number of holdings, weight by sector and the dominant sector. Derived from published weights, so available on the delayed book too."
       },
       {

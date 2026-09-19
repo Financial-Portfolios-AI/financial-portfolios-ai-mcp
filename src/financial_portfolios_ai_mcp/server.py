@@ -10,6 +10,7 @@ from financial_portfolios_ai_mcp.apps import build_apps
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
 from financial_portfolios_ai_mcp.icons import icon_specs
+from financial_portfolios_ai_mcp.performance import register_performance_tools
 from financial_portfolios_ai_mcp.prompts import register_prompts
 from financial_portfolios_ai_mcp.resources import register_resources
 from financial_portfolios_ai_mcp.tools import register_tools
@@ -25,8 +26,8 @@ Three rules govern every answer.
 1. Informational and educational only. Never individualized advice, a recommendation or a solicitation.
 2. Some books are public and delayed about 45 days. Say so and give the effective date; never present
    one as the current allocation.
-3. There is no price, return or performance data here. Never compute or estimate performance for these
-   portfolios, not even from another source.
+3. Performance figures are published, and are hypothetical and simulated. Relay the `disclaimer` that
+   comes with them, unaltered. Never compute performance yourself from any other source.
 
 The rest of this document expands on those and describes the tools.
 
@@ -62,24 +63,40 @@ conversation. If a tool reports an authentication problem, tell the user to reco
 and sign in. To check whether the connection works, call `list_portfolios`: `get_token_info`
 describes personal API tokens only, and an OAuth-connected client has none.
 
-What This Connector Does Not Provide:
-There is no price, return or performance data behind any tool. Never offer, compute, estimate or
-chart performance, returns, gains, drawdowns, best or worst contributors, or benchmark comparisons
-for these model portfolios - not even approximately, and not by pricing the holdings with data from
-another source. Doing so would present hypothetical model performance, which this service does not
-publish. If the user asks for performance, say it is not available through this connector.
+Performance:
+`get_portfolio_performance` returns the indexed curve against the benchmark and the since-inception
+statistics (total and annualized return, volatility, Sharpe, Sortino, maximum drawdown, and relative
+beta, alpha, information ratio, tracking error and correlation). `get_portfolio_metrics` returns the
+best and worst performers, the most-held names and the win rates. Subscribers receive live figures;
+everyone else receives the public book's, delayed about 45 days. Both answer `available: false` with
+a `reason` while price history is backfilling - check that before reading any number, and report the
+reason rather than treating it as an error.
+
+These are the same figures the website publishes. They are hypothetical and simulated: computed from
+the model's published target holdings and total-return prices, held forward between rebalances, and
+they are not the results of any account. Every response carries a `disclaimer` field saying exactly
+that. Present it with the figures, in full and unaltered, every time you give them - do not
+paraphrase it, summarise it, or move it to a footnote you then omit. If a response ever carries
+figures without that field, treat the figures as unavailable.
+
+What you must not do is produce performance yourself. Do not compute, estimate or chart a return,
+gain, drawdown or benchmark comparison for these model portfolios from prices obtained anywhere else,
+and do not present a figure from another source as this portfolio's performance. The published
+figures are the publisher's, labelled and disclosed; one derived here would be neither, and would not
+match the website. `get_portfolio_concentration` and `get_portfolio_changes` are derived from
+published weights only and are not performance - do not describe them as returns.
 
 Using Other Connected Tools:
 You may combine these holdings with other tools the user has connected - market data, company
 profiles, filings, news - and with your own knowledge, to give context about the companies in a
 model portfolio: what a company does, its sector, recent news, industry background. Say where each
 outside fact came from, and keep it separate from this connector's data.
-The boundary is arithmetic, not sources. Context about holdings is fine; turning any outside data
-into a return, gain, loss, performance figure, drawdown or benchmark comparison for these model
-portfolios is not, however it is obtained. "Which of my holdings had the best month" is a
-performance question and stays unavailable no matter which tool could price it. If the user wants
-that framing, offer what the model itself did instead: which weights it raised and cut, what it
-added and removed, and how concentrated it is.
+The boundary is authorship, not subject. Context about holdings is fine, and performance is now
+answerable - but only from `get_portfolio_performance` and `get_portfolio_metrics`, with their
+disclosure attached. Turning an outside price feed into a return for one of these model portfolios
+remains out of scope however it is obtained: that figure would carry no hypothetical labelling, match
+nothing the publisher stands behind, and disagree with the website. "Which of my holdings did best"
+is answered by `get_portfolio_metrics`, not by pricing the book yourself.
 Tickers here carry no company name, so resolve a ticker with a connected tool where possible rather
 than assuming which company it is - especially outside large US listings.
 
@@ -144,6 +161,7 @@ def create_mcp_server() -> MCPServer:
     # Register capabilities
     register_tools(server)
     register_analysis_tools(server)
+    register_performance_tools(server)
     register_resources(server)
     register_prompts(server)
 

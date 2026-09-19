@@ -67,7 +67,7 @@ async def test_the_analyses_are_tools_because_prompts_are_not_a_delivery_surface
     every host surfaces.
     """
     tools = {t.name: t for t in await mcp_server.list_tools()}
-    for name in ("get_portfolio_metrics", "get_portfolio_changes"):
+    for name in ("get_portfolio_concentration", "get_portfolio_changes"):
         assert name in tools
         assert tools[name].title
         assert tools[name].annotations.read_only_hint is True
@@ -84,7 +84,7 @@ async def test_metrics_are_derived_so_they_work_on_the_delayed_book():
     concentration picture a subscriber does.
     """
     book = _snapshot([("A", 0.25, "Tech"), ("B", 0.25, "Tech"), ("C", 0.25, "Energy"), ("D", 0.25, "Energy")], delayed=True)
-    data = await _call("get_portfolio_metrics", {"portfolio_code": "AQA_BALANCED"}, get_portfolio=book)
+    data = await _call("get_portfolio_concentration", {"portfolio_code": "AQA_BALANCED"}, get_portfolio=book)
 
     assert data["delayed"] is True
     assert book.effective_n is None, "the portal withheld it"
@@ -98,7 +98,7 @@ async def test_metrics_are_derived_so_they_work_on_the_delayed_book():
 async def test_metrics_report_the_scale_weights_arrived_on():
     """Sums are published weights, not renormalised, so they match get_portfolio_allocation."""
     data = await _call(
-        "get_portfolio_metrics", {"portfolio_code": "AQA_BALANCED"},
+        "get_portfolio_concentration", {"portfolio_code": "AQA_BALANCED"},
         get_portfolio=_snapshot([("A", 0.45, "Tech"), ("B", 0.45, "Energy")]),
     )
     assert data["concentration"]["top_5"] == pytest.approx(0.9)
@@ -162,7 +162,7 @@ async def test_snapshots_are_ordered_before_they_are_compared():
 @pytest.mark.parametrize(
     ("tool", "args", "mock", "error", "label"),
     [
-        ("get_portfolio_metrics", {"portfolio_code": "NOPE"}, "get_portfolio",
+        ("get_portfolio_concentration", {"portfolio_code": "NOPE"}, "get_portfolio",
          NotFoundError("no such portfolio"), "Portfolio Not Found"),
         ("get_portfolio_changes", {"portfolio_code": "AQA_BALANCED"}, "get_portfolio_history",
          AuthenticationError("session expired"), "Authentication or subscription required"),

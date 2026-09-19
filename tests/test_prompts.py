@@ -167,7 +167,7 @@ async def test_access_help_points_at_this_deployments_pricing_and_not_token_info
     text = await _render("access_help")
     assert f"{get_settings().portal_base_url.rstrip('/')}/#pricing" in text
     assert "Do not call `get_token_info`" in text
-    assert "Do not quote prices" in text
+    assert "Do not quote share prices" in text
 
 
 # --------------------------------------------------------------------------- #
@@ -298,12 +298,19 @@ async def test_completion_failure_returns_no_suggestions_instead_of_an_error():
 
 
 @pytest.mark.asyncio
-async def test_report_never_fabricates_performance():
-    """No price or return data exists behind this connector; a report must not invent any."""
+async def test_report_carries_the_disclosure_and_computes_no_performance_of_its_own():
+    """A report may now include published performance - with its disclosure attached.
+
+    The figures come from the portal, labelled hypothetical. What the report must never do
+    is derive its own from prices found elsewhere: that figure is nobody's published number
+    and would disagree with the website.
+    """
     text = await _render("portfolio_report", {"portfolio": "AQA_DEFENSIVE", "days": "30"})
     assert "days=30" in text
-    assert "do not compute, estimate or chart returns, performance" in text
-    assert "not from other sources" in text
+    assert "hypothetical and simulated" in text
+    assert "in full and unaltered" in text
+    assert "Never compute, estimate or chart a return" in text
+    assert "from prices obtained" in text and "elsewhere" in text
 
 
 @pytest.mark.asyncio

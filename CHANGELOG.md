@@ -11,6 +11,28 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Added
 
+- **Performance, at parity with the website** - the connector was stricter than the product.
+  The site publishes performance, best and worst performers and most-held names, disclosed as
+  simulated; the connector refused the category, so a customer read a figure on the site and
+  was told by the assistant it did not exist. The portal added two v1 routes and this relays
+  them:
+  - `get_portfolio_performance` - the indexed curve against the benchmark and since-inception
+    statistics (total and annualized return, volatility, Sharpe, Sortino, max drawdown, and
+    relative beta, alpha, information ratio, tracking error, correlation).
+  - `get_portfolio_metrics` - best and worst performers, most-held names **with company
+    names**, and win rates by name and by invested capital.
+
+  Subscribers get live figures, everyone else the public book's delayed about 45 days. Both
+  report `available: false` with a `reason` while price history backfills, rather than failing.
+
+  The figures are hypothetical and simulated, and each response carries the portal's own
+  `disclaimer` saying so - a separate field from the ADR-0161 constant, relayed verbatim and
+  never composed here. A payload carrying figures **without** that field is withheld rather
+  than returned.
+
+  The remaining boundary is **authorship, not subject**: performance derived here by pricing
+  holdings with another connector's feed is still out of scope, because it would carry no
+  hypothetical labelling and would not match the website.
 - **Three new MCP Apps**, alongside the Portfolio Explorer:
   - **Access & Connection** (`open_access_centre`) - which portfolios this account can see,
     which are live versus delayed by about 45 days, exactly what the delayed book withholds,
@@ -32,7 +54,7 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
   where the portal sends `effective_n`, `equity_exposure` and `cash_allocation` as null.
   Computed on the server, so hosts that do not render MCP Apps still receive every figure.
 - **Two analysis tools**, so the same answers are reachable where prompts are not:
-  - `get_portfolio_metrics` - concentration (top 5, top 10, largest holding, effective N),
+  - `get_portfolio_concentration` - concentration (top 5, top 10, largest holding, effective N),
     sector weights, dominant sector and the unclassified share.
   - `get_portfolio_changes` - what the model opened, closed, raised and cut over a period,
     with one-way turnover. Fewer than two snapshots reports why rather than returning zeros,

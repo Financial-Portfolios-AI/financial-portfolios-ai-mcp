@@ -55,7 +55,7 @@ def register_analysis_tools(server: MCPServer) -> None:
     """Register the derived-analysis tools."""
 
     @server.tool(
-        name="get_portfolio_metrics",
+        name="get_portfolio_concentration",
         title="Concentration and sector mix",
         description=(
             "Summarise how a model portfolio is shaped: how concentrated it is (top-5 and top-10 "
@@ -73,7 +73,7 @@ def register_analysis_tools(server: MCPServer) -> None:
             open_world_hint=True,
         ),
     )
-    async def get_portfolio_metrics(portfolio_code: str) -> dict[str, Any]:
+    async def get_portfolio_concentration(portfolio_code: str) -> dict[str, Any]:
         """
         Concentration and sector mix for one portfolio, derived from its weights.
 
@@ -98,7 +98,7 @@ def register_analysis_tools(server: MCPServer) -> None:
         except Exception as e:
             # Logged inline rather than through a helper: ruff only exempts a blind
             # handler from BLE001 when it can see the logging call.
-            logger.exception("Unexpected error in get_portfolio_metrics")
+            logger.exception("Unexpected error in get_portfolio_concentration")
             return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
         positions = data.get("positions") or []
