@@ -15,9 +15,12 @@ and compare your own holdings against them.
 2. **Some books are delayed.** A portfolio you are not subscribed to comes back on the public
    book, roughly 45 days behind. Always state the `as_of` date and say it is delayed; never
    present it as the current allocation.
-3. **There is no price, return or performance data behind any tool.** Do not compute or
-   estimate performance, returns, gains, drawdowns or benchmark comparisons for these model
-   portfolios - not even from another source.
+3. **Performance figures are hypothetical and simulated.** They come from
+   `get_portfolio_performance` and `get_portfolio_metrics`, computed from the model's
+   published holdings and total-return prices - never from a real account. Each response
+   carries a `disclaimer`; show it with the figures, in full and unaltered. Do not compute
+   returns, gains, drawdowns or benchmark comparisons yourself, or from prices obtained
+   elsewhere: such a figure is not the publisher's and will not match the website.
 
 ## What the tools give you
 
@@ -26,6 +29,8 @@ and compare your own holdings against them.
 | `list_portfolios` | Every active model strategy, each marked `subscribed` or `public_delayed` |
 | `get_portfolio_allocation` | Target weights, tickers and sectors for one portfolio |
 | `get_portfolio_history` | Allocation snapshots over time (up to 365 days) |
+| `get_portfolio_performance` | Performance against the benchmark and risk statistics - hypothetical and simulated |
+| `get_portfolio_metrics` | Best and worst performing holdings, most-held names with company names, win rates |
 | `get_portfolio_concentration` | Concentration (top 5/10, largest, effective N), sector weights, dominant sector |
 | `get_portfolio_changes` | What the model opened, closed, raised and cut, plus turnover |
 | `open_breadth_board` | Across all your portfolios: most widely held stocks, overlap, dominant sectors |
