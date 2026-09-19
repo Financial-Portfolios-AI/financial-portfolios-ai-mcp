@@ -20,6 +20,7 @@ Why apps rather than prompts or elicitation, for anything that needs a choice:
 from mcp.server.apps import Apps
 
 from financial_portfolios_ai_mcp.access_centre import register_access_centre
+from financial_portfolios_ai_mcp.breadth_board import register_breadth_board
 from financial_portfolios_ai_mcp.explorer import build_explorer
 from financial_portfolios_ai_mcp.rebalance_studio import register_rebalance_studio
 from financial_portfolios_ai_mcp.research_reader import register_research_reader
@@ -31,4 +32,5 @@ def build_apps() -> Apps:
     register_access_centre(apps)
     register_rebalance_studio(apps)
     register_research_reader(apps)
+    register_breadth_board(apps)
     return apps

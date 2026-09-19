@@ -109,6 +109,10 @@
         "description": "Open the Research Reader (MCP App): browse and search Financial Portfolios AI research, read a post in place, and see which posts mention tickers held in the user's model portfolios. Renders inline in hosts that support MCP Apps."
       },
       {
+        "name": "open_breadth_board",
+        "description": "Open the Breadth Board (MCP App): which stocks are held across several of the user's model portfolios and at what weight, how much each pair of portfolios overlaps by name and by weight, and each book's dominant sector and concentration. Renders inline in hosts that support MCP Apps."
+      },
+      {
         "name": "list_portfolios",
         "description": "List every active quantitative investment portfolio (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE), each marked access = subscribed (live book) or public_delayed (holdings delayed ~45 days)."
       },
