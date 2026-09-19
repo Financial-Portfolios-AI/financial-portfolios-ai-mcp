@@ -5,7 +5,7 @@
 
 | Job | What it does |
 | :--- | :--- |
-| **Lint and test** | `ruff check`, then the full `pytest` suite (143 tests) on Python 3.12, the version the image uses |
+| **Lint and test** | `ruff check`, then the full `pytest` suite on Python 3.12, the version the image uses |
 | **Build image and smoke-test it** | builds the Docker image, runs the container, and drives a real MCP client against it with [`scripts/ci_smoke.py`](../scripts/ci_smoke.py) |
 
 ## One-time setup: `SDK_READ_TOKEN`
@@ -36,11 +36,12 @@ each check corresponds to something a release actually broke:
 - `POST /mcp` without a trailing slash works (a `307` here broke connectors silently),
 - the reported version matches this checkout's `pyproject.toml`,
 - every tool has a `title` and a `readOnlyHint`, as the Claude directory requires,
-- the Portfolio Explorer is listed with its `_meta.ui.resourceUri`, and that resource is
-  served as `text/html;profile=mcp-app` and is a real page,
+- every app tool carries `_meta.ui.resourceUri`, and each page behind one is served as
+  `text/html;profile=mcp-app` and completes a handshake - checked per app, since a page
+  that fails to load looks fine from the tool list,
 - prompts are listed and titled,
 - a tokenless request is challenged with `401` and `WWW-Authenticate: … resource_metadata`,
-- icons are served, and the Explorer's HTML is **not** downloadable over plain HTTP.
+- icons are served, and **no** app page is downloadable over plain HTTP.
 
 Run it against any deployment:
 

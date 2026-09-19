@@ -6,10 +6,10 @@ Checks what every client does first, and what past releases actually broke:
 * the `initialize` handshake answers (a Host allow-list once made this a 421),
 * `POST /mcp` without a trailing slash works (a 307 here silently broke connectors),
 * the version it reports matches the package being tested,
-* `tools/list` includes the Portfolio Explorer with its `_meta.ui.resourceUri`,
-* that UI resource is served as `text/html;profile=mcp-app` (an empty page shipped once),
+* every app tool carries `_meta.ui.resourceUri`, and each page behind one is served as
+  `text/html;profile=mcp-app` and really is a page (an empty one shipped once),
 * a tokenless request is challenged with `401` + `WWW-Authenticate` (RFC 9728),
-* icons are served and the Explorer's HTML is not fetchable over plain HTTP.
+* icons are served and no app page is fetchable over plain HTTP.
 
 The portal is unreachable in CI, so no tool is actually called: this exercises the
 protocol surface, not portal data.
@@ -100,13 +100,30 @@ def main() -> int:
         annotations = tool.get("annotations") or {}
         check(f"tool {name} has a title and readOnlyHint", bool(tool.get("title")) and "readOnlyHint" in annotations)
 
-    if resource_uri:
-        contents = rpc("resources/read", {"uri": resource_uri}, 3)["contents"][0]
-        check("UI resource served as an MCP App", contents.get("mimeType") == EXPLORER_MIME, str(contents.get("mimeType")))
+    # Every app, not just the Explorer: each one is a separate page, and a page that fails to
+    # load is invisible from the tool list alone.
+    apps = {
+        name: (tool.get("_meta", {}).get("ui", {}) or {}).get("resourceUri")
+        for name, tool in tools.items()
+        if (tool.get("_meta", {}).get("ui", {}) or {}).get("resourceUri")
+    }
+    check("every app tool names a UI resource", bool(apps), json.dumps(sorted(apps))[:160])
+    request_id = 3
+    for uri in sorted(set(apps.values())):
+        request_id += 1
+        page = uri.rsplit("/", 1)[-1]
+        contents = rpc("resources/read", {"uri": uri}, request_id)["contents"][0]
+        check(f"{page} served as an MCP App", contents.get("mimeType") == EXPLORER_MIME, str(contents.get("mimeType")))
         html = contents.get("text") or ""
-        check("UI resource is a real page", "ui/initialize" in html and len(html) > 2000, f"{len(html)} chars")
+        # Each page must complete the handshake and size itself, or the host renders an
+        # empty frame it never resizes - which is exactly how the Explorer once shipped blank.
+        check(
+            f"{page} is a real page",
+            "ui/initialize" in html and "ui/notifications/size-changed" in html and len(html) > 2000,
+            f"{len(html)} chars",
+        )
 
-    prompts = rpc("prompts/list", {}, 4)["prompts"]
+    prompts = rpc("prompts/list", {}, request_id + 1)["prompts"]
     check("prompts/list is not empty", bool(prompts))
     check("prompts have titles", all(prompt.get("title") for prompt in prompts))
 
@@ -136,7 +153,12 @@ def main() -> int:
 
     check("icon is served", status("/mcp/assets/icon-512.png") == 200)
     check("well-known metadata is served", status("/.well-known/oauth-protected-resource") == 200)
-    check("Explorer HTML is not downloadable over HTTP", status("/mcp/assets/portfolio_explorer.html") == 404)
+
+    # The asset route serves images only. An app page reachable over plain HTTP would be a
+    # second, unauthenticated way to read it, outside the host's sandbox.
+    for uri in sorted(set(apps.values())):
+        filename = uri.rsplit("/", 1)[-1].replace("-", "_")
+        check(f"{filename} is not downloadable over HTTP", status(f"/mcp/assets/{filename}") == 404)
 
     print()
     if failures:
