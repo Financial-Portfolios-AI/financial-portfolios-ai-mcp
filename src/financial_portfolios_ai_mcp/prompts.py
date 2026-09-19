@@ -60,6 +60,23 @@ equity exposure, cash allocation and effective N set to null. Whenever a respons
 `delayed: true`, state its `as_of` date and say the holdings are delayed - never present
 a delayed book as the current allocation, and never fill in the null metrics."""
 
+_PANELS = """\
+Offer the matching interactive panel where one fits, rather than only printing a long table:
+`open_portfolio_explorer` to browse one portfolio, `open_breadth_board` for anything spanning
+portfolios, `open_rebalance_studio` for alignment, `open_research_reader` for research, and
+`open_access_centre` for access questions. Offer it; do not insist. A client that cannot render
+panels still receives the same data as JSON, so answer from that rather than telling the user
+their client is unsupported."""
+
+_PERFORMANCE = """\
+Performance comes from `get_portfolio_performance` (curve and risk statistics) and
+`get_portfolio_metrics` (best and worst performers, most-held names, win rates). Both are
+hypothetical and simulated. Whenever you show any of those figures, include the `disclaimer`
+field from that same response, in full and unaltered. Check `available` first: while price
+history is backfilling it is false with a `reason`, which you should report rather than treat as
+an error or as zero. Never compute a return, gain, drawdown or benchmark comparison yourself, or
+from prices obtained elsewhere."""
+
 _BOUNDARY = """\
 Stay informational. Describe what the model portfolios contain and how they differ; do
 not recommend buying, selling or holding any security, and do not tell the user which
@@ -199,6 +216,9 @@ def register_prompts(server: Any) -> None:
 2. For each portfolio with `access: "subscribed"`, call `get_portfolio_allocation` and summarise it in one short section: number of positions, the five largest holdings with weights, the largest sectors, and equity exposure vs cash.
 3. List the remaining portfolios in a compact table - name, code, risk level, theme - and note that they are available as the public delayed book.
 4. If the user subscribes to nothing, say so, give the table of all portfolios, and mention that live holdings require a subscription.
+5. Close by offering, in one line, where to go next: `open_portfolio_explorer` to browse a portfolio, `open_breadth_board` to see what the portfolios have in common, or `open_access_centre` to see exactly what this account can view.
+
+{_PANELS}
 
 {_DELAYED_BOOK}
 
@@ -220,8 +240,8 @@ End with the disclaimer."""
 
 {DISCLAIMER_TEXT}
 
-1. Call `list_portfolios` and group the portfolios by `access`.
-2. Explain, in plain language and with the user's actual portfolio names:
+1. Open `open_access_centre`. It shows this in one view: every portfolio with a live or delayed badge, exactly which figures the delayed book withholds, and how the connection is signed in. Prefer it over describing all of this in prose.
+2. Use its result - or `list_portfolios` if you would rather answer in text - and explain, in plain language and with the user's actual portfolio names:
    - Subscribed portfolios show the latest holdings, including expected return and risk metrics.
    - Other portfolios show the public book, with holdings delayed by about 45 days and without those premium metrics.
    - Model alignment calculations (`rebalance_portfolio`) are available only for subscribed portfolios.
@@ -255,10 +275,11 @@ End with the disclaimer."""
 For each portfolio:
 1. Call `get_portfolio_allocation`.
 2. Show the holdings in a table sorted by weight: ticker, sector, weight, and - when present - expected return and expected volatility.
-3. Summarise the sector breakdown by total weight.
-4. Describe concentration: the combined weight of the top five and top ten holdings, and effective N when present.
-5. Report equity exposure against cash allocation when present.
-6. Offer to show what changed recently (the `portfolio_changes` analysis) rather than fetching history unprompted.
+3. Call `get_portfolio_concentration` for the sector mix and the concentration figures. Do not work them out by hand: it derives effective N, the dominant sector and the unclassified share from the weights, so they are available on a delayed book too, where the portal returns effective N as null.
+4. Report equity exposure against cash allocation when present.
+5. Offer the next step rather than fetching it unprompted: what changed recently, how it has performed, or the Explorer panel to browse it interactively.
+
+{_PANELS}
 
 {_DELAYED_BOOK}
 
@@ -288,14 +309,13 @@ End with the disclaimer."""
 {_code_or_subscribed(portfolio)}
 
 For each portfolio:
-1. Call `get_portfolio_history` with days={days}.
-2. Compare the earliest and latest snapshot in the window and report:
-   - Positions added (ticker, sector, new weight).
-   - Positions removed (ticker, sector, previous weight).
-   - The largest weight increases and decreases among positions held throughout - show old weight, new weight, and the change in percentage points.
-   - Any net shift in sector weights.
-3. If there are several snapshots, give a one-line timeline of when the notable changes happened.
-4. If the window holds fewer than two snapshots, say there is nothing to compare, and suggest a longer period.
+1. Call `get_portfolio_changes` with days={days}. It compares the oldest and newest snapshot in the window and returns what was added, removed, raised and cut, with one-way turnover. Use it rather than diffing `get_portfolio_history` yourself.
+2. Report:
+   - Positions added (ticker, sector, new weight) and removed (ticker, sector, previous weight).
+   - The largest increases and decreases, with old weight, new weight and the change in percentage points.
+   - Turnover, as how much of the book moved over the period.
+3. If `comparable` is false, say why using the `message` it returns - a short window, or a delayed book whose history ends about 45 days ago - and suggest a longer period. Do not report zeros, which would read as "the model changed nothing".
+4. These are the model's own decisions, not returns. If the user wants to know what did well, that is `get_portfolio_metrics`, not this.
 
 For a delayed portfolio the history ends about 45 days ago, so it cannot show recent changes - say this explicitly rather than implying the model has been static.
 
@@ -336,11 +356,12 @@ End with the disclaimer."""
 
 {which}
 
-1. Call `get_portfolio_allocation` for each portfolio.
-2. Build one comparison table with a column per portfolio: risk level, theme, number of positions, top-five combined weight, largest sector, and equity exposure / cash when present.
-3. Show the sector mix side by side, as weights per sector.
-4. Report overlap: tickers held by more than one portfolio, with each portfolio's weight.
-5. Summarise the main differences in two or three neutral sentences.
+1. If the comparison covers every portfolio the user has, `open_breadth_board` answers it in one call: most widely held names, pairwise overlap by name and by weight, and each book's dominant sector and concentration. Prefer it, and fall back to the steps below for a specific subset.
+2. Otherwise call `get_portfolio_allocation` and `get_portfolio_concentration` for each portfolio.
+3. Build one comparison table with a column per portfolio: risk level, theme, number of positions, top-five combined weight, effective N, largest sector, and equity exposure / cash when present.
+4. Show the sector mix side by side, as weights per sector.
+5. Report overlap: tickers held by more than one portfolio, with each portfolio's weight. Two books can share most of their names and little of their weight, so say which you mean.
+6. Summarise the main differences in two or three neutral sentences.
 
 The books may be on different dates - some subscribed and latest, some delayed. Show each column's `as_of` date and warn that a latest book and a delayed book are not a like-for-like comparison.
 
@@ -363,7 +384,7 @@ End with the disclaimer."""
 
 {DISCLAIMER_TEXT}
 
-1. Call `list_portfolios`, then `get_portfolio_allocation` for every portfolio.
+1. Call `list_portfolios`, then `get_portfolio_allocation` for every portfolio. For "which stocks appear across my portfolios" rather than one named stock, use `open_breadth_board` instead - it answers that directly.
 2. Report a table of the portfolios holding '{symbol}': portfolio, weight, sector, its rank by weight within that portfolio, and the book's date.
 3. List the portfolios that do not hold it.
 4. If no portfolio holds it, say so. Mention that a delayed book is about 45 days old, so a recently added position would not show there yet.
@@ -399,7 +420,9 @@ End with the disclaimer."""
 
 Gather the data first:
 1. Call `get_portfolio_allocation` for the portfolio.
-2. Call `get_portfolio_history` with days={days}.
+2. Call `get_portfolio_changes` with days={days}.
+3. Call `get_portfolio_concentration` for the concentration and sector figures.
+4. Call `get_portfolio_performance` and `get_portfolio_metrics`. If either reports `available: false`, omit that section and say why rather than leaving a gap.
 
 Then build the report as a single self-contained interactive page (an artifact where the client supports one), with these sections:
 - Header: portfolio name and code, the book's `as_of` date, and - if `delayed` is true - a prominent "Holdings delayed ~45 days" badge.
@@ -407,7 +430,9 @@ Then build the report as a single self-contained interactive page (an artifact w
 - Holdings: a sortable, filterable table of ticker, sector and weight, plus expected return and expected volatility when present.
 - Sector mix: a chart of total weight per sector.
 - Concentration: a chart of cumulative weight by holding rank.
-- Changes over the period: positions added and removed, and the largest weight shifts between the first and last snapshot. Skip this section if there are fewer than two snapshots, and say why.
+- Performance: the curve against its benchmark and the headline statistics, with the `disclaimer` from that response reproduced on the page, in full, next to the figures. Omit the whole section rather than showing figures without it.
+- Best and worst performers, and the most-held names, from `get_portfolio_metrics` - again with its disclosure beside them.
+- Changes over the period: positions added and removed, and the largest weight shifts, with turnover. Skip this section if there is nothing to compare, and say why.
 - Footer: the full disclaimer text above, verbatim, visible on the page itself - the report may be shared without this conversation.
 
 Use only numbers returned by the tools. Performance figures come from `get_portfolio_performance` and `get_portfolio_metrics` and are hypothetical and simulated; if you include any of them, show the `disclaimer` from that response with them, in full and unaltered. Never compute, estimate or chart a return, gain, drawdown or benchmark comparison yourself, and never from prices obtained elsewhere - a figure derived that way is not the publisher's and will not match the website.
@@ -436,9 +461,9 @@ These calculations are target-model alignment arithmetic only - not trade execut
 {_code_or_subscribed(portfolio)}
 
 1. Confirm access before asking for any holdings: call `list_portfolios` and check the target has `access: "subscribed"`. Alignment calculations require a subscription. If the target is not subscribed, explain that and stop - do not collect the user's holdings.
-2. Ask for the user's current holdings: ticker, share quantity, and cash, or a CSV file. Limits: 200 rows, 512 KB.
-3. If they need the format, call `get_rebalance_template` and show it.
-4. Call `rebalance_portfolio` with the target code and their holdings.
+2. Get the holdings without making the user retype them. If a brokerage, custodian or portfolio-tracking connector is available, read the positions from there. Never ask anyone for brokerage credentials or account numbers.
+3. Open `open_rebalance_studio`, passing `holdings` when you have them. It shows the positions in an editable table so the user can correct them before anything is calculated - positions read from another service can be stale, partial, or from a different account than they mean. With no connector to read from, the panel is also where they paste or type them; `get_rebalance_template` gives the format. Limits: 200 rows, 512 KB.
+4. If the client cannot render the panel, collect the holdings in the conversation and call `rebalance_portfolio` directly.
 5. Present the results:
    - Positions with a calculated reduction (negative delta) to match the target weight.
    - Positions with a calculated addition (positive delta).
@@ -473,6 +498,7 @@ End with the disclaimer."""
 
 1. {search}
 2. Call `get_blog_post` on the most relevant articles to read them in full.
+2b. If the user wants to browse or read rather than receive a synthesis, offer `open_research_reader` - it lists and opens posts in place, and marks the ones mentioning a ticker their portfolios hold.
 3. Summarise the key quantitative insights, regime shifts, macro context and factor trends, citing each article by title and date.
 4. If a search returns nothing, say so and offer the latest research instead.
 
@@ -481,5 +507,101 @@ Do not pad with market commentary that isn't in the articles.
 {_BOUNDARY}
 
 End with educational takeaways and the disclaimer."""
+
+    @server.prompt(
+        name="portfolio_performance",
+        title="How a portfolio has performed",
+        description=(
+            "How a model portfolio has done against its benchmark, its risk statistics, and "
+            "which holdings helped and hurt most. Figures are hypothetical and simulated."
+        ),
+    )
+    def portfolio_performance(portfolio: PortfolioCode = "") -> str:
+        return f"""You are an educational assistant for Financial Portfolios AI, presenting published performance figures.
+
+{DISCLAIMER_TEXT}
+
+{_code_or_subscribed(portfolio)}
+
+For each portfolio:
+1. Call `get_portfolio_performance`. If `available` is false, report the `reason` plainly - the history is still being built - and stop there for that portfolio.
+2. Give the headline figures: total and annualized return, volatility, Sharpe, Sortino and maximum drawdown, each against the benchmark's, and the period they cover.
+3. Give the relative figures - beta, alpha, information ratio, tracking error, correlation - and say in one sentence what each describes, for a reader who may not know.
+4. Call `get_portfolio_metrics` and show the best and worst performers with their returns, and the win rate by name and by invested capital.
+5. Say whether these are the live or the delayed figures, using `access` and `delayed`, and give the date range.
+
+{_PERFORMANCE}
+
+{_PANELS}
+
+{_BOUNDARY} Past figures, hypothetical or not, say nothing about what comes next, and nothing here suggests the user should buy, sell or hold anything.
+
+End with the disclaimer."""
+
+    @server.prompt(
+        name="most_held_stocks",
+        title="What my portfolios hold in common",
+        description=(
+            "The stocks held across several of your model portfolios, how much any two "
+            "overlap, and which sector dominates each."
+        ),
+    )
+    def most_held_stocks() -> str:
+        return f"""You are an educational assistant for Financial Portfolios AI, describing what the user's model portfolios have in common.
+
+{DISCLAIMER_TEXT}
+
+1. Call `open_breadth_board`. It reads every portfolio and returns the cross-portfolio view in one call: names held in more than one book, pairwise overlap, and each book's concentration and dominant sector.
+2. Report the most widely held names: how many portfolios hold each, the average weight where held, and the largest single weight.
+3. Report the overlap between each pair, distinguishing shared names from shared weight - two books can hold most of the same names and put very different money behind them.
+4. Note any portfolio listed in `unavailable`: the counts cover the rest only, so say so rather than presenting a smaller number as the whole picture.
+5. Flag any book that is delayed or on a different date, since overlap partly reflects timing.
+
+Breadth is not conviction and not a recommendation: a name held everywhere at a token weight is not the same as one held twice at a large weight, and neither is advice to own it.
+
+{_DELAYED_BOOK}
+
+{_BOUNDARY}
+
+End with the disclaimer."""
+
+    @server.prompt(
+        name="portfolio_digest",
+        title="Recurring portfolio digest",
+        description=(
+            "A short, repeatable summary of what changed across your portfolios - written to "
+            "be run on a schedule, as a Claude Cowork task, a routine, or a ChatGPT task."
+        ),
+    )
+    def portfolio_digest(
+        days: Annotated[
+            int,
+            Field(description="How many days the digest should cover, from 1 to 365. Defaults to 7.", ge=1, le=365),
+        ] = 7,
+    ) -> str:
+        return f"""You are producing a recurring digest of the user's Financial Portfolios AI model portfolios, covering the last {days} days.
+
+{DISCLAIMER_TEXT}
+
+This runs unattended on a schedule, so it must be short, self-contained and safe to read out of context. Do not ask the user questions; if something is unavailable, say so and continue.
+
+1. Call `list_portfolios`.
+2. For each subscribed portfolio, call `get_portfolio_changes` with days={days}.
+3. Write at most one short section per portfolio:
+   - One line saying whether anything changed at all.
+   - What was added and removed, by ticker.
+   - The two or three largest weight moves, in percentage points.
+   - Turnover, as how much of the book moved.
+4. Skip a portfolio whose `comparable` is false, with a one-line reason - typically too short a window, or a delayed book whose history ends about 45 days ago.
+5. If nothing changed anywhere, say exactly that in one sentence. A quiet period is a result, not a failure, and is worth stating plainly.
+6. End with a single line naming the portfolios covered and the period.
+
+Keep the whole digest under roughly 200 words per portfolio. Report only what the tools returned: no speculation about why the model changed, and no suggestion about what the user should do.
+
+{_DELAYED_BOOK}
+
+{_BOUNDARY}
+
+End with the disclaimer."""
 
     server.completion()(complete_portfolio_code)

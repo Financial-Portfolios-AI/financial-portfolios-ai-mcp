@@ -225,6 +225,21 @@
         "name": "market_research_digest",
         "title": "Research digest",
         "description": "Summarises the latest research articles and market commentary, optionally on one topic."
+      },
+      {
+        "name": "portfolio_performance",
+        "title": "How a portfolio has performed",
+        "description": "How a model portfolio has done against its benchmark, its risk statistics, and which holdings helped and hurt most. Hypothetical and simulated."
+      },
+      {
+        "name": "most_held_stocks",
+        "title": "What my portfolios hold in common",
+        "description": "The stocks held across several of your model portfolios, how much any two overlap, and which sector dominates each."
+      },
+      {
+        "name": "portfolio_digest",
+        "title": "Recurring portfolio digest",
+        "description": "A short, repeatable summary of what changed across your portfolios, written to be run on a schedule."
       }
     ]
   }

@@ -9,6 +9,28 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Added
+
+- **Three prompts** for capabilities that had none:
+  - `portfolio_performance` - performance against the benchmark, risk statistics, and best and
+    worst performers, with the rule that the disclosure travels with the figures.
+  - `most_held_stocks` - what the user's portfolios hold in common, via the Breadth Board.
+  - `portfolio_digest` - a short recurring summary of what changed, written to run **unattended**
+    on a Claude Cowork task, a Claude Code routine or a ChatGPT task: it asks no questions,
+    continues past an unavailable portfolio, and states a quiet period as a result rather than
+    returning nothing. See [docs/providers_and_automation.md](docs/providers_and_automation.md).
+
+### Changed
+
+- **The existing prompts use the tools and panels that now exist** rather than hand-computing.
+  `portfolio_review` and `compare_portfolios` call `get_portfolio_concentration` instead of
+  working out top-N and effective N by hand - which also means those figures now appear for
+  delayed books. `portfolio_changes` calls `get_portfolio_changes` instead of diffing history
+  itself. `access_help` leads with the Access & Connection panel. `rebalance_advisor` reads
+  holdings from a brokerage connector and opens the Rebalance Studio rather than asking the user
+  to dictate positions. `portfolio_report` gains performance sections. Each prompt now offers the
+  matching interactive panel, while still answering from JSON where the client cannot render one.
+
 ## [1.4.0] - 2026-09-19
 
 ### Added

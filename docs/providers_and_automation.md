@@ -75,18 +75,39 @@ primitive. The SDK's WebSocket event stream (`portfolio.updated`, `blog.publishe
 a host, so if we want "tell me when the model changes", that notification has to come from the
 portal by its own channel - the MCP side can only answer when asked.
 
-**What automation asks of the server**, all of which is cheap:
+**What automation asks of the server**, all of which is now in place:
 
-1. **Every tool `readOnlyHint`** - already true - which is what lets an unattended run proceed
-   without an approval prompt on both Claude and ChatGPT.
-2. **A digest-shaped tool.** A scheduled task wants one call that answers "what changed in my
-   portfolios since last week" - the conviction-change and turnover work in
-   [roadmap_apps.md](roadmap_apps.md) is exactly that payload, and is worth building as a tool
-   for this reason alone.
-3. **Stable tool names**, since a routine references them by name.
-4. **Front-loaded instructions.** Ours open with a sentence of positioning. For ChatGPT, the
-   delayed-book rule and the performance boundary should be inside the first 512 characters,
-   not below the capability list.
+1. **Every tool `readOnlyHint`** - which is what lets an unattended run proceed without an
+   approval prompt on both Claude and ChatGPT. A tool needing approval **stalls** a ChatGPT
+   scheduled task outright, so this is the difference between a routine that works and one that
+   hangs.
+2. **A digest-shaped tool**: `get_portfolio_changes` answers "what changed since last week" in
+   one call, including turnover, and reports `comparable: false` with a reason instead of
+   returning zeros that would read as "nothing changed".
+3. **A prompt written for unattended use**: `portfolio_digest`, below.
+4. **Stable tool names**, since a routine references them by name.
+5. **Front-loaded instructions** - the three rules are inside the first 512 characters.
+
+### Setting up a recurring digest
+
+The `portfolio_digest` prompt is the body of the task. It takes a `days` argument, defaults to
+7, and is deliberately written to run with nobody watching: it never asks a question, it reports
+an unavailable portfolio and continues, and it states a quiet period as a result rather than
+producing nothing.
+
+| Surface | How |
+| :--- | :--- |
+| **Claude Cowork** | Schedule a recurring task whose prompt is "Run the portfolio_digest prompt for the last 7 days". Connected tools are available to scheduled tasks. |
+| **Claude Code routine** | Same prompt, on a schedule; connectors are included by default. Minimum interval is 1 hour. |
+| **ChatGPT task** | Same, as a scheduled task. Web tasks only. Our tools are all read-only, so the run proceeds without an approval prompt where org policy allows. |
+| **Gemini** | Scheduled actions exist, but whether they can invoke a custom MCP app is undocumented - untested. |
+
+Because prompts are unreliable as a surface (§1), a routine can equally name the tools directly:
+"call get_portfolio_changes for each subscribed portfolio over 7 days and summarise". The prompt
+is a convenience, not the mechanism.
+
+**There is still no push.** A timer remains the only trigger; the server cannot notify a host
+when a model changes.
 
 ## 3. The customer journey, and where it breaks
 

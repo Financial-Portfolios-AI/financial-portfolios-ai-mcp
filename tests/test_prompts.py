@@ -25,6 +25,9 @@ EXPECTED_PROMPTS = {
     "find_holding",
     "rebalance_advisor",
     "market_research_digest",
+    "portfolio_performance",
+    "most_held_stocks",
+    "portfolio_digest",
     "portfolio_report",
 }
 
@@ -151,9 +154,54 @@ async def test_rebalance_checks_entitlement_before_collecting_holdings():
     """A non-subscriber must not be asked to hand over holdings that will be refused."""
     text = await _render("rebalance_advisor", {"portfolio": "AQA_BALANCED"})
     check = text.index("Confirm access before asking for any holdings")
-    ask = text.index("Ask for the user's current holdings")
-    assert check < ask
+    collect = text.index("Get the holdings without making the user retype them")
+    assert check < collect
     assert "do not collect the user's holdings" in text
+
+
+@pytest.mark.asyncio
+async def test_rebalance_reads_holdings_from_a_connector_before_asking():
+    """Retyping what a brokerage connector already holds is the wrong path, and asking for
+    credentials is never acceptable."""
+    text = await _render("rebalance_advisor")
+    assert "brokerage, custodian or portfolio-tracking connector" in text
+    assert "Never ask anyone for brokerage credentials" in text
+    # The Studio shows what arrived so the user can correct it before anything is calculated.
+    assert "open_rebalance_studio" in text
+    assert "editable table" in text
+    # And a client that cannot render it still has a path.
+    assert "cannot render the panel" in text
+
+
+@pytest.mark.asyncio
+async def test_performance_prompt_carries_the_disclosure_rule():
+    text = await _render("portfolio_performance", {"portfolio": "AQA_BALANCED"})
+    assert "hypothetical and simulated" in text
+    assert "in full and unaltered" in text
+    # `available: false` is an answer, not an error, and must not be reported as zero.
+    assert "available" in text and "reason" in text
+
+
+@pytest.mark.asyncio
+async def test_digest_is_written_to_run_unattended():
+    """It is the body of a scheduled task, so it must not ask questions or stall.
+
+    A quiet period is a result worth stating, not a failure to report.
+    """
+    text = await _render("portfolio_digest", {"days": "7"})
+    assert "days=7" in text
+    assert "Do not ask the user questions" in text
+    assert "A quiet period is a result" in text
+    assert "get_portfolio_changes" in text
+
+
+@pytest.mark.asyncio
+async def test_breadth_prompt_refuses_to_read_breadth_as_conviction():
+    text = await _render("most_held_stocks")
+    assert "open_breadth_board" in text
+    assert "Breadth is not conviction" in text
+    # A partial read must not be presented as the whole picture.
+    assert "unavailable" in text
 
 
 @pytest.mark.asyncio
