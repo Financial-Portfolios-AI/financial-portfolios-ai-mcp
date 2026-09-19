@@ -9,6 +9,38 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.0 — September 2026
+
+- **Performance is now available**, matching what the website shows: how a model portfolio
+  has done against its benchmark, its risk statistics, and which holdings helped and hurt
+  most. These figures are hypothetical and simulated - they come from the model's published
+  holdings and total-return prices, not from any real account - and the assistant will show
+  that notice with them every time.
+- **Which stocks the models hold most**, with company names, and how often each appears.
+- **Three new interactive panels**, alongside the Portfolio Explorer:
+  - *Access & Connection* - what your subscription covers, which books are live and which
+    are delayed by about 45 days, and exactly which figures a delayed book leaves out.
+  - *Rebalance Studio* - compare your own holdings against a model. If your assistant can
+    read your positions from a brokerage connector, it fills them in for you to check;
+    otherwise paste them from a spreadsheet. Nothing is calculated until you have looked.
+  - *Research Reader* - browse and read the research, with posts flagged when they mention
+    a stock your portfolios hold.
+  - *Breadth Board* - what your portfolios have in common: the most widely held names, how
+    much any two overlap, and which sector dominates each.
+- **Concentration and sector figures for delayed books too.** These are worked out from the
+  published weights, so a delayed book now shows the same shape a live one does.
+- **"What changed"** - which holdings a model opened, closed, raised and cut over a period.
+- **The panels work properly on a phone.** Buttons and table headers are large enough to
+  tap, and sorting no longer depends on hovering.
+- **Your assistant knows what you are looking at.** Ask "why is this one so large?" about a
+  row on screen and it follows, without you restating which portfolio or holding.
+- **Gemini CLI** is now supported through an installable extension.
+
+Nothing about who can see what has changed: live books still require a subscription, and
+everything else remains delayed by about 45 days.
+
+---
+
 ## Version 1.3.0 — September 2026
 
 - **Fewer hiccups.** A brief glitch reaching the portal is now retried automatically

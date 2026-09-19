@@ -9,6 +9,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-09-19
+
 ### Added
 
 - **Performance, at parity with the website** - the connector was stricter than the product.
@@ -278,7 +280,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.1.1...v1.2.0
