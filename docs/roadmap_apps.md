@@ -185,10 +185,52 @@ Ordered by evidence that they matter.
 Verify before building anything provider-conditional: whether Claude reports a host context
 at all, and whether ChatGPT surfaces prompts. See §5 of the provider notes.
 
-## 8. Open decisions
+## 8. Decisions
+
+### Decided 2026-09-19: parity with the web portal, not a narrower connector
+
+§2 of this document recommended keeping "best / worst" firewalled. **That recommendation was
+wrong**, and the reason is worth recording so it is not re-argued.
+
+The premise was that publishing performance for these model portfolios was a line the
+business had not crossed. It had. The portal displays performance figures and discloses
+them as such - its disclaimer reads *"All performance data, metrics, and figures shown are
+simulated or hypothetical and do not represent actual trading results"*, and the public site
+repeats it as *"based on simulated, hypothetical, or back-tested results."* Best and worst
+performers, most-held stocks and other per-product metrics are shown to customers there.
+
+So the connector was not being cautious, it was being **inconsistent**: a customer sees a
+figure on the website and is told by the assistant that it does not exist. The decision is
+to surface what the portal surfaces.
+
+The firewall keeps the half that earns something:
+
+| | |
+| :--- | :--- |
+| **Allowed** | Figures the portal publishes, relayed with the portal's own simulated/hypothetical disclosure attached |
+| **Still refused** | Performance this connector computes itself by pricing holdings from a market-data connector |
+
+The distinction is authorship, not subject. A figure the publisher produced and labelled is
+the publisher's to publish. A figure we derive from someone else's prices is one nobody
+vetted, carries no hypothetical labelling, and would not match the website - three separate
+problems in one number.
+
+Consequences to carry through:
+
+- `DISCLAIMER` currently ends "All outputs represent mathematical target-model alignment
+  arithmetic", which stops being true the moment a performance figure is returned. That text
+  is the portal's ADR-0161 constant, so **the wording change belongs to the portal**, not
+  here - we import it.
+- The three tests that enforce the ban (`test_server.py`, `test_prompts.py`,
+  `test_release.py`) must be rewritten to enforce the new rule rather than deleted: that a
+  performance figure never appears without its disclosure, and that the model is still told
+  not to compute its own.
+- Anything the portal computes in its frontend only has to reach `/api/v1` first. That is a
+  Portal-side request, not work we can do here.
+
+### Still open
 
 | Question | Owner |
 | :--- | :--- |
-| Does "best / worst" stay firewalled? (recommendation: yes, ship conviction change instead) | product / ADR-0161 |
 | May `expected_return` be aggregated to portfolio level? | compliance |
 | Is cross-connector news in scope for a regulated surface? | compliance |
