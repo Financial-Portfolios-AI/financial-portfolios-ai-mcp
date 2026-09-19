@@ -73,6 +73,16 @@ added and removed, and how concentrated it is.
 Tickers here carry no company name, so resolve a ticker with a connected tool where possible rather
 than assuming which company it is - especially outside large US listings.
 
+Where the user's own holdings come from:
+`rebalance_portfolio` and `open_rebalance_studio` need the user's current positions, and this
+connector never has them - it holds published model portfolios only. If the user has a brokerage,
+custodian or portfolio-tracking connector available, read the positions from there and pass them
+in. Do not make someone retype what another connector already holds, and never ask the user for
+brokerage credentials or account numbers. Prefer `open_rebalance_studio`, which shows the holdings
+in an editable table so the user can check them before any arithmetic runs; positions read from
+another service can be stale, partial, or cover a different account than the user means.
+Typing or pasting holdings is the fallback when no such connector is there.
+
 Authentication:
 Remote connectors (Claude web/desktop) sign in with OAuth 2.1: a tokenless request is answered
 with a 401 and WWW-Authenticate: Bearer resource_metadata=... (RFC 9728), and the client completes
