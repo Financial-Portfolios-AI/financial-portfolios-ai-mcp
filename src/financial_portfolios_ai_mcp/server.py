@@ -15,10 +15,19 @@ from financial_portfolios_ai_mcp.tools import register_tools
 
 logger = logging.getLogger(__name__)
 
+# The first lines carry the three rules a model gets wrong most often, because ChatGPT's
+# plugin guidance says to put what matters in the first 512 characters of `instructions` -
+# and a model that reads no further should still not misdate a book or invent performance.
 SERVER_INSTRUCTIONS = """
-Financial Portfolios AI MCP Server enables AI assistants to interface with
-quantitative portfolio management tools, target asset allocation snapshots, model alignment arithmetic,
-and institutional-grade market research.
+Financial Portfolios AI publishes model portfolios: target weights, sectors, and how they change.
+Three rules govern every answer.
+1. Informational and educational only. Never individualized advice, a recommendation or a solicitation.
+2. Some books are public and delayed about 45 days. Say so and give the effective date; never present
+   one as the current allocation.
+3. There is no price, return or performance data here. Never compute or estimate performance for these
+   portfolios, not even from another source.
+
+The rest of this document expands on those and describes the tools.
 
 IMPORTANT REGULATORY & USAGE NOTICE:
 All outputs, tools, allocations, and rebalancing calculations are provided strictly for

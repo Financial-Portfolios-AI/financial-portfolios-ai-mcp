@@ -323,6 +323,18 @@ def test_instructions_rule_out_performance():
     assert "not by pricing the holdings with data from\nanother source" in text
 
 
+def test_the_three_rules_survive_a_truncated_read():
+    """ChatGPT's guidance is to put what matters in the first 512 characters of `instructions`.
+
+    A model that reads no further must still not misdate a delayed book or invent
+    performance - the two mistakes this connector has actually seen in the wild.
+    """
+    head = mcp_server.instructions[:512]
+    assert "Informational and educational only" in head
+    assert "delayed about 45 days" in head
+    assert "no price, return or performance data" in head
+
+
 def test_instructions_allow_context_from_other_tools_but_not_performance_maths():
     """The line is arithmetic, not sources.
 
