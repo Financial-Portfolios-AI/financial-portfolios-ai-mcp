@@ -1,7 +1,7 @@
 """Provider manifests, rendered for the deployment that serves them.
 
 The three connector manifests (`claude_connector.json`, `chatgpt_manifest.json`,
-`gemini_extension.json`) are stored as templates: every absolute URL they contain
+`gemini-extension.json`) are stored as templates: every absolute URL they contain
 is written as `${PUBLIC_ORIGIN}/...` rather than a baked-in hostname. Rendering
 happens either here, against the origin a request arrived on, or offline via
 `scripts/render_manifests.py` for the static artifacts submitted to the provider
@@ -27,7 +27,7 @@ MANIFEST_PATH = "/mcp/manifests"
 MANIFESTS = (
     "claude_connector.json",
     "chatgpt_manifest.json",
-    "gemini_extension.json",
+    "gemini-extension.json",
 )
 
 

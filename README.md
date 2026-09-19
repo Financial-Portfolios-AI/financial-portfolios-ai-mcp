@@ -78,9 +78,12 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
 
 ### 3. Google Gemini & Google Cloud Vertex AI
 
-- **Google Vertex AI Agent Builder & Extensions:**
-  - Import [`gemini_extension.json`](gemini_extension.json) alongside [`openapi.yaml`](openapi.yaml) to register the extension.
-- **Gemini CLI:**
+- **Gemini CLI extension** (the supported path): [`gemini-extension.json`](gemini-extension.json)
+  with [`GEMINI.md`](GEMINI.md) as its context file. Installed from a public repository with
+  `gemini extensions install <repo-url>`, then `gemini extensions config financial-portfolios-ai`
+  to set the API token. Gemini CLI renders no MCP Apps, so the app tools that only open a UI
+  are excluded and the rest answer as JSON.
+- **Gemini CLI, configured by hand:**
   ```bash
   gemini mcp add --transport http financial-portfolios-ai https://<your-domain>/mcp --header 'X-API-Key: aqat_v1_<token>'
   ```
@@ -205,8 +208,8 @@ to the connector and its tool calls:
   backend's own assets router, so an icon URL there would never reach us. The OAuth
   challenge explicitly exempts `/mcp/assets` and `/mcp/manifests` so directories can fetch
   them with no credential.
-- **In the manifests** - `claude_connector.json`, `chatgpt_manifest.json` and
-  `gemini_extension.json` point their `icon_url` / `logo_url` / `icon_uri` at the same files,
+- **In the manifests** - `claude_connector.json` and `chatgpt_manifest.json`
+  point their `icon_url` / `logo_url` at the same files,
   through the `${PUBLIC_ORIGIN}` placeholder (see [Manifests](#manifests)).
 
 Sources live in `src/financial_portfolios_ai_mcp/assets/` and ship inside the wheel.

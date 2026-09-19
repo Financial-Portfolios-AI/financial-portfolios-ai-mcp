@@ -208,6 +208,43 @@ def test_root_icon_urls_follow_request_origin():
     assert all(s.startswith("https://dev.financial-portfolios.ai/mcp/assets/") for s in remote)
 
 
+@pytest.mark.asyncio
+async def test_gemini_extension_is_a_real_gemini_cli_extension():
+    """The file users install, so its shape is pinned.
+
+    The previous `gemini_extension.json` used the Vertex AI Extensions manifest, which no
+    Google surface reads and whose product shuts down after 2026-11-26. This is the
+    documented Gemini CLI format: `name` (lowercase and dashes), `version`, `description`,
+    and an `mcpServers` entry - `httpUrl` for Streamable HTTP, not `url`, which is SSE.
+    """
+    import re
+
+    manifest = json.loads(
+        (Path(__file__).resolve().parent.parent / "gemini-extension.json").read_text(encoding="utf-8")
+    )
+    assert re.fullmatch(r"[a-z0-9-]+", manifest["name"]), "name must be lowercase with dashes"
+    assert manifest["version"] and manifest["description"]
+    server = manifest["mcpServers"]["financial-portfolios-ai"]
+    assert server["httpUrl"].endswith("/mcp")
+    assert "url" not in server, "`url` is the SSE key; this server speaks Streamable HTTP"
+
+    # The token is supplied by a declared setting, never written into the manifest. The
+    # renderer substitutes ${PUBLIC_ORIGIN} only, so the env placeholder must survive it.
+    assert server["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
+    assert any(s["envVar"] == "FINANCIAL_PORTFOLIOS_API_TOKEN" and s["sensitive"] for s in manifest["settings"])
+    rendered = render_manifest("gemini-extension.json", "https://financial-portfolios.ai")
+    assert rendered["mcpServers"]["financial-portfolios-ai"]["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
+
+    # Gemini CLI does not implement MCP Apps and so does not honour `_meta.ui.visibility`:
+    # a page-only tool would otherwise appear in its tool list as something to call.
+    app_only = {
+        t.name for t in await mcp_server.list_tools()
+        if (t.meta or {}).get("ui", {}).get("visibility") == ["app"]
+    }
+    assert app_only, "expected at least one page-only tool"
+    assert app_only.issubset(set(manifest["excludeTools"]))
+
+
 def test_manifest_templates_carry_no_environment_origin():
     """The committed manifests must stay origin-agnostic."""
     for name in MANIFESTS:
@@ -236,9 +273,9 @@ def test_manifests_rendered_for_request_origin():
 
 def test_render_manifests_script_matches_served_document():
     """The offline renderer and the live endpoint agree."""
-    rendered = render_manifest("gemini_extension.json", "https://dev.financial-portfolios.ai")
+    rendered = render_manifest("gemini-extension.json", "https://dev.financial-portfolios.ai")
     resp = TestClient(create_app()).get(
-        "/mcp/manifests/gemini_extension.json",
+        "/mcp/manifests/gemini-extension.json",
         headers={"X-Forwarded-Proto": "https", "X-Forwarded-Host": "dev.financial-portfolios.ai"},
     )
     assert resp.json() == rendered

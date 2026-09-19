@@ -24,7 +24,7 @@ Before starting any submission process, ensure you have the following repository
 - [x] **Claude Connector Manifest:** [`claude_connector.json`](../claude_connector.json).
 - [x] **OpenAPI 3.1 Specification:** [`openapi.yaml`](../openapi.yaml) (for ChatGPT Actions & Google Vertex AI).
 - [x] **ChatGPT Plugin Manifest:** [`chatgpt_manifest.json`](../chatgpt_manifest.json).
-- [x] **Google Vertex AI Manifest:** [`gemini_extension.json`](../gemini_extension.json).
+- [x] **Gemini CLI Extension:** [`gemini-extension.json`](../gemini-extension.json) + [`GEMINI.md`](../GEMINI.md).
 - [x] **Terms of Service:** `https://financial-portfolios.ai/legal/terms`
 - [x] **Privacy Policy:** `https://financial-portfolios.ai/legal/privacy`
 - [x] **High-Resolution Logo:** 512×512 PNG (`https://financial-portfolios.ai/assets/logo-512.png`).

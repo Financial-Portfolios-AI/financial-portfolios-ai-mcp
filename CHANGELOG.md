@@ -59,6 +59,15 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Changed
 
+- **A real Gemini CLI extension.** `gemini_extension.json` used the legacy Vertex AI Extensions
+  manifest, which no Google surface reads and whose product shuts down after 2026-11-26. It is
+  replaced by [`gemini-extension.json`](gemini-extension.json) plus [`GEMINI.md`](GEMINI.md) in
+  the documented Gemini CLI format: `httpUrl` (Streamable HTTP, not the SSE `url`), the API
+  token supplied through a declared `sensitive` setting rather than written into the manifest,
+  and `excludeTools` carrying the page-only tool - Gemini CLI implements no MCP Apps and so
+  does not honour `_meta.ui.visibility`, which would otherwise expose `report_explorer_host` as
+  something to call. Publishing still needs a public repository, since
+  `gemini extensions install` clones one.
 - **The Explorer is usable by touch.** Sortable columns advertised themselves only through a
   hover colour, which the one host we have telemetry for (ChatGPT mobile) never shows; every
   sortable column now carries a mark and `aria-sort`, headers are keyboard-reachable, and tap

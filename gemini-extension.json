@@ -1,0 +1,30 @@
+{
+  "$comment": "Gemini CLI extension manifest (docs/extensions/reference.md). Template: ${PUBLIC_ORIGIN} is substituted at render time - produce the publishable file with `python scripts/render_manifests.py --env prod`, or fetch it from a running server at GET /mcp/manifests/gemini-extension.json. Installed with `gemini extensions install <repo-url>`, which reads this file plus GEMINI.md from the repository root.",
+  "name": "financial-portfolios-ai",
+  "version": "1.0.0",
+  "description": "Systematic, AI-driven model portfolios: target allocations, holdings history, concentration and sector metrics, model-alignment arithmetic, and quantitative research. Informational and educational only - not investment advice.",
+  "contextFileName": "GEMINI.md",
+  "mcpServers": {
+    "financial-portfolios-ai": {
+      "httpUrl": "${PUBLIC_ORIGIN}/mcp",
+      "headers": {
+        "X-API-Key": "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
+      },
+      "timeout": 60000
+    }
+  },
+  "settings": [
+    {
+      "name": "API token",
+      "description": "Personal API token from ${PUBLIC_ORIGIN}/settings/api-tokens (starts with aqat_v1_). Without one the server answers 401 and no portfolio is visible.",
+      "envVar": "FINANCIAL_PORTFOLIOS_API_TOKEN",
+      "sensitive": true
+    }
+  ],
+  "excludeTools": [
+    "report_explorer_host",
+    "open_portfolio_explorer",
+    "open_rebalance_studio",
+    "open_research_reader"
+  ]
+}

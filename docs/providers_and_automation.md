@@ -115,20 +115,31 @@ Two gaps worth naming:
 - **`sector` is frequently null**, and the apps bucket it as "Unclassified". Sector-level answers
   are only as good as that field.
 
-## 4. Action: the Gemini manifest we ship is the wrong format
+## 4. Done: a real Gemini CLI extension
 
-`gemini_extension.json` matches the **legacy Vertex AI Extensions** manifest - `display_name`,
-`runtime_environment`, `service_endpoint`, `api_spec`. Vertex AI Extensions is deprecated and
-shuts down after **2026-11-26**, and no current Google surface reads that file.
+We shipped `gemini_extension.json`, which matched the **legacy Vertex AI Extensions** manifest -
+`display_name`, `runtime_environment`, `service_endpoint`, `api_spec`. Vertex AI Extensions is
+deprecated and shuts down after **2026-11-26**, and no current Google surface read that file.
+It has been replaced by [`gemini-extension.json`](../gemini-extension.json) (hyphen), the
+documented **Gemini CLI** format, with [`GEMINI.md`](../GEMINI.md) as its context file.
 
-The documented format is **`gemini-extension.json`** (hyphen) for **Gemini CLI**: `name`,
-`version`, `description`, `mcpServers`, `contextFileName`, `excludeTools`, `settings[]`,
-installed with `gemini extensions install <github-url>`. Gemini CLI is also the one Gemini
-surface that supports prompts and resources.
+Two details that are easy to get wrong:
 
-So the choice is: publish a real Gemini CLI extension, or drop the file. Shipping a manifest no
-host reads is worse than shipping none - it implies support we do not have. Note that Gemini CLI
-does not render MCP Apps, so our three apps degrade to their JSON results there.
+- **`httpUrl`, not `url`.** `url` is the SSE key; `httpUrl` is Streamable HTTP, which is what
+  this server speaks. The token comes from a declared `settings` entry
+  (`FINANCIAL_PORTFOLIOS_API_TOKEN`, `sensitive: true`), so it is never written into the
+  manifest; the origin renderer substitutes `${PUBLIC_ORIGIN}` only and leaves that placeholder
+  for the CLI.
+- **`excludeTools` carries the page-only tool.** Gemini CLI does not implement MCP Apps and so
+  does not honour `_meta.ui.visibility`; without the exclusion, `report_explorer_host` would
+  appear in its tool list as something to call. The UI-opening app tools are excluded too,
+  since they carry no data a text client cannot get from another tool - `open_breadth_board`
+  and `open_access_centre` stay, because their results are computed server-side and have no
+  other source.
+
+**Still to do: publishing needs a public repository.** `gemini extensions install` clones one,
+and this repository is private. The manifest and `GEMINI.md` must be published somewhere public
+first - either a dedicated repo or alongside the existing public marketplace repo.
 
 Remote MCP from the **Gemini API / Vertex** is blocked regardless: Google's own limitations page
 states "Gemini 3 does not support remote MCP, this is coming soon."
