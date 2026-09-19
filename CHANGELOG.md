@@ -31,6 +31,23 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
   snapshots. Computed from weights alone, so they are available on the public delayed book -
   where the portal sends `effective_n`, `equity_exposure` and `cash_allocation` as null.
   Computed on the server, so hosts that do not render MCP Apps still receive every figure.
+- **Two analysis tools**, so the same answers are reachable where prompts are not:
+  - `get_portfolio_metrics` - concentration (top 5, top 10, largest holding, effective N),
+    sector weights, dominant sector and the unclassified share.
+  - `get_portfolio_changes` - what the model opened, closed, raised and cut over a period,
+    with one-way turnover. Fewer than two snapshots reports why rather than returning zeros,
+    which would read as "the model changed nothing".
+
+  They are tools rather than prompts because prompts are effectively invisible in ChatGPT
+  and disputed on claude.ai (see [docs/providers_and_automation.md](docs/providers_and_automation.md)).
+  `get_portfolio_changes` is also the shape a scheduled task needs - one call answering
+  "what changed since last week".
+- **Autocomplete for `ticker`** on `find_holding`, drawn from the tickers the user's
+  portfolios actually hold. Previously the field had none, and a ticker held in no book
+  returns an empty search that reads like a broken tool.
+- **Autocomplete for the `portfolios://{portfolio_code}/allocation` resource template.** The
+  completion handler answered only prompt references, so a host offering a resource picker
+  could not complete a portfolio code at all.
 - **Continuous integration** (`.github/workflows/ci.yml`): `ruff check` and the full test
   suite on Python 3.12, plus a job that builds the image, runs the container and drives a
   real MCP client against it (`scripts/ci_smoke.py` - handshake, tool list and
