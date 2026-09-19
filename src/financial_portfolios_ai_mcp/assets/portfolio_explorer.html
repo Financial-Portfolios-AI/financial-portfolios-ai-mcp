@@ -870,9 +870,14 @@
   // Events
   // ---------------------------------------------------------------------------
   function onToolResult(result) {
-    gotToolResult = true;
     try {
-      const data = parseResult(result);
+      // The spec sends the CallToolResult as `params` itself; accept a `{result: ...}`
+      // wrapper too, because a host that sends one would otherwise leave the page blank.
+      const data = parseResult(result && result.result && !result.content ? result.result : result);
+      // Set only after a successful parse. Setting it first meant an unparseable result
+      // disabled the bootstrap fallback as well, turning a bad payload into a dead page
+      // with no second chance.
+      gotToolResult = true;
       state.portfolios = data.portfolios || [];
       state.selected = data.selected || null;
       state.allocation = data.allocation || null;

@@ -336,3 +336,21 @@ async def test_ui_reports_content_height_not_document_height():
     assert "documentElement.scrollHeight" not in code
     # Re-sent after the handshake in case the host ignored an earlier report.
     assert "reportSize(true)" in html
+
+@pytest.mark.asyncio
+async def test_a_bad_tool_result_does_not_disable_the_fallback():
+    """An unparseable payload must leave the page able to load itself.
+
+    `gotToolResult` used to be set before parsing, so a result the page could not read both
+    showed an error and suppressed the bootstrap fetch - a dead page with no second chance.
+    It is now set only after a successful parse.
+    """
+    html, _ = await _html()
+    begin = html.index("function onToolResult(result) {")
+    handler = html[begin:html.index("showError(err.message)", begin)]
+    before_try = handler.split("try {")[0]
+
+    assert "gotToolResult = true" not in before_try, "flag set before the parse can fail"
+    assert "gotToolResult = true" in handler, "flag must still be set on success"
+    # A wrapped result is tolerated too: a host sending one would otherwise blank the page.
+    assert "result.result" in handler
