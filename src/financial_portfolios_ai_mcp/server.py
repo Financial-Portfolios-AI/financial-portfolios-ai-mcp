@@ -5,9 +5,9 @@ import logging
 from mcp.server import MCPServer
 
 from financial_portfolios_ai_mcp._version import __version__
+from financial_portfolios_ai_mcp.apps import build_apps
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION
-from financial_portfolios_ai_mcp.explorer import build_explorer
 from financial_portfolios_ai_mcp.icons import icon_specs
 from financial_portfolios_ai_mcp.prompts import register_prompts
 from financial_portfolios_ai_mcp.resources import register_resources
@@ -58,8 +58,20 @@ chart performance, returns, gains, drawdowns, best or worst contributors, or ben
 for these model portfolios - not even approximately, and not by pricing the holdings with data from
 another source. Doing so would present hypothetical model performance, which this service does not
 publish. If the user asks for performance, say it is not available through this connector.
-Suggest only follow-ups the tools actually support: holdings, sector mix, concentration, changes
-over time, comparisons between portfolios, and research.
+
+Using Other Connected Tools:
+You may combine these holdings with other tools the user has connected - market data, company
+profiles, filings, news - and with your own knowledge, to give context about the companies in a
+model portfolio: what a company does, its sector, recent news, industry background. Say where each
+outside fact came from, and keep it separate from this connector's data.
+The boundary is arithmetic, not sources. Context about holdings is fine; turning any outside data
+into a return, gain, loss, performance figure, drawdown or benchmark comparison for these model
+portfolios is not, however it is obtained. "Which of my holdings had the best month" is a
+performance question and stays unavailable no matter which tool could price it. If the user wants
+that framing, offer what the model itself did instead: which weights it raised and cut, what it
+added and removed, and how concentrated it is.
+Tickers here carry no company name, so resolve a ticker with a connected tool where possible rather
+than assuming which company it is - especially outside large US listings.
 
 Authentication:
 Remote connectors (Claude web/desktop) sign in with OAuth 2.1: a tokenless request is answered
@@ -87,9 +99,10 @@ def create_mcp_server() -> MCPServer:
         # stays correct even when the MCP service answers on a hostname of its own.
         "website_url": settings.portal_base_url.rstrip("/"),
         "version": __version__,
-        # MCP Apps: the Portfolio Explorer, an interactive UI a supporting host renders
-        # inline. Hosts without Apps support still get the tool's JSON result.
-        "extensions": [build_explorer()],
+        # MCP Apps: interactive UIs a supporting host renders inline. Hosts without Apps
+        # support still get each tool's JSON result, so nothing is lost by not rendering.
+        # One extension carries every app; each app owns a `ui://` resource and its tools.
+        "extensions": [build_apps()],
     }
 
     # Brand icons surfaced by LLM providers in connector pickers and tool-call UI.

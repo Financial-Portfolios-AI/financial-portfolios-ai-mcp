@@ -97,6 +97,10 @@
         "description": "Open the interactive Portfolio Explorer (MCP App): a portfolio dropdown, sortable holdings, sector and concentration charts, changes over time, a side-by-side comparison of two or three portfolios, and a search for which portfolios hold a stock. Renders inline in hosts that support MCP Apps."
       },
       {
+        "name": "open_access_centre",
+        "description": "Open the Access & Connection panel (MCP App): which model portfolios this account can see, which are live versus delayed by about 45 days, what the delayed book withholds, and how this client is signed in. Renders inline in hosts that support MCP Apps."
+      },
+      {
         "name": "list_portfolios",
         "description": "List every active quantitative investment portfolio (e.g. AQA_AGGRESSIVE, AQA_BALANCED, AQA_DEFENSIVE), each marked access = subscribed (live book) or public_delayed (holdings delayed ~45 days)."
       },

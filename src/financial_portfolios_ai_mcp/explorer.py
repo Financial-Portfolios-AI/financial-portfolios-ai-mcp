@@ -16,9 +16,7 @@ The page is fully self-contained - inline script and styles, no network - becaus
 host's default Content-Security-Policy for an app allows nothing else.
 """
 
-import importlib.resources
 import logging
-from pathlib import Path
 from typing import Any
 
 from financial_portfolios_ai.exceptions import FinancialPortfoliosAIError
@@ -26,7 +24,7 @@ from mcp.server.apps import Apps
 from mcp.types import ToolAnnotations
 
 from financial_portfolios_ai_mcp import portal
-from financial_portfolios_ai_mcp._version import __version__
+from financial_portfolios_ai_mcp.app_assets import VERSION_PLACEHOLDER, load_app_html, read_app_html
 from financial_portfolios_ai_mcp.auth import get_async_client
 from financial_portfolios_ai_mcp.config import get_settings
 from financial_portfolios_ai_mcp.disclosure import DISCLAIMER
@@ -36,23 +34,21 @@ logger = logging.getLogger(__name__)
 EXPLORER_URI = "ui://financial-portfolios-ai/portfolio-explorer.html"
 EXPLORER_HTML = "portfolio_explorer.html"
 
-
-# Placeholder in the page, replaced with the server version when the page is loaded.
-VERSION_PLACEHOLDER = "__APP_VERSION__"
+__all__ = [
+    "EXPLORER_HTML",
+    "EXPLORER_URI",
+    "VERSION_PLACEHOLDER",
+    "build_explorer",
+    "summarize_host",
+]
 
 
 def _read_html() -> str:
-    try:
-        traversable = importlib.resources.files("financial_portfolios_ai_mcp") / "assets" / EXPLORER_HTML
-        if traversable.is_file():
-            return traversable.read_text(encoding="utf-8")
-    except (FileNotFoundError, ModuleNotFoundError, TypeError, ValueError, OSError) as exc:
-        logger.debug("Packaged explorer HTML not resolvable: %s", exc)
-    return (Path(__file__).resolve().parent / "assets" / EXPLORER_HTML).read_text(encoding="utf-8")
+    return read_app_html(EXPLORER_HTML)
 
 
 def _load_html() -> str:
-    return _read_html().replace(VERSION_PLACEHOLDER, __version__)
+    return load_app_html(EXPLORER_HTML)
 
 
 def _pick_initial(portfolios: list[dict[str, Any]], requested: str) -> str | None:

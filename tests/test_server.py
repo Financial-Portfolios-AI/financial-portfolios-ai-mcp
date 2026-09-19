@@ -321,3 +321,22 @@ def test_instructions_rule_out_performance():
     assert "no price, return or performance data" in text
     assert "best or worst contributors" in text
     assert "not by pricing the holdings with data from\nanother source" in text
+
+
+def test_instructions_allow_context_from_other_tools_but_not_performance_maths():
+    """The line is arithmetic, not sources.
+
+    Users run this connector beside market-data and brokerage connectors, and the model
+    should use them for what a company is and what happened to it. What it must not do is
+    turn any of that into a return for one of these model portfolios - the restriction is
+    on the calculation, so it cannot be satisfied by sourcing the prices elsewhere.
+    """
+    text = mcp_server.instructions
+    assert "Using Other Connected Tools" in text
+    assert "market data, company\nprofiles, filings, news" in text
+    assert "Say where each\noutside fact came from" in text
+    assert "The boundary is arithmetic, not sources." in text
+    # The worked example matters: it is the exact question that tempts a model to price the book.
+    assert "best month" in text and "stays unavailable" in text
+    # And it must say what to offer instead, or the model simply refuses and stops.
+    assert "which weights it raised and cut" in text
