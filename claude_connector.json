@@ -182,6 +182,11 @@
     ],
     "prompts": [
       {
+        "name": "start_here",
+        "title": "Start here: what can I do?",
+        "description": "A menu of the things you can do with your model portfolios, what each one needs connected, and how to run them on a schedule."
+      },
+      {
         "name": "my_portfolios",
         "title": "My portfolios at a glance",
         "description": "See which model portfolios you subscribe to and what each one holds right now, plus the other portfolios available on a delayed basis."

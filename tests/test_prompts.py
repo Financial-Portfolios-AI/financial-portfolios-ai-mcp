@@ -17,6 +17,7 @@ from financial_portfolios_ai_mcp.prompts import complete_portfolio_code
 from financial_portfolios_ai_mcp.server import mcp_server
 
 EXPECTED_PROMPTS = {
+    "start_here",
     "my_portfolios",
     "access_help",
     "portfolio_review",
@@ -194,6 +195,16 @@ async def test_digest_is_written_to_run_unattended():
     assert "Do not ask the user questions" in text
     assert "A quiet period is a result" in text
     assert "get_portfolio_changes" in text
+
+
+@pytest.mark.asyncio
+async def test_start_here_offers_every_journey_and_keeps_schedules_read_only():
+    text = await _render("start_here")
+    for tool in ("open_access_centre", "open_portfolio_explorer", "get_portfolio_performance",
+                 "open_breadth_board", "open_rebalance_studio"):
+        assert tool in text
+    assert "never prepare or place orders" in text
+    assert "news connector" in text and "brokerage connector" in text
 
 
 @pytest.mark.asyncio

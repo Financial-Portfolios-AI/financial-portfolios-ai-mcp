@@ -36,7 +36,8 @@ def register_tools(server: Any) -> None:
             "public book is available, with holdings delayed by about 45 days. Call this first when the "
             "user refers to 'my portfolios', 'my holdings', or 'my positions' without naming a specific "
             "portfolio, then use `get_portfolio_allocation` to show the holdings of each - preferring "
-            "the `subscribed` ones when the user says 'my'."
+            "the `subscribed` ones when the user says 'my'. If the user asks what they can do here, "
+            "offer the journeys in the `start_here` prompt rather than a list of tools."
         ),
         annotations=ToolAnnotations(
             title="List model portfolios",
@@ -94,6 +95,7 @@ def register_tools(server: Any) -> None:
             "user whenever `delayed` is true rather than presenting a delayed book as current. Can also "
             "fetch a historical snapshot via `as_of`. Output represents mathematical target-model "
             "allocation arithmetic, not personalized investment advice."
+            " To add context, pair the holdings with a connected market-data or news tool (company, news, filings) and attribute what it says; to compare against the user's own account, read positions from a connected brokerage tool."
         ),
         annotations=ToolAnnotations(
             title="Portfolio holdings and target allocation",
@@ -158,6 +160,7 @@ def register_tools(server: Any) -> None:
         title="Allocation history",
         description=(
             "Retrieve historical allocation snapshots for up to 365 days for a specific portfolio. "
+            "For what changed at a rebalance, prefer `get_portfolio_changes`, which does the diff. "
             "Useful for tracking historical model changes and target allocation evolution. For a "
             "subscribed portfolio this returns the full history; otherwise it returns only the public "
             "delayed entries - nothing more recent than about 45 days ago - with equity exposure, cash "
@@ -227,7 +230,10 @@ def register_tools(server: Any) -> None:
             "history tools, this has no public delayed mode and returns a 403 when the user is not "
             "entitled. "
             "Note: Uploaded holdings data is processed solely for model alignment calculations. "
-            "Output represents mathematical calculations, not trade execution or individualized investment advice."
+            "Output represents mathematical calculations, not trade execution or individualized investment advice. "
+            "Read the holdings from a connected brokerage or aggregator tool (e.g. SnapTrade, IBKR) "
+            "rather than asking the user to type them, and prefer `open_rebalance_studio` so they can "
+            "check them first. Never run this unattended to prepare orders."
         ),
         annotations=ToolAnnotations(
             title="Model alignment arithmetic",
@@ -317,7 +323,8 @@ def register_tools(server: Any) -> None:
         title="Search research and market commentary",
         description=(
             "List published quantitative research articles, market commentaries, and investment "
-            "insights from Financial Portfolios AI."
+            "insights from Financial Portfolios AI. This is the publisher's own research; for third-party "
+            "news on a holding, use a connected news or market-data tool and attribute it."
         ),
         annotations=ToolAnnotations(
             title="Search research and market commentary",

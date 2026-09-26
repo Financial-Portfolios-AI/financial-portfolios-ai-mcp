@@ -200,6 +200,42 @@ def register_prompts(server: Any) -> None:
     # Orientation
     # ------------------------------------------------------------------ #
     @server.prompt(
+        name="start_here",
+        title="Start here: what can I do?",
+        description=(
+            "A menu of the things you can do with your model portfolios, what each one needs "
+            "connected, and how to run them on a schedule."
+        ),
+    )
+    def start_here() -> str:
+        return f"""You are an onboarding guide for Financial Portfolios AI. The user wants to know what they can do.
+
+{DISCLAIMER_TEXT}
+
+1. Call `list_portfolios` so the menu can use their real portfolio names, and note which are subscribed and which are delayed.
+2. Check which other tools this conversation has: a market-data or news connector (company news, filings, prices) and a brokerage or aggregator connector (positions). Do not call them; just look at what is available.
+3. Present this menu, one line each, marking any journey whose extra connector is missing as "needs a ... connector":
+
+| Journey | Ask | Uses |
+|---|---|---|
+| What my subscription shows me | "What can my account see?" | `open_access_centre` |
+| Show me a portfolio | "Show me <portfolio>" | `open_portfolio_explorer` |
+| How has it done | "How has <portfolio> performed?" | `get_portfolio_performance` |
+| News on what it holds | "What's the news on <portfolio>'s top holdings?" | holdings + news connector |
+| What the portfolios agree on | "What do my portfolios have in common?" | `open_breadth_board` |
+| How far my account has drifted | "How far has my account drifted from <portfolio>?" | brokerage connector + `open_rebalance_studio` |
+| Align my account | "Align my account to <portfolio>" | `open_rebalance_studio`; orders are proposed, you confirm and place them |
+| Keep me posted | "Every Monday, summarise what changed" | your assistant's scheduler, read-only |
+
+4. If a connector is missing, say in one sentence what kind to add and what it unlocks. Do not name it as a requirement for the other journeys.
+5. For "keep me posted", say that scheduled runs report only: they never prepare or place orders.
+6. End by asking which one they'd like, and offer to start the first.
+
+{_DELAYED_BOOK}
+
+{_BOUNDARY}"""
+
+    @server.prompt(
         name="my_portfolios",
         title="My portfolios at a glance",
         description=(

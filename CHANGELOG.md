@@ -11,6 +11,16 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Added
 
+- **`start_here` prompt** - a menu of the eight things a customer can do, which of them need a
+  news or brokerage connector added, and how to run them on a schedule. The server instructions
+  offer the same menu when the user asks what the connector can do, which matters on surfaces
+  that show no prompts at all (claude.ai, ChatGPT, Gemini app).
+- **Journey hints in tool descriptions.** Assistants that see only tools (Gemini Spark, ChatGPT)
+  now learn from the descriptions to pair holdings with a news tool and to read positions from a
+  brokerage tool.
+- **Scheduled-run rule** in the server instructions: text only, read-only, never prepare orders,
+  and one line when nothing changed.
+
 - **Order-placement rails in the server instructions.** The connector places no orders, but a
   model holding both this and a brokerage connector can prepare them - so the propose-confirm
   rule now lives here rather than only in the Claude Code plugin's skill, where claude.ai and
