@@ -120,6 +120,7 @@ async def test_panel_reports_access_counts_and_links():
     data = await _open(_client(_listing()))
     assert [p["code"] for p in data["portfolios"]] == ["AQA_DEFENSIVE", "AQA_BALANCED"]
     assert data["subscribed"] == 1 and data["delayed"] == 1
+    assert data["plan"] == "subscriber"
     assert data["links"]["pricing"].endswith("/#pricing")
     assert data["links"]["portal"] and data["links"]["api_tokens"].endswith("/settings/api-tokens")
     # Naming what the delayed book withholds is the whole point of the panel.
@@ -146,3 +147,10 @@ async def test_page_never_invites_a_token_paste():
     html, _ = await _html()
     assert "Never type or paste an API token into the chat" in html
     assert "reconnect the connector" in html.lower()
+
+
+def test_free_access_is_named_as_a_plan_not_a_fault():
+    from financial_portfolios_ai_mcp.server import SERVER_INSTRUCTIONS
+
+    assert "Free access is a normal way to use this service" in SERVER_INSTRUCTIONS
+    assert "never" in SERVER_INSTRUCTIONS.split("Free access is a normal way")[1][:400]

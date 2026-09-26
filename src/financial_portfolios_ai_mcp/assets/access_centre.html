@@ -263,7 +263,7 @@
     }).join("") : `<div class="empty">No portfolios are visible to this connection.</div>`;
 
     const delayedNote = delayed.length ? `<h2>What a delayed book leaves out</h2><div class="panel">
-        <div class="desc">${delayed.length} of your ${portfolios.length} portfolios are published on the public book, about 45 days behind the live allocation. That book is the model as it stood then, not the current one, and these figures are withheld from it:</div>
+        <div class="desc">${s.plan === "free_delayed" ? "You're on free access: every portfolio's public book, free of charge, about 45 days behind the live allocation." : `${delayed.length} of your ${portfolios.length} portfolios are published on the public book, about 45 days behind the live allocation.`} That book is the model as it stood then, not the current one, and these figures are withheld from it:</div>
         <ul class="hides">${(s.delayed_hides || []).map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
         <div class="row" style="margin-top:10px">${linkBtn("See subscription options", links.pricing || "")}</div>
       </div>` : "";

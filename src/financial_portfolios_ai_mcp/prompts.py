@@ -50,8 +50,8 @@ PortfolioCode = Annotated[
 # the advice boundary identically.
 _RESOLVE_PORTFOLIOS = """\
 Call `list_portfolios` first. Use the entries marked `access: "subscribed"` - those are
-the user's own portfolios. If none are subscribed, say so plainly, then continue with
-the public delayed book of every listed portfolio so the user still gets an answer."""
+the user's own portfolios. If none are subscribed, the user is on free access, which is
+normal rather than a problem: continue with the public delayed book of every listed portfolio."""
 
 _DELAYED_BOOK = """\
 Access levels: a `subscribed` portfolio returns the latest book. Anything else returns
@@ -251,7 +251,7 @@ def register_prompts(server: Any) -> None:
 1. Call `list_portfolios`.
 2. For each portfolio with `access: "subscribed"`, call `get_portfolio_allocation` and summarise it in one short section: number of positions, the five largest holdings with weights, the largest sectors, and equity exposure vs cash.
 3. List the remaining portfolios in a compact table - name, code, risk level, theme - and note that they are available as the public delayed book.
-4. If the user subscribes to nothing, say so, give the table of all portfolios, and mention that live holdings require a subscription.
+4. If the user subscribes to nothing, they are on free access, which is normal: give the table of all portfolios with their delayed dates, and mention once that a subscription adds the live book.
 5. Close by offering, in one line, where to go next: `open_portfolio_explorer` to browse a portfolio, `open_breadth_board` to see what the portfolios have in common, or `open_access_centre` to see exactly what this account can view.
 
 {_PANELS}

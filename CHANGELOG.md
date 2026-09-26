@@ -9,6 +9,14 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Fixed
+
+- **Free access no longer reads as a fault.** An account with no subscriptions is a free user
+  reading the delayed public books, but assistants were treating zero subscriptions as a
+  problem and guessing at lapsed or unlinked subscriptions. The server instructions now say
+  free access is normal, `open_access_centre` returns `plan: "free_delayed"` with an
+  explanation, and the Access panel says "You're on free access".
+
 ## [1.4.1] - 2026-09-26
 
 ### Added

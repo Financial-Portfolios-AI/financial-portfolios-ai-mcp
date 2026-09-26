@@ -56,6 +56,11 @@ Portfolio reads come in two flavours and the response says which one was served 
 When `delayed` is true, tell the user the book is delayed and give its effective date rather than
 presenting it as the current allocation. A portfolio code that is not an active public product
 returns "not found".
+Free access is a normal way to use this service, not a fault. Anyone can read every portfolio's
+delayed book without paying; a subscription only adds the live book and the premium figures. So an
+account with no `subscribed` portfolios is a free user: never describe it as a problem, and never
+speculate that a subscription has lapsed, is unlinked or belongs to another account. Mention once,
+without pressure, that a subscription gives the live book, and carry on with the delayed data.
 
 Credentials:
 Never ask the user to share, paste or type an API token, password or other credential in the

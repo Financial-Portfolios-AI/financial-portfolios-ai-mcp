@@ -118,10 +118,19 @@ def register_access_centre(apps: Apps) -> None:
             return {"error": "Internal Error", "message": str(e), "disclaimer": DISCLAIMER}
 
         portfolios = listing.get("portfolios") or []
+        subscribed = sum(1 for p in portfolios if p.get("access") == "subscribed")
         return {
             "connection": connection_state(),
+            # Named, so the model reads zero subscriptions as the free tier rather than a fault.
+            "plan": "subscriber" if subscribed else "free_delayed",
+            "plan_detail": (
+                "Live book for the subscribed portfolios; the delayed public book for the rest."
+                if subscribed
+                else "Free access: every portfolio's public book, delayed about 45 days. This is "
+                "normal, not an account problem. A subscription adds the live book."
+            ),
             "portfolios": portfolios,
-            "subscribed": sum(1 for p in portfolios if p.get("access") == "subscribed"),
+            "subscribed": subscribed,
             "delayed": sum(1 for p in portfolios if p.get("delayed")),
             "links": links,
             "delayed_hides": DELAYED_HIDES,
