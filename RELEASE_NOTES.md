@@ -9,6 +9,23 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.1 — September 2026
+
+- **"What can I do?" now has a proper answer.** Ask it, or choose *Start here*, and your
+  assistant shows the things you can do with your portfolios, and which ones need a news or
+  brokerage connection added first.
+- **Check how far your account has drifted** from a model portfolio. It reports the gaps and
+  stops there: it never proposes trades, so it is safe to run on a schedule.
+- **Ready-made summaries** for performance, for what your portfolios hold in common, and a short
+  digest of what changed, written to run on a schedule.
+- **Scheduled runs stay read-only.** A task that runs while you are away reports; it never
+  prepares or places orders.
+- **Acting on an alignment at your broker** always needs your confirmation of each batch of
+  orders. There is no standing permission, whatever the broker allows.
+- **Fix:** the Portfolio Explorer no longer stays blank if a result arrives in an unexpected shape.
+
+---
+
 ## Version 1.4.0 — September 2026
 
 - **Performance is now available**, matching what the website shows: how a model portfolio

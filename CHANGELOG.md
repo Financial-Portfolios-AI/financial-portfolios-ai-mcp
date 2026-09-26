@@ -9,6 +9,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.1] - 2026-09-26
+
 ### Added
 
 - **`start_here` prompt** - a menu of the eight things a customer can do, which of them need a
@@ -20,7 +22,6 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
   brokerage tool.
 - **Scheduled-run rule** in the server instructions: text only, read-only, never prepare orders,
   and one line when nothing changed.
-
 - **Order-placement rails in the server instructions.** The connector places no orders, but a
   model holding both this and a brokerage connector can prepare them - so the propose-confirm
   rule now lives here rather than only in the Claude Code plugin's skill, where claude.ai and
@@ -323,7 +324,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...HEAD
+[1.4.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.0...v1.2.1
