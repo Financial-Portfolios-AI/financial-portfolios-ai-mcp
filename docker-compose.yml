@@ -15,7 +15,7 @@
 
 services:
   mcp:
-    container_name: fpai-mcp
+    container_name: financial-portfolios-mcp
     build:
       context: ..                                  # financial-portfolio-ai-oss (sdk + mcp)
       dockerfile: financial-portfolios-ai-mcp/Dockerfile

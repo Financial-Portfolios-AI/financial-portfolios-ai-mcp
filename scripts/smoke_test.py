@@ -124,7 +124,7 @@ class MCPClient:
                         "params": {
                             "protocolVersion": "2025-06-18",
                             "capabilities": {},
-                            "clientInfo": {"name": "fpai-smoke-test", "version": "1.0"},
+                            "clientInfo": {"name": "financial-portfolios-smoke-test", "version": "1.0"},
                         },
                     }
                 )

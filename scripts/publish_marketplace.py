@@ -4,7 +4,7 @@
 Two channels install this service, and both hardcode an endpoint:
 
 * the **Gemini CLI extension** - `gemini-extension.json` plus its `GEMINI.md` context file,
-* the **Claude Code plugin** - `plugins/fpai-portfolio/.mcp.json`.
+* the **Claude Code plugin** - `plugins/financial-portfolios/.mcp.json`.
 
 They live in a public repository because `gemini extensions install` and
 `/plugin marketplace add` both clone one, while this repository is private. That split is
@@ -45,7 +45,7 @@ from financial_portfolios_ai_mcp.manifests import (
 
 GEMINI_MANIFEST = "gemini-extension.json"
 GEMINI_CONTEXT = "GEMINI.md"
-PLUGIN_CONFIG = Path("plugins/fpai-portfolio/.mcp.json")
+PLUGIN_CONFIG = Path("plugins/financial-portfolios/.mcp.json")
 
 
 MARKETPLACE_REPO = "financial-portfolios-ai-marketplace"
@@ -64,8 +64,8 @@ def find_marketplace() -> Path | None:
     return None
 
 # The plugin's URL is an env-var default inside a JSON string, so it is rewritten by pattern
-# rather than by key: `${FPAI_MCP_URL:-https://.../mcp}` keeps the user's override working.
-PLUGIN_URL_PATTERN = re.compile(r"(\$\{FPAI_MCP_URL:-)(https?://[^}]+)(\})")
+# rather than by key: `${FINANCIAL_PORTFOLIOS_MCP_URL:-https://.../mcp}` keeps the user's override working.
+PLUGIN_URL_PATTERN = re.compile(r"(\$\{FINANCIAL_PORTFOLIOS_MCP_URL:-)(https?://[^}]+)(\})")
 
 
 def probe(origin: str) -> tuple[bool, str]:
@@ -124,7 +124,7 @@ def plugin_config(current: str, origin: str) -> str:
     replaced, count = PLUGIN_URL_PATTERN.subn(rf"\g<1>{origin}/mcp\g<3>", current)
     if count != 1:
         raise SystemExit(
-            f"Expected exactly one ${{FPAI_MCP_URL:-...}} default in {PLUGIN_CONFIG}, found {count}. "
+            f"Expected exactly one ${{FINANCIAL_PORTFOLIOS_MCP_URL:-...}} default in {PLUGIN_CONFIG}, found {count}. "
             "The plugin's config shape changed; update this script rather than editing by hand."
         )
     return replaced

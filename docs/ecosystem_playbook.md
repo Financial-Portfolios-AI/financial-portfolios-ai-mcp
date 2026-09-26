@@ -41,7 +41,7 @@ the same mechanism.
 
 | Surface | Mechanism | J1–J8 coverage | Gap |
 | :--- | :--- | :--- | :--- |
-| Claude Code | plugin commands `/fpai-portfolio:*`, MCP prompts | all 8 | Does not render MCP Apps (text fallback) |
+| Claude Code | plugin commands `/financial-portfolios:*`, MCP prompts | all 8 | Does not render MCP Apps (text fallback) |
 | Claude Cowork | same plugins, plus scheduled tasks | all 8 | — |
 | claude.ai / Desktop / mobile | MCP prompts **not shown** (issue #333); Skills are | **none named** | Ship claude.ai Skills (§3.2) |
 | ChatGPT | plugin skills `$name`, MCP Apps | none named | Publish a ChatGPT plugin with skills (§3.1) |
@@ -98,8 +98,8 @@ template is **text-out**.
 
 | Vendor | How the template ships | Customer effort |
 | :--- | :--- | :--- |
-| Claude Cowork / Code | Skills in `fpai-portfolio` (`/digest`, `/drift` exist); add `/schedule-template` that prints the prompt and cadence | Pick a template, press schedule |
-| ChatGPT | One skill per template in the ChatGPT plugin; scheduled task created from chat ("run $fpai-digest every Monday") | One sentence |
+| Claude Cowork / Code | Skills in `financial-portfolios` (`/digest`, `/drift` exist); add `/schedule-template` that prints the prompt and cadence | Pick a template, press schedule |
+| ChatGPT | One skill per template in the ChatGPT plugin; scheduled task created from chat ("run $portfolio-automations every Monday") | One sentence |
 | Gemini Spark | Copy-paste prompts on the portal's /agentic page with the cadence written in ("Every Monday at 8am, …") | Paste once |
 | Muse | Same copy-paste prompts, once onboarded | Paste once |
 
@@ -188,3 +188,16 @@ Three separate surfaces, no shared submission:
 | 9 | Client ID Metadata Document support | newer clients | Portal (auth) |
 
 Items 2–6 don't wait on production.
+
+---
+
+## Naming (decided 2026-09-26)
+
+No "fpai" abbreviation anywhere a customer sees it. The brand name is the namespace:
+
+| Was | Now |
+| :--- | :--- |
+| plugins `fpai-portfolio` + `fpai-research` | one plugin, **`financial-portfolios`** (`/financial-portfolios:drift`, …) |
+| plugin `fpai-broker` | **`financial-portfolios-broker`**, a separate opt-in because it prepares order tickets |
+| claude.ai skills `fpai-*` | descriptive names: `portfolio-start`, `portfolio-overview`, `portfolio-performance`, `holdings-news`, `portfolio-breadth`, `portfolio-drift`, `portfolio-align`, `portfolio-automations` |
+| env `FPAI_MCP_URL` | `FINANCIAL_PORTFOLIOS_MCP_URL` |

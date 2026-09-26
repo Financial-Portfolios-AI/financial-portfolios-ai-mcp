@@ -91,15 +91,15 @@ jobs:
       # Context is the parent directory, as in cloudbuild.yaml, so the SDK is available
       # to the build.
       - name: Build
-        run: docker build -t fpai-mcp:ci -f financial-portfolios-ai-mcp/Dockerfile .
+        run: docker build -t financial-portfolios-mcp:ci -f financial-portfolios-ai-mcp/Dockerfile .
 
       - name: Run
         run: |
-          docker run -d --name fpai-mcp-ci -p 8080:8080 \
+          docker run -d --name financial-portfolios-mcp-ci -p 8080:8080 \
             -e MCP_PUBLIC_URL=https://ci.invalid/mcp \
             -e FINANCIAL_PORTFOLIOS_BASE_URL=https://ci.invalid \
             -e MCP_ALLOWED_HOSTS=localhost,127.0.0.1,localhost:* \
-            fpai-mcp:ci
+            financial-portfolios-mcp:ci
           for i in $(seq 1 30); do
             curl -sf http://localhost:8080/healthz >/dev/null && break
             sleep 1
@@ -112,8 +112,8 @@ jobs:
 
       - name: Container logs on failure
         if: failure()
-        run: docker logs fpai-mcp-ci || true
+        run: docker logs financial-portfolios-mcp-ci || true
 
       - name: Stop
         if: always()
-        run: docker rm -f fpai-mcp-ci || true
+        run: docker rm -f financial-portfolios-mcp-ci || true

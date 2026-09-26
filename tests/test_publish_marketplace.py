@@ -56,11 +56,11 @@ def test_environments_are_defined_once():
 # The plugin's URL is an env-var default inside a string, so it is rewritten by pattern
 # --------------------------------------------------------------------------- #
 def test_plugin_default_is_retargeted_and_the_override_survives():
-    before = '{"url": "${FPAI_MCP_URL:-https://financial-portfolios.ai/mcp}"}'
+    before = '{"url": "${FINANCIAL_PORTFOLIOS_MCP_URL:-https://financial-portfolios.ai/mcp}"}'
     after = publish.plugin_config(before, DEV)
-    assert after == '{"url": "${FPAI_MCP_URL:-https://dev.financial-portfolios.ai/mcp}"}'
+    assert after == '{"url": "${FINANCIAL_PORTFOLIOS_MCP_URL:-https://dev.financial-portfolios.ai/mcp}"}'
     # The override is the point: a self-hosted or staging server must still work.
-    assert "${FPAI_MCP_URL:-" in after
+    assert "${FINANCIAL_PORTFOLIOS_MCP_URL:-" in after
 
 
 def test_a_changed_plugin_shape_fails_loudly_rather_than_silently_publishing():
