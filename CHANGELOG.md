@@ -9,6 +9,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.2] - 2026-09-26
+
 ### Fixed
 
 - **Free access no longer reads as a fault.** An account with no subscriptions is a free user
@@ -332,7 +334,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...HEAD
+[1.4.2]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.2.1...v1.3.0

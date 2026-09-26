@@ -9,6 +9,14 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.2 — September 2026
+
+- **Free access is treated as what it is.** If you read the delayed portfolios without a
+  subscription, your assistant now says you're on free access rather than suggesting
+  something is wrong with your account.
+
+---
+
 ## Version 1.4.1 — September 2026
 
 - **"What can I do?" now has a proper answer.** Ask it, or choose *Start here*, and your
