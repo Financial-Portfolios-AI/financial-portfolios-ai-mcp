@@ -90,7 +90,7 @@ https://financial-portfolios.ai/agentic **[or the marketplace README until that 
 >   adds that portfolio's live book and the premium figures (expected return and volatility,
 >   equity exposure, cash, effective N).
 > - Alignment calculations against a model portfolio need a subscription to it.
-> - Regional availability: **[confirm; the portal has a US-residency gate setting]**.
+> - Regional availability: global. No regional restriction.
 > - Rate limits: per-token requests-per-minute and daily caps apply **[confirm the numbers]**.
 
 **Tools** (for reviewers; all read-only, annotated `readOnlyHint`)
