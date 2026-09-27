@@ -58,10 +58,10 @@ Zoe Tsekas · zoetsekas@financial-portfolios.ai
 support@financial-portfolios.ai
 
 **Privacy policy URL**
-https://financial-portfolios.ai/legal/privacy **[must load on the production domain before submitting]**
+https://financial-portfolios.ai/legal/privacy (loads on production, checked 2026-09-27)
 
 **Terms of service URL**
-https://financial-portfolios.ai/legal/terms **[same]**
+https://financial-portfolios.ai/legal/terms (loads on production, checked 2026-09-27)
 
 ---
 
@@ -130,7 +130,8 @@ These need the account owner, not the drafting session:
       `resource_metadata` (`python scripts/ci_smoke.py https://financial-portfolios.ai`)
 - [ ] OAuth sign-in completes end to end on production (the consent page was fixed on dev on
       2026-09-27)
-- [ ] Privacy and terms pages load on the production domain, and support@financial-portfolios.ai receives mail
+- [x] Privacy and terms pages load on the production domain (checked 2026-09-27)
+- [ ] support@financial-portfolios.ai receives mail
 - [ ] Icon URL above serves on production
 - [ ] Every **[confirm]** above answered
 - [ ] Review expected to take weeks: Meta is onboarding the first ~2,000 submissions in waves
