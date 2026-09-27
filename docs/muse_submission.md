@@ -91,7 +91,8 @@ https://financial-portfolios.ai/agentic **[or the marketplace README until that 
 >   equity exposure, cash, effective N).
 > - Alignment calculations against a model portfolio need a subscription to it.
 > - Regional availability: global. No regional restriction.
-> - Rate limits: per-token requests-per-minute and daily caps apply **[confirm the numbers]**.
+> - Rate limits: API keys default to 60 requests per minute and 10,000 per day. OAuth sign-in and
+>   client registration are rate-limited per IP.
 
 **Tools** (for reviewers; all read-only, annotated `readOnlyHint`)
 `list_portfolios`, `get_portfolio_allocation`, `get_portfolio_history`, `get_portfolio_changes`,
