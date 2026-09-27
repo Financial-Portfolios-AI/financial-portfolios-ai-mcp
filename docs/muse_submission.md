@@ -46,7 +46,7 @@ https://financial-portfolios.ai
 
 **Connector icon**
 512 × 512 PNG, served at `https://financial-portfolios.ai/mcp/assets/icon-512.png` (source:
-`src/financial_portfolios_ai_mcp/assets/`). **[confirm it is the approved brand mark]**
+`src/financial_portfolios_ai_mcp/assets/`). The approved brand mark.
 
 **Accepts payments?**
 No. Subscriptions are bought on the website, never through the connector.
