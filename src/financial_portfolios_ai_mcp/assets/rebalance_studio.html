@@ -438,7 +438,7 @@
     const gate = $("gate");
     if (!eligible.length) {
       gate.hidden = false;
-      gate.textContent = "Aligning holdings to a model needs a subscription to that model. The portfolios on this connection are all on the public delayed book, so there is nothing to align to yet.";
+      gate.textContent = "You're on free access, which covers every portfolio's delayed public book. Aligning your holdings to a model needs a subscription to that model.";
       $("holdings").disabled = true;
     } else {
       gate.hidden = true;

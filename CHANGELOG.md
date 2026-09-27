@@ -9,6 +9,18 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.3] - 2026-09-26
+
+### Fixed
+
+- **A missing subscription is no longer reported as a failed sign-in.** The portal answers
+  both with 401/403, so `rebalance_portfolio` told free users "Authentication failed". Tool
+  errors now say "Subscription required" (the connection is working; free access covers the
+  delayed books) or "Not signed in" (reconnect), and the hint no longer hard-codes the
+  production URL.
+- Rebalance Studio's free-access message and Research Reader's empty state ("No research has
+  been published yet" rather than "No research matches" when nothing was searched).
+
 ## [1.4.2] - 2026-09-26
 
 ### Fixed
@@ -334,7 +346,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...HEAD
+[1.4.3]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...v1.4.1
 [1.4.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.3.0...v1.4.0

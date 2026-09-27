@@ -310,7 +310,7 @@
     if (!rows.length) {
       $("list").innerHTML = `<div class="empty">${state.heldOnly
         ? "No posts mention a ticker in your portfolios."
-        : "No research matches."}</div>`;
+        : state.search ? "No research matches." : "No research has been published yet."}</div>`;
       contextChanged();
       return;
     }

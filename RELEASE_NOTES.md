@@ -9,6 +9,14 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.3 — September 2026
+
+- **Clearer messages when something needs a subscription.** Aligning holdings to a model
+  needs a subscription to it; your assistant now says exactly that, instead of suggesting
+  your sign-in failed.
+
+---
+
 ## Version 1.4.2 — September 2026
 
 - **Free access is treated as what it is.** If you read the delayed portfolios without a

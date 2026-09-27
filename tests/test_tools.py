@@ -205,3 +205,18 @@ async def test_tool_not_found_error_handling():
         )
         data = json.loads(_extract_text(result_raw))
         assert data["error"] == "Portfolio Not Found"
+
+
+def test_a_missing_subscription_is_not_reported_as_a_failed_sign_in():
+    from financial_portfolios_ai.exceptions import AuthenticationError
+
+    from financial_portfolios_ai_mcp.tools import access_error
+
+    free = access_error(AuthenticationError("No active subscription for this portfolio.", status_code=403), "AQA_DEFENSIVE")
+    assert free["error"] == "Subscription required"
+    assert "signed in and working" in free["message"]
+    assert free["pricing"].endswith("/#pricing")
+
+    signed_out = access_error(AuthenticationError("Invalid or revoked API key", status_code=401))
+    assert signed_out["error"] == "Not signed in"
+    assert "settings/api-tokens" in signed_out["hint"]

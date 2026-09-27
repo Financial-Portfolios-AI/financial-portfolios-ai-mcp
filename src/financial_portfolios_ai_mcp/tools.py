@@ -23,6 +23,37 @@ logger = logging.getLogger(__name__)
 API_TOKEN_PREFIX = "aqat_v1_"
 
 
+def access_error(e: AuthenticationError, portfolio_code: str = "") -> dict[str, Any]:
+    """Tell a missing subscription apart from a failed sign-in.
+
+    The portal answers both with 401/403, and "Authentication failed" read as a broken
+    connection to users on free access - who are signed in fine and simply have no
+    subscription to this portfolio.
+    """
+    portal_url = get_settings().portal_base_url.rstrip("/")
+    if getattr(e, "status_code", None) == 403 or "subscription" in str(e).lower():
+        return {
+            "error": "Subscription required",
+            "portfolio": portfolio_code,
+            "message": (
+                "This needs a subscription to the portfolio. The connection is signed in and "
+                "working; free access covers every portfolio's public book, delayed about 45 days."
+            ),
+            "pricing": f"{portal_url}/#pricing",
+            "disclaimer": DISCLAIMER,
+        }
+    return {
+        "error": "Not signed in",
+        "portfolio": portfolio_code,
+        "message": str(e),
+        "hint": (
+            "Reconnect the connector to sign in again. Command-line clients using a personal "
+            f"API token can check or replace it at {portal_url}/settings/api-tokens."
+        ),
+        "disclaimer": DISCLAIMER,
+    }
+
+
 def register_tools(server: Any) -> None:
     """Register all Financial Portfolios AI tools with the MCP server."""
 
@@ -132,13 +163,7 @@ def register_tools(server: Any) -> None:
             )
             return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return {
-                "error": "Authentication or subscription access denied",
-                "portfolio": portfolio_code,
-                "message": str(e),
-                "hint": "Sign in and generate an API token at https://financial-portfolios.ai/settings/api-tokens. A valid token without a subscription still returns the public delayed book (~45 days) for active products.",
-                "disclaimer": DISCLAIMER,
-            }
+            return access_error(e, portfolio_code)
         except NotFoundError as e:
             return {
                 "error": "Portfolio Not Found",
@@ -204,11 +229,7 @@ def register_tools(server: Any) -> None:
             )
             return {**data, "disclaimer": DISCLAIMER}
         except AuthenticationError as e:
-            return {
-                "error": "Authentication or subscription required",
-                "message": str(e),
-                "disclaimer": DISCLAIMER,
-            }
+            return access_error(e)
         except NotFoundError as e:
             return {"error": "Portfolio Not Found", "message": str(e), "disclaimer": DISCLAIMER}
         except RateLimitError as e:
@@ -264,11 +285,7 @@ def register_tools(server: Any) -> None:
                 data["disclaimer"] = DISCLAIMER
                 return data
         except AuthenticationError as e:
-            return {
-                "error": "Authentication or subscription required",
-                "message": str(e),
-                "disclaimer": DISCLAIMER,
-            }
+            return access_error(e)
         except ValidationError as e:
             return {"error": "Invalid Holdings Format", "message": str(e), "disclaimer": DISCLAIMER}
         except RateLimitError as e:
