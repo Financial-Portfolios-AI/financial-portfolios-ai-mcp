@@ -52,7 +52,7 @@ https://financial-portfolios.ai
 No. Subscriptions are bought on the website, never through the connector.
 
 **Your name and work email**
-**[Zoe to fill in: a company address, not a personal one]**
+Zoe Tsekas · zoetsekas@financial-portfolios.ai
 
 **Support email or URL**
 https://financial-portfolios.ai/contact **[confirm, or give a support@ address]**
