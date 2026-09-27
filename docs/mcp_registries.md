@@ -53,7 +53,7 @@ The official GitHub directory maintained by Anthropic and the MCP community.
 ### Cursor IDE
 Users install your server directly via the **Cursor Settings** -> **Features** -> **MCP**:
 - **Type:** `command` (local) or `http` (remote).
-- **Configuration snippet:** Provided in [`mcp_clients.json`](../mcp_clients.json).
+- **Configuration snippet:** Per deployment in [`clients/`](../clients) (`mcp_clients.dev.json`, `mcp_clients.prod.json`), generated from the [`mcp_clients.json`](../mcp_clients.json) template.
 
 ### Windsurf IDE (Codeium)
 Users add your server to `~/.codeium/windsurf/mcp_config.json`:

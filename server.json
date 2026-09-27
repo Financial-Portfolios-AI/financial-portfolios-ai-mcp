@@ -36,7 +36,7 @@
         },
         {
           "name": "FINANCIAL_PORTFOLIOS_BASE_URL",
-          "description": "Portal origin the server calls. Defaults to https://financial-portfolios.ai.",
+          "description": "Portal origin the server calls, when running locally. Or set FINANCIAL_PORTFOLIOS_ENV to dev or prod. One of the two is required.",
           "isRequired": false
         }
       ]

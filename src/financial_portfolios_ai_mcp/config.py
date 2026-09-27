@@ -3,8 +3,10 @@
 from functools import lru_cache
 from urllib.parse import urlparse
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from financial_portfolios_ai_mcp.environments import ENVIRONMENTS
 
 
 class Settings(BaseSettings):
@@ -16,9 +18,18 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Which deployment to talk to. There is deliberately no default: the target is chosen
+    # when the server is deployed or run, never baked into the code. Naming an environment
+    # fills in every URL below; any URL set explicitly still wins.
+    environment: str | None = Field(
+        default=None,
+        validation_alias="FINANCIAL_PORTFOLIOS_ENV",
+        description="Target deployment: " + " or ".join(sorted(ENVIRONMENTS)),
+    )
+
     # Portal API Endpoint
     portal_base_url: str = Field(
-        default="https://financial-portfolios.ai",
+        default="",
         validation_alias="FINANCIAL_PORTFOLIOS_BASE_URL",
         description="Base URL for Financial Portfolios AI portal backend",
     )
@@ -34,12 +45,12 @@ class Settings(BaseSettings):
     # origin (the portal's issuer) advertised in /.well-known/oauth-protected-resource,
     # and this server's own PUBLIC URL (the protected resource / audience).
     authorization_server_url: str = Field(
-        default="https://financial-portfolios.ai",
+        default="",
         validation_alias="OAUTH_AUTHORIZATION_SERVER",
         description="Public OAuth 2.1 authorization-server origin (issuer)",
     )
     public_resource_url: str = Field(
-        default="https://financial-portfolios.ai/mcp",
+        default="",
         validation_alias="MCP_PUBLIC_URL",
         description="This MCP server's public URL (OAuth protected-resource identifier)",
     )
@@ -130,6 +141,30 @@ class Settings(BaseSettings):
         validation_alias="MCP_ALLOWED_HOSTS",
         description="Comma-separated Host allow-list override for the MCP transports",
     )
+
+    @model_validator(mode="after")
+    def _resolve_target(self) -> "Settings":
+        """Fill the URLs from FINANCIAL_PORTFOLIOS_ENV, and refuse to start without a target."""
+        if self.environment:
+            env = self.environment.strip().lower()
+            if env not in ENVIRONMENTS:
+                raise ValueError(
+                    f"FINANCIAL_PORTFOLIOS_ENV={self.environment!r} is not one of {sorted(ENVIRONMENTS)}"
+                )
+            origin = ENVIRONMENTS[env]
+            self.portal_base_url = self.portal_base_url or origin
+            self.authorization_server_url = self.authorization_server_url or origin
+            self.public_resource_url = self.public_resource_url or f"{origin}/mcp"
+        if not self.portal_base_url:
+            raise ValueError(
+                "No target deployment. Set FINANCIAL_PORTFOLIOS_ENV to "
+                + " or ".join(sorted(ENVIRONMENTS))
+                + ", or FINANCIAL_PORTFOLIOS_BASE_URL explicitly."
+            )
+        # An explicit portal URL alone (local stdio, tests) serves as issuer and resource too.
+        self.authorization_server_url = self.authorization_server_url or self.portal_base_url
+        self.public_resource_url = self.public_resource_url or f"{self.portal_base_url.rstrip('/')}/mcp"
+        return self
 
     @property
     def allowed_hosts(self) -> list[str]:

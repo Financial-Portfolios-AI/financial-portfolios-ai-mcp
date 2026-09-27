@@ -78,6 +78,7 @@ packages = ["src/financial_portfolios_ai_mcp"]
 "claude_connector.json" = "financial_portfolios_ai_mcp/manifests/claude_connector.json"
 "chatgpt_manifest.json" = "financial_portfolios_ai_mcp/manifests/chatgpt_manifest.json"
 "gemini-extension.json" = "financial_portfolios_ai_mcp/manifests/gemini-extension.json"
+"mcp_clients.json" = "financial_portfolios_ai_mcp/manifests/mcp_clients.json"
 # GEMINI.md is the Gemini CLI extension's context file; it travels with that manifest.
 "GEMINI.md" = "financial_portfolios_ai_mcp/manifests/GEMINI.md"
 # NOTE: openapi.yaml already ships inside the package at

@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breadth Board</title>
+<style>
+  :root {
+    --bg: var(--color-background-primary, #ffffff); --panel: var(--color-background-secondary, #f6f7fb);
+    --line: var(--color-border-primary, #e3e6ef); --text: var(--color-text-primary, #16182b);
+    --muted: var(--color-text-secondary, #5d6275);
+    --accent: #0e9fb0; --accent-soft: rgba(14,159,176,.12); --violet: #6a4bd6;
+    --warn-bg: #fff5e6; --warn-text: #8a4b00; --warn-line: #f3c98b;
+  }
+  :root[data-theme="dark"] {
+    --bg: var(--color-background-primary, #111322); --panel: var(--color-background-secondary, #181b2e);
+    --line: var(--color-border-primary, #2a2e47); --text: var(--color-text-primary, #e9ebf5);
+    --muted: var(--color-text-secondary, #9aa0b8);
+    --accent: #3ee6f0; --accent-soft: rgba(62,230,240,.12); --violet: #9b85ff;
+    --warn-bg: #2b2111; --warn-text: #f5c77e; --warn-line: #5a4320;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
+  .wrap { padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  h1 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  h2 { font-size: 13px; margin: 20px 0 8px; font-weight: 650; }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .action { font: inherit; font-size: 12.5px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 11px; cursor: pointer; white-space: nowrap; }
+  @media (hover: hover) { .action:hover { border-color: var(--accent); } }
+  .action:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.delayed { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .meta { color: var(--muted); font-size: 12px; }
+  .note { color: var(--muted); font-size: 11.5px; margin-top: 8px; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(122px, 1fr)); gap: 8px; margin-top: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .card .k { color: var(--muted); font-size: 11.5px; }
+  .card .v { font-size: 18px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .banner { margin-top: 12px; padding: 9px 12px; border-radius: 8px; font-size: 12.5px;
+    background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--panel); }
+  td.num, th.num { text-align: right; }
+  tr:last-child td { border-bottom: 0; }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+  .bar-track { background: var(--panel); border-radius: 5px; height: 10px; overflow: hidden; min-width: 70px; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--violet)); border-radius: 5px; }
+  .empty, .error { padding: 18px; text-align: center; color: var(--muted); }
+  .error { color: #c0392b; }
+  .toast { position: fixed; right: 12px; bottom: 12px; font-size: 12px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; }
+  .toast:empty { display: none; }
+  footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; }
+  @media (pointer: coarse) { .action { min-height: 44px; padding: 11px 14px; } th, td { padding: 11px 10px; } }
+  html[data-touch="true"] .action { min-height: 44px; padding: 11px 14px; }
+  html[data-touch="true"] th, html[data-touch="true"] td { padding: 11px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Breadth Board</h1>
+    <span id="scope" class="meta"></span>
+    <div class="actions">
+      <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      <button id="ask" class="action" type="button" hidden>Ask about this</button>
+      <button id="expand" class="action" type="button" hidden>Expand</button>
+    </div>
+  </header>
+  <div id="body"><div class="empty">Reading every portfolio…</div></div>
+  <footer id="disclaimer"></footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Host bridge: MCP Apps JSON-RPC over postMessage (ext-apps spec).
+  // ---------------------------------------------------------------------------
+  let nextId = 1;
+  const pending = new Map();
+  let canCallTools = false;
+  let hostCaps = {};
+  const hostCtx = {};
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+  function request(method, params) {
+    const id = nextId++;
+    send({ jsonrpc: "2.0", id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  function notify(method, params) { send({ jsonrpc: "2.0", method, params }); }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent) return;
+    const m = event.data;
+    if (!m || m.jsonrpc !== "2.0") return;
+    if (m.id !== undefined && pending.has(m.id) && !m.method) {
+      const { resolve, reject } = pending.get(m.id);
+      pending.delete(m.id);
+      m.error ? reject(new Error(m.error.message || "Host error")) : resolve(m.result);
+      return;
+    }
+    switch (m.method) {
+      case "ui/notifications/tool-result": onToolResult(m.params); break;
+      case "ui/notifications/host-context-changed": applyContext(m.params); break;
+      default:
+        if (m.id !== undefined && m.method) send({ jsonrpc: "2.0", id: m.id, result: {} });
+    }
+  });
+
+  function applyContext(ctx) {
+    if (!ctx) return;
+    Object.assign(hostCtx, ctx);
+    if (ctx.theme === "dark" || ctx.theme === "light") document.documentElement.dataset.theme = ctx.theme;
+    const device = ctx.deviceCapabilities;
+    if (device && typeof device === "object" && typeof device.touch === "boolean") {
+      document.documentElement.dataset.touch = String(device.touch);
+    }
+    const vars = ctx.styles && ctx.styles.variables;
+    if (vars && typeof vars === "object") {
+      Object.entries(vars).forEach(([name, value]) => {
+        if (/^--[a-z0-9-]{1,64}$/.test(name) && typeof value === "string" && value.length < 200 && !/url\(|expression\(/i.test(value)) {
+          document.documentElement.style.setProperty(name, value);
+        }
+      });
+    }
+    renderActions();
+  }
+
+  function logToHost(level, message) {
+    if (hostCaps.logging) notify("notifications/message", { level, message: String(message).slice(0, 500) });
+  }
+
+  function parseResult(result) {
+    if (!result) throw new Error("No result");
+    let data = null;
+    const block = (result.content || []).find((c) => c.type === "text" && typeof c.text === "string");
+    if (block) { try { data = JSON.parse(block.text); } catch (_) { data = null; } }
+    if (data === null && result.structuredContent) {
+      const sc = result.structuredContent;
+      data = typeof sc.result === "string" ? JSON.parse(sc.result) : sc;
+    }
+    if (data === null) throw new Error(block ? block.text : "Empty result");
+    if (result.isError || data.error) throw new Error(data.message || data.error || "Request failed");
+    return data;
+  }
+
+  async function callTool(name, args) {
+    if (!canCallTools) throw new Error("This app can't fetch more data in this client.");
+    try {
+      return parseResult(await request("tools/call", { name, arguments: args }));
+    } catch (err) {
+      logToHost("error", `${name} failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Helpers
+  // ---------------------------------------------------------------------------
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isNum = (v) => typeof v === "number" && Number.isFinite(v);
+  let state = null;
+
+  // The server sends weights exactly as the portal published them, so the page applies the
+  // same fraction-or-percent detection the other views use.
+  let scale = 100;
+  function calibrate(values) {
+    const max = Math.max(0, ...values.filter(isNum));
+    scale = max > 1.5 ? 1 : 100;
+  }
+  const pct = (w, d = 1) => isNum(w) ? (w * scale).toFixed(d) + "%" : "—";
+
+  function toast(message) {
+    $("toast").textContent = message;
+    setTimeout(() => { if ($("toast").textContent === message) $("toast").textContent = ""; }, 3000);
+  }
+
+  const nameOf = (code) => ((state && state.portfolios && state.portfolios[code] || {}).name) || code;
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+  function render() {
+    const s = state;
+    if (!s) return;
+    const codes = Object.keys(s.portfolios || {});
+    const held = s.most_held || [];
+    calibrate(held.flatMap((r) => [r.mean_weight, r.max_weight]));
+
+    $("scope").textContent = codes.length ? `${codes.length} portfolios` : "";
+
+    const delayed = codes.filter((c) => s.portfolios[c].delayed);
+    const dates = [...new Set(codes.map((c) => s.portfolios[c].as_of).filter(Boolean))];
+    const warn = [];
+    if (s.unavailable && s.unavailable.length) {
+      warn.push(`${s.unavailable.map(esc).join(", ")} could not be read, so these counts cover the rest only.`);
+    }
+    if (dates.length > 1) {
+      warn.push(`These books are from different dates (${dates.map(esc).join(", ")}), so overlap partly reflects timing.`);
+    }
+    if (delayed.length) {
+      warn.push(`${delayed.map((c) => esc(nameOf(c))).join(", ")} ${delayed.length === 1 ? "is" : "are"} on the public book, delayed about 45 days.`);
+    }
+
+    const cards = [
+      ["Held in 2+", String(held.length)],
+      ["Distinct holdings", String(s.distinct_holdings ?? "—")],
+      ["In one book only", String(s.only_in_one ?? "—")],
+    ].map(([k, v]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
+
+    // Most held: the honest reading of "the stocks we back most" - how many strategies
+    // hold a name, then how much weight they give it on average.
+    const maxMean = Math.max(0.0001, ...held.map((r) => r.mean_weight).filter(isNum));
+    const mostHeld = held.length ? `<div class="tablebox"><table>
+        <thead><tr><th>Ticker</th><th>Sector</th><th class="num">In</th><th class="num">Avg weight</th><th class="num">Largest</th><th>Held by</th></tr></thead>
+        <tbody>${held.map((r) => `<tr>
+          <td><strong>${esc(r.ticker)}</strong></td>
+          <td>${esc(r.sector || "—")}</td>
+          <td class="num">${esc(r.count)}</td>
+          <td class="num">${esc(pct(r.mean_weight, 2))}<div class="bar-track" style="margin-top:3px"><div class="bar-fill" style="width:${Math.round((r.mean_weight / maxMean) * 100)}%"></div></div></td>
+          <td class="num">${esc(pct(r.max_weight, 2))}</td>
+          <td class="meta">${esc((r.held_by || []).map(nameOf).join(", "))}</td>
+        </tr>`).join("")}</tbody></table></div>`
+      : `<div class="empty">No holding appears in more than one of these portfolios.</div>`;
+
+    const overlaps = (s.overlaps || []).length ? `<div class="tablebox"><table>
+        <thead><tr><th>Pair</th><th class="num">Shared names</th><th class="num">Shared weight</th><th class="num">Name overlap</th></tr></thead>
+        <tbody>${s.overlaps.map((o) => `<tr>
+          <td>${esc(nameOf(o.left))} · ${esc(nameOf(o.right))}</td>
+          <td class="num">${esc((o.shared || []).length)}</td>
+          <td class="num">${esc(pct(o.weight_overlap))}</td>
+          <td class="num">${esc(Math.round((o.jaccard || 0) * 100))}%</td>
+        </tr>`).join("")}</tbody></table></div>`
+      + `<div class="note">Shared weight is how much of the money sits in the same names; name overlap ignores size. Two books can share most of their names and little of their weight.</div>`
+      : "";
+
+    const books = codes.length ? `<div class="tablebox"><table>
+        <thead><tr><th>Portfolio</th><th class="num">Holdings</th><th class="num">Top 5</th><th class="num">Effective N</th><th>Dominant sector</th><th class="num">Unclassified</th></tr></thead>
+        <tbody>${codes.map((code) => {
+          const b = (s.books || {})[code] || {};
+          const c = b.concentration || {};
+          const sec = b.sectors || {};
+          const meta = s.portfolios[code] || {};
+          return `<tr>
+            <td><strong>${esc(nameOf(code))}</strong>${meta.delayed ? ` <span class="badge delayed">delayed</span>` : ""}</td>
+            <td class="num">${esc(c.positions ?? "—")}</td>
+            <td class="num">${esc(pct(c.top_5))}</td>
+            <td class="num">${esc(isNum(c.effective_n) ? c.effective_n.toFixed(1) : "—")}</td>
+            <td>${sec.dominant ? `${esc(sec.dominant.sector)} · ${esc(pct(sec.dominant.weight))}` : "—"}</td>
+            <td class="num">${esc(pct(sec.unclassified))}</td>
+          </tr>`;
+        }).join("")}</tbody></table></div>`
+      + `<div class="note">Effective N is how many equally sized holdings would be this concentrated - derived from the weights, so it is shown for delayed books too, where the portal sends it as null.</div>`
+      : "";
+
+    $("body").innerHTML = (warn.length ? `<div class="banner">${warn.map(esc).join(" ")}</div>` : "")
+      + `<div class="cards">${cards}</div>`
+      + `<h2>Most widely held</h2>` + mostHeld
+      + (overlaps ? `<h2>How much the books overlap</h2>` + overlaps : "")
+      + (books ? `<h2>Each book</h2>` + books : "")
+      + `<div class="note">Describes what the model portfolios hold and where they agree. There are no prices or returns behind any of it, so nothing here says how a holding or a portfolio performed. A stock being widely held is not a recommendation to own it, and no suitability assessment has been performed.</div>`;
+    renderActions();
+    contextChanged();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Actions and model context
+  // ---------------------------------------------------------------------------
+  function askText() {
+    if (!state || !(state.most_held || []).length) return null;
+    const top = state.most_held.slice(0, 5).map((r) => r.ticker).join(", ");
+    return `Using the Breadth Board, describe what my model portfolios hold in common - the most widely held names (${top}), how much the books overlap, and which sectors dominate. Do not discuss performance.`;
+  }
+
+  function renderActions() {
+    $("ask").hidden = !hostCaps.message || !askText();
+    const modes = hostCtx.availableDisplayModes || [];
+    const expand = $("expand");
+    expand.hidden = !modes.includes("fullscreen");
+    expand.textContent = hostCtx.displayMode === "fullscreen" ? "Exit full screen" : "Expand";
+  }
+
+  $("ask").addEventListener("click", () => {
+    const text = askText();
+    if (!text) return;
+    request("ui/message", { role: "user", content: { type: "text", text } })
+      .then(() => toast("Sent to the conversation"))
+      .catch((err) => { toast("Couldn't send"); logToHost("error", `ui/message failed: ${err.message}`); });
+  });
+
+  $("expand").addEventListener("click", () => {
+    const mode = hostCtx.displayMode === "fullscreen" ? "inline" : "fullscreen";
+    request("ui/request-display-mode", { mode })
+      .then((res) => { hostCtx.displayMode = (res && res.mode) || mode; renderActions(); })
+      .catch((err) => logToHost("warning", `request-display-mode failed: ${err.message}`));
+  });
+
+  let contextTimer = null;
+  function contextChanged() {
+    if (!hostCaps.updateModelContext || !state) return;
+    clearTimeout(contextTimer);
+    contextTimer = setTimeout(() => {
+      const held = state.most_held || [];
+      const text = `The user has the Breadth Board open across ${Object.keys(state.portfolios || {}).length} model portfolios. `
+        + `${held.length} holdings appear in more than one. `
+        + (held.length ? `The most widely held are ${held.slice(0, 5).map((r) => `${r.ticker} (in ${r.count})`).join(", ")}.` : "");
+      request("ui/update-model-context", {
+        content: [{ type: "text", text }],
+        structuredContent: {
+          panel: "breadth",
+          most_held: held.slice(0, 15).map((r) => ({ ticker: r.ticker, count: r.count, sector: r.sector })),
+          overlaps: (state.overlaps || []).map((o) => ({ left: o.left, right: o.right, shared: (o.shared || []).length })),
+        },
+      }).catch((err) => logToHost("warning", `update-model-context failed: ${err.message}`));
+    }, 600);
+  }
+
+  function showError(message) {
+    $("body").innerHTML = `<div class="error">${esc(message)}</div>`;
+    logToHost("error", message);
+  }
+
+  let gotToolResult = false;
+  function onToolResult(params) {
+    try {
+      const data = parseResult(params && params.result ? params.result : params);
+      gotToolResult = true;
+      state = data;
+      if (data.disclaimer) $("disclaimer").textContent = data.disclaimer;
+      render();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Size and handshake
+  // ---------------------------------------------------------------------------
+  const wrap = document.querySelector(".wrap");
+  let reported = { width: 0, height: 0 };
+  function reportSize(force) {
+    const box = wrap.getBoundingClientRect();
+    const size = { width: Math.ceil(box.width), height: Math.ceil(box.height) };
+    if (!force && Math.abs(size.height - reported.height) < 2 && Math.abs(size.width - reported.width) < 2) return;
+    reported = size;
+    notify("ui/notifications/size-changed", size);
+  }
+  new ResizeObserver(() => reportSize(false)).observe(wrap);
+
+  $("disclaimer").textContent = "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed.";
+
+  // The board's arithmetic runs on the server, so there is nothing useful to rebuild here:
+  // if the result never arrives, say so rather than issuing a dozen reads from the page.
+  function bootstrap() {
+    if (gotToolResult) return;
+    showError("No data was received. Ask the assistant to open the Breadth Board again.");
+  }
+
+  request("ui/initialize", {
+    protocolVersion: "2025-06-18",
+    appInfo: { name: "financial-portfolios-ai-breadth", version: "__APP_VERSION__" },
+    appCapabilities: { availableDisplayModes: ["inline", "fullscreen"] },
+  }).then((init) => {
+    hostCaps = (init && init.hostCapabilities) || {};
+    applyContext(init && init.hostContext);
+    canCallTools = !!hostCaps.serverTools;
+    notify("ui/notifications/initialized", {});
+    reportSize(true);
+    renderActions();
+    if (state) render();
+    setTimeout(bootstrap, 3000);
+  }).catch(() => {
+    notify("ui/notifications/initialized", {});
+  });
+})();
+</script>
+</body>
+</html>

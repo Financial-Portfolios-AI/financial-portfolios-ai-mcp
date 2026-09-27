@@ -1,6 +1,11 @@
 """Test fixtures for Financial Portfolios AI MCP Server tests."""
 
+import os
 from datetime import datetime, timezone
+
+# The server has no default target and some modules read settings at import, so a target
+# must exist before the package is imported. Tests talk to a fake host, never dev or prod.
+os.environ.setdefault("FINANCIAL_PORTFOLIOS_BASE_URL", "https://test.financial-portfolios.ai")
 
 import pytest
 

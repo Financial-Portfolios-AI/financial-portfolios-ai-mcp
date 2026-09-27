@@ -21,13 +21,7 @@ logger = logging.getLogger(__name__)
 
 PLACEHOLDER = "${PUBLIC_ORIGIN}"
 
-# The deployments this service is published for. Defined once: the manifest renderer, the
-# marketplace publisher and their tests must agree on what "dev" and "prod" mean, and a
-# second copy is how an artifact ends up pointing at the wrong environment.
-ENVIRONMENTS = {
-    "prod": "https://financial-portfolios.ai",
-    "dev": "https://dev.financial-portfolios.ai",
-}
+from financial_portfolios_ai_mcp.environments import ENVIRONMENTS  # noqa: F401 - re-exported
 
 # Public path prefix for the manifest routes; see icons.ASSET_PATH for why /mcp.
 MANIFEST_PATH = "/mcp/manifests"
@@ -36,7 +30,17 @@ MANIFESTS = (
     "claude_connector.json",
     "chatgpt_manifest.json",
     "gemini-extension.json",
+    "mcp_clients.json",
 )
+
+# Per-environment copies of the client snippets, committed so a user can copy the right one
+# without running anything. `scripts/render_manifests.py --clients` writes them and a test
+# fails if they drift from the template.
+CLIENTS_DIR = "clients"
+
+
+def clients_filename(env: str) -> str:
+    return f"mcp_clients.{env}.json"
 
 
 def _repo_root_candidates(filename: str) -> list[Path]:

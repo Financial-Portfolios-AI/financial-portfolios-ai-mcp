@@ -22,18 +22,18 @@ services:
     ports:
       - "${MCP_PUBLISH_PORT:-8090}:8080"
     environment:
-      # Portal origin the SDK calls (it appends /api/v1/... and /api/tokens).
-      # Defaults to production. For local integration against a self-hosted portal,
-      # set FINANCIAL_PORTFOLIOS_BASE_URL to your backend origin (e.g. the portal's
-      # internal Docker service on a shared network) in a local .env — do not hard-
-      # code private hostnames here.
-      - FINANCIAL_PORTFOLIOS_BASE_URL=${FINANCIAL_PORTFOLIOS_BASE_URL:-https://financial-portfolios.ai}
+      # Target deployment, chosen when you run it - there is no default:
+      #   FINANCIAL_PORTFOLIOS_ENV=dev docker compose up
+      # For a self-hosted portal, set FINANCIAL_PORTFOLIOS_BASE_URL (and the OAuth URLs
+      # below) in a local .env instead; explicit URLs override the environment.
+      - FINANCIAL_PORTFOLIOS_ENV=${FINANCIAL_PORTFOLIOS_ENV:-}
+      - FINANCIAL_PORTFOLIOS_BASE_URL=${FINANCIAL_PORTFOLIOS_BASE_URL:-}
       # Optional single-user default token (per-request X-API-Key overrides it).
       - FINANCIAL_PORTFOLIOS_API_TOKEN=${FINANCIAL_PORTFOLIOS_API_TOKEN:-}
       # OAuth 2.1: public authorization-server (issuer) + this server's public URL,
       # advertised in /.well-known/oauth-protected-resource for marketplace clients.
-      - OAUTH_AUTHORIZATION_SERVER=${OAUTH_AUTHORIZATION_SERVER:-http://localhost:3000}
-      - MCP_PUBLIC_URL=${MCP_PUBLIC_URL:-http://localhost:8090/mcp}
+      - OAUTH_AUTHORIZATION_SERVER=${OAUTH_AUTHORIZATION_SERVER:-}
+      - MCP_PUBLIC_URL=${MCP_PUBLIC_URL:-}
       # Origin used to build the absolute /assets icon URLs advertised to MCP
       # clients. Defaults to MCP_PUBLIC_URL minus the transport path when unset.
       - MCP_PUBLIC_BASE_URL=${MCP_PUBLIC_BASE_URL:-}

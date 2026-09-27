@@ -4,6 +4,7 @@ import json
 import re
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from financial_portfolios_ai_mcp import __version__
@@ -79,3 +80,21 @@ def test_every_force_included_file_exists():
     dockerfile = (root / "Dockerfile").read_text(encoding="utf-8")
     uncopied = [name for name in named if f"financial-portfolios-ai-mcp/{name}" not in dockerfile]
     assert not uncopied, f"force-included but never COPYed into the image: {uncopied}"
+
+
+@pytest.mark.parametrize("env", ["dev", "prod"])
+def test_committed_client_configs_match_the_template(env):
+    """clients/mcp_clients.<env>.json is what a user copies; it must not drift or cross envs."""
+    import importlib.util
+
+    from financial_portfolios_ai_mcp.manifests import ENVIRONMENTS, clients_filename
+
+    spec = importlib.util.spec_from_file_location("render_manifests", ROOT / "scripts" / "render_manifests.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    committed = (ROOT / "clients" / clients_filename(env)).read_text(encoding="utf-8")
+    assert committed == module.render_clients(env), "run: python scripts/render_manifests.py --clients"
+    other = next(origin for name, origin in ENVIRONMENTS.items() if name != env)
+    assert f"{other}/" not in committed and f'"{other}"' not in committed
+    assert "${PUBLIC_ORIGIN}" not in committed

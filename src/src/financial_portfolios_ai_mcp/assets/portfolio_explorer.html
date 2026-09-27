@@ -1,0 +1,1001 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Portfolio Explorer</title>
+<style>
+  /* Surface colours and font follow the host's theme variables when it supplies them
+     (hostContext.styles.variables), so the Explorer looks native in Claude and ChatGPT.
+     Brand accents stay ours. */
+  :root {
+    --bg: var(--color-background-primary, #ffffff); --panel: var(--color-background-secondary, #f6f7fb);
+    --line: var(--color-border-primary, #e3e6ef); --text: var(--color-text-primary, #16182b);
+    --muted: var(--color-text-secondary, #5d6275);
+    --accent: #0e9fb0; --accent-soft: rgba(14,159,176,.12); --violet: #6a4bd6;
+    --warn-bg: #fff5e6; --warn-text: #8a4b00; --warn-line: #f3c98b;
+    --up: #0f8a5f; --down: #c0392b;
+  }
+  :root[data-theme="dark"] {
+    --bg: var(--color-background-primary, #111322); --panel: var(--color-background-secondary, #181b2e);
+    --line: var(--color-border-primary, #2a2e47); --text: var(--color-text-primary, #e9ebf5);
+    --muted: var(--color-text-secondary, #9aa0b8);
+    --accent: #3ee6f0; --accent-soft: rgba(62,230,240,.12); --violet: #9b85ff;
+    --warn-bg: #2b2111; --warn-text: #f5c77e; --warn-line: #5a4320;
+    --up: #45d39b; --down: #ff7a6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+    font: 14px/1.45 var(--font-sans, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .action { font: inherit; font-size: 12.5px; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 5px 10px; cursor: pointer; white-space: nowrap; }
+  @media (hover: hover) { .action:hover { border-color: var(--accent); } }
+  /* Floats over the page: appearing must not reflow the header under the user's finger. */
+  .toast { position: fixed; right: 12px; bottom: 12px; font-size: 12px; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; box-shadow: 0 2px 8px rgba(0,0,0,.12); z-index: 10; }
+  .toast:empty { display: none; }
+  .wrap { padding: 16px; }
+  header { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+  h1 { font-size: 15px; margin: 0; font-weight: 650; letter-spacing: .2px; }
+  select, input { font: inherit; color: var(--text); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+  select:focus, input:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.live { background: var(--accent-soft); color: var(--accent); }
+  .badge.delayed { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .meta { color: var(--muted); font-size: 12px; }
+  .banner { margin-top: 12px; padding: 8px 12px; border-radius: 8px; font-size: 12.5px;
+    background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-line); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; margin-top: 14px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .card .k { color: var(--muted); font-size: 11.5px; }
+  .card .v { font-size: 18px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  nav { display: flex; gap: 4px; margin-top: 16px; border-bottom: 1px solid var(--line);
+    overflow-x: auto; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  nav button { font: inherit; background: none; border: 0; color: var(--muted); padding: 8px 12px;
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; flex: 0 0 auto; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0 4px; }
+  .chip { font: inherit; font-size: 12.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 999px; padding: 4px 11px; cursor: pointer; }
+  .chip[aria-pressed="true"] { color: var(--text); border-color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+  .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+  .mini { display: block; height: 5px; border-radius: 3px; margin-top: 3px; min-width: 2px; }
+  .note { color: var(--muted); font-size: 11.5px; margin-top: 8px; }
+  nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  section { padding-top: 12px; }
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .tablebox { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--panel); position: sticky; top: 0; }
+  th.sortable { cursor: pointer; user-select: none; }
+  @media (hover: hover) { th.sortable:hover { color: var(--text); } }
+  /* The only affordance for "this sorts" used to be a hover colour, which a touch host
+     (chatgpt mobile reports hover: false) never shows. Every sortable column carries a
+     mark; the inactive ones are dimmed rather than absent. */
+  .sortmark { margin-left: 4px; opacity: .32; font-size: 10px; }
+  th[aria-sort] .sortmark { opacity: 1; color: var(--accent); }
+  td.num, th.num { text-align: right; }
+  tr:last-child td { border-bottom: 0; }
+  .wbar { display: inline-block; height: 6px; border-radius: 3px; background: var(--accent); vertical-align: middle; margin-left: 8px; opacity: .75; }
+  .bars { display: grid; gap: 7px; }
+  .bar-row { display: grid; grid-template-columns: minmax(90px, 30%) 1fr 58px; gap: 10px; align-items: center; }
+  .bar-track { background: var(--panel); border-radius: 5px; height: 12px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--violet)); border-radius: 5px; }
+  .label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .right { text-align: right; font-variant-numeric: tabular-nums; }
+  h2 { font-size: 13px; margin: 18px 0 8px; font-weight: 650; }
+  .up { color: var(--up); } .down { color: var(--down); }
+  .empty, .error { padding: 18px; text-align: center; color: var(--muted); }
+  .error { color: var(--down); }
+  footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid var(--line); color: var(--muted); font-size: 11.5px; }
+  svg text { fill: var(--muted); font-size: 10px; }
+
+  /* Touch hosts. `pointer: coarse` covers most of it; `html[data-touch]` is set from the
+     host's own deviceCapabilities, because an iframe does not always inherit the query.
+     Targets go to ~44px, the usual floor for a finger. */
+  @media (pointer: coarse) {
+    .action, .chip, nav button, select, input { min-height: 44px; }
+    .action, .chip { padding: 10px 14px; }
+    nav button { padding: 12px 14px; }
+    select, input { padding: 10px 12px; }
+    th, td { padding: 11px 10px; }
+  }
+  html[data-touch="true"] .action, html[data-touch="true"] .chip,
+  html[data-touch="true"] nav button, html[data-touch="true"] select, html[data-touch="true"] input { min-height: 44px; }
+  html[data-touch="true"] .action, html[data-touch="true"] .chip { padding: 10px 14px; }
+  html[data-touch="true"] nav button { padding: 12px 14px; }
+  html[data-touch="true"] select, html[data-touch="true"] input { padding: 10px 12px; }
+  html[data-touch="true"] th, html[data-touch="true"] td { padding: 11px 10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Portfolio Explorer</h1>
+    <label class="meta" for="portfolio">Portfolio</label>
+    <select id="portfolio" aria-label="Choose a portfolio" disabled><option>Loading…</option></select>
+    <span id="access"></span>
+    <span id="asof" class="meta"></span>
+    <div class="actions">
+      <span id="toast" class="toast" role="status" aria-live="polite"></span>
+      <button id="ask" class="action" type="button" hidden>Ask about this</button>
+      <button id="expand" class="action" type="button" hidden>Expand</button>
+    </div>
+  </header>
+  <div id="banner" class="banner" hidden></div>
+  <div id="cards" class="cards"></div>
+
+  <nav role="tablist">
+    <button role="tab" data-tab="holdings" aria-selected="true">Holdings</button>
+    <button role="tab" data-tab="sectors" aria-selected="false">Sectors</button>
+    <button role="tab" data-tab="changes" aria-selected="false">Changes</button>
+    <button role="tab" data-tab="compare" aria-selected="false">Compare</button>
+    <button role="tab" data-tab="find" aria-selected="false">Find a stock</button>
+  </nav>
+
+  <section id="tab-holdings">
+    <div class="toolbar">
+      <input id="filter" type="search" placeholder="Filter by ticker or sector" aria-label="Filter holdings">
+      <span id="count" class="meta"></span>
+    </div>
+    <div class="tablebox"><table id="holdings"></table></div>
+  </section>
+
+  <section id="tab-sectors" hidden>
+    <h2>Weight by sector</h2>
+    <div id="sectors" class="bars"></div>
+    <h2>Concentration</h2>
+    <div class="meta">Cumulative weight by holding rank.</div>
+    <div id="concentration"></div>
+  </section>
+
+  <section id="tab-changes" hidden>
+    <div class="toolbar">
+      <label class="meta" for="days">Period</label>
+      <select id="days" aria-label="Period">
+        <option value="30">30 days</option><option value="90" selected>90 days</option>
+        <option value="180">180 days</option><option value="365">1 year</option>
+      </select>
+      <span id="changes-note" class="meta"></span>
+    </div>
+    <div id="changes"></div>
+  </section>
+
+  <section id="tab-compare" hidden>
+    <div class="meta">Choose two or three portfolios.</div>
+    <div id="compare-picks" class="chips" role="group" aria-label="Portfolios to compare"></div>
+    <div id="compare"></div>
+  </section>
+
+  <section id="tab-find" hidden>
+    <div class="toolbar">
+      <input id="ticker" type="search" placeholder="Ticker, e.g. NVDA" aria-label="Find a stock across portfolios"
+        autocapitalize="characters" autocomplete="off" spellcheck="false">
+    </div>
+    <div id="find"><div class="note">See which portfolios hold a stock, at what weight and rank.</div></div>
+  </section>
+
+  <footer id="disclaimer"></footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---------------------------------------------------------------------------
+  // Host bridge: MCP Apps JSON-RPC over postMessage (ext-apps spec).
+  // ---------------------------------------------------------------------------
+  let nextId = 1;
+  const pending = new Map();
+  let canCallTools = false;
+
+  function send(message) { window.parent.postMessage(message, "*"); }
+  function request(method, params) {
+    const id = nextId++;
+    send({ jsonrpc: "2.0", id, method, params });
+    return new Promise((resolve, reject) => pending.set(id, { resolve, reject }));
+  }
+  function notify(method, params) { send({ jsonrpc: "2.0", method, params }); }
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window.parent) return;
+    const m = event.data;
+    if (!m || m.jsonrpc !== "2.0") return;
+
+    if (m.id !== undefined && pending.has(m.id) && !m.method) {
+      const { resolve, reject } = pending.get(m.id);
+      pending.delete(m.id);
+      m.error ? reject(new Error(m.error.message || "Host error")) : resolve(m.result);
+      return;
+    }
+    switch (m.method) {
+      case "ui/notifications/tool-result": onToolResult(m.params); break;
+      case "ui/notifications/host-context-changed": applyContext(m.params); break;
+      default:
+        // Any host request we don't handle (e.g. teardown) gets an empty success.
+        if (m.id !== undefined && m.method) send({ jsonrpc: "2.0", id: m.id, result: {} });
+    }
+  });
+
+  // What the host advertised in ui/initialize, and its context as it changes.
+  let hostCaps = {};
+  const hostCtx = {};
+
+  function applyContext(ctx) {
+    if (!ctx) return;
+    Object.assign(hostCtx, ctx);
+    if (ctx.theme === "dark" || ctx.theme === "light") {
+      document.documentElement.dataset.theme = ctx.theme;
+    }
+    // The host knows whether a finger is driving this better than the iframe's own media
+    // query does; chatgpt mobile reports touch: true, hover: false.
+    const device = ctx.deviceCapabilities;
+    if (device && typeof device === "object" && typeof device.touch === "boolean") {
+      document.documentElement.dataset.touch = String(device.touch);
+    }
+    // Host theme variables (--color-*, --font-*, ...). Only well-formed custom properties
+    // with plain values are applied.
+    const vars = ctx.styles && ctx.styles.variables;
+    if (vars && typeof vars === "object") {
+      Object.entries(vars).forEach(([name, value]) => {
+        if (/^--[a-z0-9-]{1,64}$/.test(name) && typeof value === "string" && value.length < 200 && !/url\(|expression\(/i.test(value)) {
+          document.documentElement.style.setProperty(name, value);
+        }
+      });
+    }
+    if (typeof renderActions === "function") renderActions();
+  }
+
+  // Send the page's errors to the host's logs when it accepts them.
+  function logToHost(level, message) {
+    if (hostCaps.logging) notify("notifications/message", { level, message: String(message).slice(0, 500) });
+  }
+
+  // Our tools return a JSON string. The SDK sends it twice: as a text content block,
+  // and wrapped as structuredContent {"result": "<the same JSON string>"}. Read the
+  // text block first; fall back to unwrapping structuredContent. Reading
+  // structuredContent as-is yields {result: "..."} - an object with no portfolios.
+  function parseResult(result) {
+    if (!result) throw new Error("No result");
+    let data = null;
+    const block = (result.content || []).find((c) => c.type === "text" && typeof c.text === "string");
+    if (block) {
+      try { data = JSON.parse(block.text); } catch (_) { data = null; }
+    }
+    if (data === null && result.structuredContent) {
+      const sc = result.structuredContent;
+      data = typeof sc.result === "string" ? JSON.parse(sc.result) : sc;
+    }
+    if (data === null) throw new Error(block ? block.text : "Empty result");
+    if (result.isError || data.error) throw new Error(data.message || data.error || "Request failed");
+    return data;
+  }
+
+  async function callTool(name, args) {
+    if (!canCallTools) throw new Error("This app can't fetch more data in this client.");
+    try {
+      return parseResult(await request("tools/call", { name, arguments: args }));
+    } catch (err) {
+      logToHost("error", `${name} failed: ${err.message}`);
+      throw err;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // State and helpers
+  // ---------------------------------------------------------------------------
+  const state = { portfolios: [], selected: null, allocation: null, sortKey: "weight", sortDir: -1, compare: [] };
+
+  // Allocations are fetched once per portfolio and reused by Holdings, Compare and Find.
+  const cache = new Map();
+  async function allocationFor(code) {
+    if (cache.has(code)) return cache.get(code);
+    const a = await callTool("get_portfolio_allocation", { portfolio_code: code });
+    cache.set(code, a);
+    return a;
+  }
+  const $ = (id) => document.getElementById(id);
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const isNum = (v) => typeof v === "number" && isFinite(v);
+
+  // Weights arrive as fractions (0.15); tolerate percentages if a series exceeds 1.
+  let weightScale = 100;
+  const pct = (w, d = 2) => isNum(w) ? (w * weightScale).toFixed(d) + "%" : "—";
+  const pp = (w) => isNum(w) ? (w * weightScale >= 0 ? "+" : "") + (w * weightScale).toFixed(2) + " pp" : "—";
+  function calibrate(positions) {
+    const max = Math.max(0, ...positions.map((p) => p.weight).filter(isNum));
+    weightScale = max > 1.5 ? 1 : 100;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Rendering
+  // ---------------------------------------------------------------------------
+  function renderPicker() {
+    const sel = $("portfolio");
+    sel.innerHTML = state.portfolios.map((p) => {
+      const tag = p.access === "subscribed" ? "Live" : "Delayed";
+      const label = `${p.product_name || p.code} (${p.code}) · ${tag}`;
+      return `<option value="${esc(p.code)}"${p.code === state.selected ? " selected" : ""}>${esc(label)}</option>`;
+    }).join("");
+    sel.disabled = state.portfolios.length === 0 || !canCallTools;
+    if (!canCallTools && state.portfolios.length) sel.title = "Switching portfolios isn't available in this client.";
+  }
+
+  function renderHeader(a) {
+    const live = a && !a.delayed;
+    $("access").innerHTML = a ? `<span class="badge ${live ? "live" : "delayed"}">${live ? "Live book" : "Holdings delayed ~45 days"}</span>` : "";
+    const date = a && (a.as_of || a.date);
+    $("asof").textContent = date ? `As of ${String(date).slice(0, 10)}` : "";
+    const banner = $("banner");
+    if (a && a.delayed) {
+      banner.hidden = false;
+      banner.textContent = "You're viewing the public book, delayed about 45 days. It is not the current allocation. Expected return, volatility, equity exposure, cash and effective N are only shown for portfolios you subscribe to.";
+    } else {
+      banner.hidden = true;
+    }
+  }
+
+  function renderCards(a) {
+    const pos = a.positions || [];
+    const sorted = pos.map((p) => p.weight).filter(isNum).sort((x, y) => y - x);
+    const top = (n) => sorted.slice(0, n).reduce((s, w) => s + w, 0);
+    const cards = [
+      ["Positions", String(a.total_positions ?? pos.length)],
+      ["Top 5 weight", pct(top(5), 1)],
+      ["Top 10 weight", pct(top(10), 1)],
+    ];
+    // Omit null metrics rather than showing zero: they are null on the delayed book.
+    if (isNum(a.effective_n)) cards.push(["Effective N", a.effective_n.toFixed(1)]);
+    if (isNum(a.equity_exposure)) cards.push(["Equity exposure", pct(a.equity_exposure, 1)]);
+    if (isNum(a.cash_allocation)) cards.push(["Cash", pct(a.cash_allocation, 1)]);
+    $("cards").innerHTML = cards.map(([k, v]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`).join("");
+  }
+
+  function renderHoldings() {
+    const a = state.allocation;
+    const all = (a && a.positions) || [];
+    const hasSignals = all.some((p) => isNum(p.expected_return) || isNum(p.expected_volatility));
+    const q = $("filter").value.trim().toLowerCase();
+    const rows = all
+      .filter((p) => !q || String(p.ticker).toLowerCase().includes(q) || String(p.sector || "").toLowerCase().includes(q))
+      .sort((x, y) => {
+        const k = state.sortKey, va = x[k], vb = y[k];
+        if (isNum(va) || isNum(vb)) return ((isNum(va) ? va : -Infinity) - (isNum(vb) ? vb : -Infinity)) * state.sortDir;
+        return String(va ?? "").localeCompare(String(vb ?? "")) * state.sortDir;
+      });
+    const maxW = Math.max(0.0001, ...all.map((p) => p.weight).filter(isNum));
+
+    const cols = [["ticker", "Ticker", false], ["sector", "Sector", false], ["weight", "Weight", true]];
+    if (hasSignals) cols.push(["expected_return", "Exp. return", true], ["expected_volatility", "Exp. volatility", true]);
+    const mark = (k) => `<span class="sortmark" aria-hidden="true">${state.sortKey === k ? (state.sortDir < 0 ? "▾" : "▴") : "⇅"}</span>`;
+    const sorted = (k) => state.sortKey === k ? ` aria-sort="${state.sortDir < 0 ? "descending" : "ascending"}"` : "";
+    const head = `<thead><tr>${cols.map(([k, label, num]) => `<th class="sortable${num ? " num" : ""}" data-key="${k}"${sorted(k)} tabindex="0" role="columnheader" title="Sort by ${label}">${label}${mark(k)}</th>`).join("")}</tr></thead>`;
+    const body = rows.length
+      ? rows.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td>`
+          + `<td class="num">${pct(p.weight)}<span class="wbar" style="width:${Math.round((p.weight / maxW) * 60)}px"></span></td>`
+          + (hasSignals ? `<td class="num">${pct(p.expected_return, 1)}</td><td class="num">${pct(p.expected_volatility, 1)}</td>` : "")
+          + `</tr>`).join("")
+      : `<tr><td colspan="${cols.length}" class="empty">No holdings match.</td></tr>`;
+    $("holdings").innerHTML = head + `<tbody>${body}</tbody>`;
+    $("count").textContent = `${rows.length} of ${all.length} holdings`;
+    lastHoldings = { rows, total: all.length, filter: q, sortKey: state.sortKey, sortDir: state.sortDir };
+    const applySort = (th) => {
+      const k = th.dataset.key;
+      state.sortDir = state.sortKey === k ? -state.sortDir : (k === "ticker" || k === "sector" ? 1 : -1);
+      state.sortKey = k;
+      renderHoldings();
+      contextChanged(); // the model should know what the user re-ordered the table by
+    };
+    $("holdings").querySelectorAll("th.sortable").forEach((th) => {
+      th.addEventListener("click", () => applySort(th));
+      th.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); applySort(th); }
+      });
+    });
+  }
+
+  function renderSectors() {
+    const pos = (state.allocation && state.allocation.positions) || [];
+    const bySector = new Map();
+    pos.forEach((p) => { if (isNum(p.weight)) bySector.set(p.sector || "Unclassified", (bySector.get(p.sector || "Unclassified") || 0) + p.weight); });
+    const rows = [...bySector.entries()].sort((a, b) => b[1] - a[1]);
+    const max = Math.max(0.0001, ...rows.map((r) => r[1]));
+    $("sectors").innerHTML = rows.length
+      ? rows.map(([s, w]) => `<div class="bar-row"><div class="label" title="${esc(s)}">${esc(s)}</div>`
+          + `<div class="bar-track"><div class="bar-fill" style="width:${(w / max) * 100}%"></div></div>`
+          + `<div class="right">${pct(w, 1)}</div></div>`).join("")
+      : `<div class="empty">No sector data.</div>`;
+
+    // Cumulative weight curve.
+    const weights = pos.map((p) => p.weight).filter(isNum).sort((a, b) => b - a);
+    if (!weights.length) { $("concentration").innerHTML = ""; return; }
+    const total = weights.reduce((s, w) => s + w, 0) || 1;
+    let run = 0;
+    const cum = weights.map((w) => (run += w) / total);
+    const W = 560, H = 150, P = 26;
+    const x = (i) => P + (i / Math.max(1, cum.length - 1)) * (W - P * 2);
+    const y = (v) => H - P + 4 - v * (H - P * 2);
+    const line = cum.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(" ");
+    const area = `${x(0)},${y(0)} ${line} ${x(cum.length - 1)},${y(0)}`;
+    const grid = [0, 0.5, 1].map((v) => `<line x1="${P}" x2="${W - P}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="2" y="${y(v) + 3}">${Math.round(v * 100)}%</text>`).join("");
+    $("concentration").innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Cumulative weight by holding rank">
+      ${grid}
+      <polygon points="${area}" fill="var(--accent-soft)"/>
+      <polyline points="${line}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+      <text x="${P}" y="${H - 4}">1</text><text x="${W - P - 10}" y="${H - 4}">${cum.length}</text>
+    </svg>`;
+  }
+
+  async function loadChanges() {
+    const box = $("changes"), note = $("changes-note");
+    if (!state.selected) return;
+    box.innerHTML = `<div class="empty">Loading history…</div>`;
+    note.textContent = "";
+    try {
+      const h = await callTool("get_portfolio_history", { portfolio_code: state.selected, days: Number($("days").value) });
+      const snaps = (h.snapshots || []).slice().sort((a, b) => String(a.date).localeCompare(String(b.date)));
+      if (h.delayed) note.textContent = "Delayed history ends about 45 days ago, so recent changes are not shown.";
+      if (snaps.length < 2) {
+        box.innerHTML = `<div class="empty">Fewer than two snapshots in this period, so there is nothing to compare. Try a longer period.</div>`;
+        return;
+      }
+      const first = snaps[0], last = snaps[snaps.length - 1];
+      const map = (s) => new Map((s.positions || []).map((p) => [p.ticker, p]));
+      const a = map(first), b = map(last);
+      const added = [...b.values()].filter((p) => !a.has(p.ticker)).sort((x, y) => y.weight - x.weight);
+      const removed = [...a.values()].filter((p) => !b.has(p.ticker)).sort((x, y) => y.weight - x.weight);
+      const shifts = [...b.values()].filter((p) => a.has(p.ticker))
+        .map((p) => ({ ticker: p.ticker, sector: p.sector, from: a.get(p.ticker).weight, to: p.weight, d: p.weight - a.get(p.ticker).weight }))
+        .filter((r) => isNum(r.d) && Math.abs(r.d) > 1e-9)
+        .sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 12);
+
+      // One-way turnover: half the summed absolute weight change across the union of
+      // tickers, so an add and the sell that funded it count once between them.
+      let drift = 0;
+      new Set([...a.keys(), ...b.keys()]).forEach((t) => {
+        const from = a.has(t) && isNum(a.get(t).weight) ? a.get(t).weight : 0;
+        const to = b.has(t) && isNum(b.get(t).weight) ? b.get(t).weight : 0;
+        drift += Math.abs(to - from);
+      });
+      lastChanges = {
+        from: String(first.date).slice(0, 10), to: String(last.date).slice(0, 10), snapshots: snaps.length,
+        added: added.length, removed: removed.length, turnover_pct: asPct(drift / 2),
+        largest_moves: shifts.slice(0, 8).map((r) => ({ ticker: r.ticker, change_pp: asPct(r.d, 2), to_pct: asPct(r.to, 2) })),
+      };
+      contextChanged();
+
+      const table = (title, rowsHtml, headers) => `<h2>${title}</h2><div class="tablebox"><table><thead><tr>${headers}</tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+      const none = (n) => `<tr><td colspan="${n}" class="empty">None.</td></tr>`;
+      box.innerHTML =
+        `<div class="meta">Comparing ${esc(String(first.date).slice(0, 10))} with ${esc(String(last.date).slice(0, 10))} (${snaps.length} snapshots).</div>`
+        + table(`Added (${added.length})`, added.length ? added.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td><td class="num">${pct(p.weight)}</td></tr>`).join("") : none(3), `<th>Ticker</th><th>Sector</th><th class="num">Weight</th>`)
+        + table(`Removed (${removed.length})`, removed.length ? removed.map((p) => `<tr><td><strong>${esc(p.ticker)}</strong></td><td>${esc(p.sector || "—")}</td><td class="num">${pct(p.weight)}</td></tr>`).join("") : none(3), `<th>Ticker</th><th>Sector</th><th class="num">Previous weight</th>`)
+        + table("Largest weight shifts", shifts.length ? shifts.map((r) => `<tr><td><strong>${esc(r.ticker)}</strong></td><td>${esc(r.sector || "—")}</td><td class="num">${pct(r.from)}</td><td class="num">${pct(r.to)}</td><td class="num ${r.d > 0 ? "up" : "down"}">${pp(r.d)}</td></tr>`).join("") : none(5), `<th>Ticker</th><th>Sector</th><th class="num">From</th><th class="num">To</th><th class="num">Change</th>`);
+    } catch (err) {
+      box.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+    }
+  }
+
+  function renderAll() {
+    // Buttons depend on the data (nothing to ask about before a portfolio loads), so they
+    // re-evaluate whenever the view does - not only at the handshake.
+    renderActions();
+    contextChanged();
+    const a = state.allocation;
+    renderPicker();
+    renderHeader(a);
+    if (!a) {
+      $("cards").innerHTML = "";
+      $("holdings").innerHTML = `<tbody><tr><td class="empty">No portfolio selected.</td></tr></tbody>`;
+      return;
+    }
+    calibrate(a.positions || []);
+    renderCards(a);
+    renderHoldings();
+    renderSectors();
+    lastChanges = null; // belongs to whichever book was loaded before this one
+    if (!$("tab-changes").hidden) loadChanges();
+  }
+
+  function showError(message) {
+    $("holdings").innerHTML = `<tbody><tr><td class="error">${esc(message)}</td></tr></tbody>`;
+    $("sectors").innerHTML = `<div class="error">${esc(message)}</div>`;
+    logToHost("error", message);
+  }
+
+  // ---------------------------------------------------------------------------
+  // What the user is looking at: shared by model context and the Ask button
+  // ---------------------------------------------------------------------------
+  let currentTab = "holdings";
+  let lastFind = null;
+  let lastHoldings = null;
+  let lastChanges = null;
+  let lastCompare = null;
+
+  // Concentration and sector figures computed from weights alone, so they are available on
+  // the delayed book too - where the portal sends null for effective_n and the rest.
+  function metricsOf(a) {
+    const weights = (a.positions || []).map((p) => p.weight).filter(isNum);
+    const total = weights.reduce((s, w) => s + w, 0);
+    if (!total) return null;
+    const ranked = weights.slice().sort((x, y) => y - x);
+    const sectors = new Map();
+    (a.positions || []).forEach((p) => {
+      if (!isNum(p.weight)) return;
+      const key = p.sector || "Unclassified";
+      sectors.set(key, (sectors.get(key) || 0) + p.weight);
+    });
+    const bySector = [...sectors.entries()].sort((x, y) => y[1] - x[1]);
+    // HHI needs weights that sum to 1; the book can sum to less than the whole portfolio
+    // when cash sits outside `positions`, so normalise here and only here. The headline
+    // percentages stay on the page's own scale, so they match what the user is reading.
+    const hhi = weights.reduce((s, w) => s + (w / total) ** 2, 0);
+    const sectorHhi = bySector.reduce((s, [, w]) => s + (w / total) ** 2, 0);
+    return {
+      top5: ranked.slice(0, 5).reduce((s, w) => s + w, 0),
+      top10: ranked.slice(0, 10).reduce((s, w) => s + w, 0),
+      effectiveN: hhi ? 1 / hhi : null,
+      largest: ranked[0] ?? null,
+      sectors: bySector,
+      dominant: bySector[0] || null,
+      effectiveSectors: sectorHhi ? 1 / sectorHhi : null,
+      unclassified: sectors.get("Unclassified") || 0,
+    };
+  }
+
+  // Percent on the same scale the page displays (`weightScale` detects fractions vs percent).
+  const asPct = (w, d = 1) => isNum(w) ? Number((w * weightScale).toFixed(d)) : null;
+
+  function describeView() {
+    const a = state.allocation;
+    const name = a ? nameOf(state.selected) : null;
+    const book = a ? `${a.delayed ? "public book delayed about 45 days" : "latest book"}, as of ${dateOf(a)}` : "";
+    const lines = [];
+    const structured = { tab: currentTab, portfolio: state.selected, access: a ? (a.delayed ? "public_delayed" : "subscribed") : null, as_of: a ? dateOf(a) : null };
+    if (a) lines.push(`The user has the Portfolio Explorer open on ${name} (${state.selected}), ${book}.`);
+    const m = a ? metricsOf(a) : null;
+    if (m) {
+      structured.concentration = {
+        positions: a.total_positions ?? (a.positions || []).length,
+        top5_pct: asPct(m.top5), top10_pct: asPct(m.top10), largest_pct: asPct(m.largest, 2),
+        effective_n: m.effectiveN ? Number(m.effectiveN.toFixed(1)) : null,
+      };
+    }
+    if (currentTab === "holdings") {
+      const q = $("filter").value.trim();
+      lines.push(`They are viewing its holdings table${q ? `, filtered by "${q}"` : ""}.`);
+      structured.filter = q || null;
+      // The rows actually on screen, in the order they are on screen, so a question about
+      // "the third one" or "the biggest" resolves without the user restating anything.
+      if (lastHoldings) {
+        const shown = lastHoldings.rows.slice(0, 15);
+        structured.sorted_by = { column: lastHoldings.sortKey, direction: lastHoldings.sortDir < 0 ? "desc" : "asc" };
+        structured.visible_rows = { shown: shown.length, matching: lastHoldings.rows.length, total: lastHoldings.total };
+        structured.holdings = shown.map((p) => ({ ticker: p.ticker, weight_pct: asPct(p.weight, 2), sector: p.sector || null }));
+        lines.push(`The table is sorted by ${lastHoldings.sortKey} ${lastHoldings.sortDir < 0 ? "descending" : "ascending"}`
+          + `, showing ${lastHoldings.rows.length} of ${lastHoldings.total} holdings`
+          + `${shown.length < lastHoldings.rows.length ? ` (the first ${shown.length} are listed here)` : ""}.`);
+      }
+    } else if (currentTab === "sectors") {
+      lines.push("They are viewing its sector weights and concentration.");
+      if (m && m.dominant) {
+        structured.sectors = m.sectors.slice(0, 8).map(([sector, w]) => ({ sector, weight_pct: asPct(w) }));
+        structured.dominant_sector = { sector: m.dominant[0], weight_pct: asPct(m.dominant[1]) };
+        structured.effective_sectors = m.effectiveSectors ? Number(m.effectiveSectors.toFixed(1)) : null;
+        structured.unclassified_pct = asPct(m.unclassified);
+        lines.push(`Its largest sector is ${m.dominant[0]} at ${pct(m.dominant[1], 1)}`
+          + `${m.effectiveSectors ? `, and its weight is spread across the equivalent of ${m.effectiveSectors.toFixed(1)} equally sized sectors` : ""}.`);
+      }
+    } else if (currentTab === "changes") {
+      lines.push(`They are viewing its changes over the last ${$("days").value} days.`);
+      structured.days = Number($("days").value);
+      if (lastChanges) {
+        structured.changes = lastChanges;
+        lines.push(`Between ${lastChanges.from} and ${lastChanges.to} the model added ${lastChanges.added} and removed ${lastChanges.removed} holdings`
+          + `${isNum(lastChanges.turnover_pct) ? `, moving about ${lastChanges.turnover_pct}% of the book` : ""}.`);
+      }
+    } else if (currentTab === "compare") {
+      lines.push(`They are comparing ${state.compare.map(nameOf).join(", ")}.`);
+      structured.compare = state.compare.slice();
+      if (lastCompare) {
+        structured.comparison = lastCompare;
+        lines.push(`${lastCompare.shared_holdings} holding${lastCompare.shared_holdings === 1 ? "" : "s"} appear in more than one of them.`);
+      }
+    } else if (currentTab === "find") {
+      if (lastFind) {
+        lines.push(`They searched for ${lastFind.ticker}, which is held in ${lastFind.held} of ${lastFind.total} portfolios.`);
+        structured.ticker = lastFind.ticker;
+      } else {
+        lines.push("They are on the stock search.");
+      }
+    }
+    return { text: lines.join(" "), structured };
+  }
+
+  // Keep the model aware of the current view, so "why did this change?" needs no restating.
+  let contextTimer = null;
+  function contextChanged() {
+    if (!hostCaps.updateModelContext) return;
+    clearTimeout(contextTimer);
+    contextTimer = setTimeout(() => {
+      const view = describeView();
+      if (!view.text) return;
+      request("ui/update-model-context", { content: [{ type: "text", text: view.text }], structuredContent: view.structured })
+        .catch((err) => logToHost("warning", `update-model-context failed: ${err.message}`));
+    }, 600);
+  }
+
+  // The follow-up the Ask button posts into the conversation. Worded as a neutral request
+  // to describe what is on screen - never a request for advice.
+  function askText() {
+    const a = state.allocation;
+    if (!a) return null;
+    const name = `${nameOf(state.selected)} (${state.selected})`;
+    const dated = a.delayed ? `, noting that this is the delayed book as of ${dateOf(a)}` : "";
+    switch (currentTab) {
+      case "changes":
+        return `Using the Portfolio Explorer, explain what changed in the ${name} model portfolio over the last ${$("days").value} days${dated}.`;
+      case "compare":
+        return state.compare.length >= 2
+          ? `Using the Portfolio Explorer, summarise the differences between the ${state.compare.map(nameOf).join(", ")} model portfolios, noting where the books are from different dates.`
+          : null;
+      case "find":
+        return lastFind
+          ? `Using the Portfolio Explorer, describe how ${lastFind.ticker} is weighted across the model portfolios.`
+          : null;
+      case "sectors":
+        return `Using the Portfolio Explorer, describe the sector weights and concentration of the ${name} model portfolio${dated}.`;
+      default:
+        return `Using the Portfolio Explorer, describe the holdings and sector mix of the ${name} model portfolio${dated}.`;
+    }
+  }
+
+  function toast(message) {
+    $("toast").textContent = message;
+    setTimeout(() => { if ($("toast").textContent === message) $("toast").textContent = ""; }, 3000);
+  }
+
+  function renderActions() {
+    const ask = $("ask");
+    ask.hidden = !hostCaps.message || !askText();
+    const modes = hostCtx.availableDisplayModes || [];
+    const expand = $("expand");
+    expand.hidden = !modes.includes("fullscreen");
+    expand.textContent = hostCtx.displayMode === "fullscreen" ? "Exit full screen" : "Expand";
+  }
+
+  $("ask").addEventListener("click", () => {
+    const text = askText();
+    if (!text) return;
+    request("ui/message", { role: "user", content: { type: "text", text } })
+      .then(() => toast("Sent to the conversation"))
+      .catch((err) => { toast("Couldn't send"); logToHost("error", `ui/message failed: ${err.message}`); });
+  });
+
+  $("expand").addEventListener("click", () => {
+    const mode = hostCtx.displayMode === "fullscreen" ? "inline" : "fullscreen";
+    request("ui/request-display-mode", { mode })
+      .then((r) => { hostCtx.displayMode = (r && r.mode) || mode; renderActions(); })
+      .catch((err) => logToHost("warning", `request-display-mode failed: ${err.message}`));
+  });
+
+  // ---------------------------------------------------------------------------
+  // Compare
+  // ---------------------------------------------------------------------------
+  const SERIES = ["var(--accent)", "var(--violet)", "#e0913a"];
+  const nameOf = (code) => { const p = state.portfolios.find((x) => x.code === code); return (p && p.product_name) || code; };
+  const dateOf = (a) => String(a.as_of || a.date || "").slice(0, 10);
+  const accessBadge = (a) => a.delayed
+    ? `<span class="badge delayed">Delayed</span>` : `<span class="badge live">Live</span>`;
+
+  function renderComparePicks() {
+    if (!state.compare.length) {
+      // Start from the portfolio on screen, then fill up to three.
+      const codes = state.portfolios.map((p) => p.code);
+      state.compare = [state.selected, ...codes.filter((c) => c !== state.selected)].filter(Boolean).slice(0, 3);
+    }
+    $("compare-picks").innerHTML = state.portfolios.map((p) =>
+      `<button class="chip" aria-pressed="${state.compare.includes(p.code)}" data-code="${esc(p.code)}">${esc(p.product_name || p.code)}</button>`
+    ).join("");
+    $("compare-picks").querySelectorAll(".chip").forEach((chip) => chip.addEventListener("click", () => {
+      const code = chip.dataset.code;
+      if (state.compare.includes(code)) state.compare = state.compare.filter((c) => c !== code);
+      else if (state.compare.length < 3) state.compare = [...state.compare, code];
+      renderComparePicks();
+      loadCompare();
+      renderActions();
+      contextChanged();
+    }));
+  }
+
+  let compareSeq = 0;
+  async function loadCompare() {
+    const box = $("compare");
+    const codes = state.compare.slice(0, 3);
+    if (codes.length < 2) { box.innerHTML = `<div class="empty">Choose at least two portfolios to compare.</div>`; return; }
+    const seq = ++compareSeq;
+    box.innerHTML = `<div class="empty">Loading…</div>`;
+    let books;
+    try {
+      books = await Promise.all(codes.map(allocationFor));
+    } catch (err) {
+      if (seq === compareSeq) box.innerHTML = `<div class="error">${esc(err.message)}</div>`;
+      return;
+    }
+    if (seq !== compareSeq) return;
+
+    const cols = codes.map((code, i) => ({ code, a: books[i], color: SERIES[i] }));
+    calibrate(cols.flatMap((c) => c.a.positions || []));
+
+    const stats = (a) => {
+      const pos = a.positions || [];
+      const ws = pos.map((p) => p.weight).filter(isNum).sort((x, y) => y - x);
+      const top = (n) => ws.slice(0, n).reduce((s, w) => s + w, 0);
+      const sectors = new Map();
+      pos.forEach((p) => isNum(p.weight) && sectors.set(p.sector || "Unclassified", (sectors.get(p.sector || "Unclassified") || 0) + p.weight));
+      const lead = [...sectors.entries()].sort((x, y) => y[1] - x[1])[0];
+      return { pos, top5: top(5), top10: top(10), sectors, lead };
+    };
+    cols.forEach((c) => { c.s = stats(c.a); });
+
+    // Different dates, or live next to delayed, are not like-for-like.
+    const dates = new Set(cols.map((c) => dateOf(c.a)));
+    const mixed = new Set(cols.map((c) => !!c.a.delayed)).size > 1;
+    const warning = dates.size > 1 || mixed
+      ? `<div class="banner">These books are from different dates (${[...dates].map(esc).join(", ")})${mixed ? ", and some are delayed about 45 days" : ""}. Differences partly reflect timing, not only the models, so this is not a like-for-like comparison.</div>`
+      : "";
+
+    const head = `<th></th>` + cols.map((c) => `<th><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("");
+    const row = (label, fn) => `<tr><td class="meta">${label}</td>${cols.map((c) => `<td>${fn(c)}</td>`).join("")}</tr>`;
+    const summary = `<div class="tablebox"><table><thead><tr>${head}</tr></thead><tbody>`
+      + row("Access", (c) => accessBadge(c.a))
+      + row("As of", (c) => esc(dateOf(c.a)))
+      + row("Risk level", (c) => { const p = state.portfolios.find((x) => x.code === c.code); return esc((p && p.risk_level) || "—"); })
+      + row("Positions", (c) => esc(c.a.total_positions ?? c.s.pos.length))
+      + row("Top 5 weight", (c) => pct(c.s.top5, 1))
+      + row("Top 10 weight", (c) => pct(c.s.top10, 1))
+      + row("Largest sector", (c) => c.s.lead ? `${esc(c.s.lead[0])} · ${pct(c.s.lead[1], 1)}` : "—")
+      + row("Effective N", (c) => isNum(c.a.effective_n) ? c.a.effective_n.toFixed(1) : "—")
+      + row("Equity / cash", (c) => isNum(c.a.equity_exposure) ? `${pct(c.a.equity_exposure, 0)} / ${pct(c.a.cash_allocation, 0)}` : "—")
+      + `</tbody></table></div>`;
+
+    const allSectors = [...new Set(cols.flatMap((c) => [...c.s.sectors.keys()]))]
+      .sort((x, y) => Math.max(...cols.map((c) => c.s.sectors.get(y) || 0)) - Math.max(...cols.map((c) => c.s.sectors.get(x) || 0)));
+    const maxSector = Math.max(0.0001, ...cols.flatMap((c) => [...c.s.sectors.values()]));
+    const sectorTable = `<div class="tablebox"><table><thead><tr><th>Sector</th>${cols.map((c) => `<th class="num"><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("")}</tr></thead><tbody>`
+      + allSectors.map((sec) => `<tr><td>${esc(sec)}</td>${cols.map((c) => {
+          const w = c.s.sectors.get(sec) || 0;
+          return w ? `<td class="num">${pct(w, 1)}<span class="mini" style="width:${(w / maxSector) * 100}%;background:${c.color}"></span></td>` : `<td class="num">—</td>`;
+        }).join("")}</tr>`).join("")
+      + `</tbody></table></div>`;
+
+    const byTicker = new Map();
+    cols.forEach((c, i) => c.s.pos.forEach((p) => {
+      const key = String(p.ticker).toUpperCase();
+      if (!byTicker.has(key)) byTicker.set(key, { ticker: p.ticker, sector: p.sector, weights: [] });
+      byTicker.get(key).weights[i] = p.weight;
+    }));
+    const shared = [...byTicker.values()].filter((t) => t.weights.filter(isNum).length > 1)
+      .sort((x, y) => y.weights.filter(isNum).reduce((s, w) => s + w, 0) - x.weights.filter(isNum).reduce((s, w) => s + w, 0));
+    const overlap = shared.length
+      ? `<div class="meta">${shared.length} holding${shared.length === 1 ? "" : "s"} appear in more than one of these portfolios.</div>`
+        + `<div class="tablebox" style="margin-top:6px"><table><thead><tr><th>Ticker</th><th>Sector</th>${cols.map((c) => `<th class="num"><span class="sw" style="background:${c.color}"></span>${esc(nameOf(c.code))}</th>`).join("")}</tr></thead><tbody>`
+        + shared.map((t) => `<tr><td><strong>${esc(t.ticker)}</strong></td><td>${esc(t.sector || "—")}</td>${cols.map((_, i) => `<td class="num">${isNum(t.weights[i]) ? pct(t.weights[i]) : "—"}</td>`).join("")}</tr>`).join("")
+        + `</tbody></table></div>`
+      : `<div class="empty">These portfolios have no holdings in common.</div>`;
+
+    lastCompare = {
+      portfolios: cols.map((c) => ({
+        code: c.code, as_of: dateOf(c.a), delayed: !!c.a.delayed,
+        positions: c.a.total_positions ?? c.s.pos.length,
+        top5_pct: asPct(c.s.top5), largest_sector: c.s.lead ? c.s.lead[0] : null,
+      })),
+      shared_holdings: shared.length,
+      mixed_dates: dates.size > 1 || mixed,
+    };
+    contextChanged();
+
+    box.innerHTML = warning + `<h2>Summary</h2>` + summary + `<h2>Sector mix</h2>` + sectorTable + `<h2>Shared holdings</h2>` + overlap
+      + `<div class="note">Describes differences in the model data only. It is not a recommendation of any portfolio, and no suitability assessment has been performed.</div>`;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Find a stock
+  // ---------------------------------------------------------------------------
+  let findSeq = 0, findTimer = null;
+  async function runFind() {
+    const box = $("find");
+    const q = $("ticker").value.trim().toUpperCase();
+    if (!q) { box.innerHTML = `<div class="note">See which portfolios hold a stock, at what weight and rank.</div>`; return; }
+    const seq = ++findSeq;
+    box.innerHTML = `<div class="empty">Searching…</div>`;
+
+    const results = await Promise.all(state.portfolios.map((p) =>
+      allocationFor(p.code).then((a) => ({ p, a })).catch((err) => ({ p, err }))));
+    if (seq !== findSeq) return;
+
+    const ok = results.filter((r) => r.a);
+    calibrate(ok.flatMap((r) => r.a.positions || []));
+    const held = [], notHeld = [];
+    ok.forEach(({ p, a }) => {
+      const ranked = (a.positions || []).filter((x) => isNum(x.weight)).sort((x, y) => y.weight - x.weight);
+      const i = ranked.findIndex((x) => String(x.ticker).toUpperCase() === q);
+      if (i >= 0) held.push({ p, a, pos: ranked[i], rank: i + 1, of: ranked.length });
+      else notHeld.push({ p, a });
+    });
+    held.sort((x, y) => y.pos.weight - x.pos.weight);
+    lastFind = { ticker: q, held: held.length, total: ok.length };
+    renderActions();
+    contextChanged();
+
+    let html = "";
+    if (held.length) {
+      html += `<h2>${esc(q)} is held in ${held.length} of ${ok.length} portfolios</h2>`
+        + `<div class="tablebox"><table><thead><tr><th>Portfolio</th><th class="num">Weight</th><th>Sector</th><th class="num">Rank</th><th>As of</th></tr></thead><tbody>`
+        + held.map((h) => `<tr><td>${esc(h.p.product_name || h.p.code)} ${accessBadge(h.a)}</td><td class="num">${pct(h.pos.weight)}</td>`
+          + `<td>${esc(h.pos.sector || "—")}</td><td class="num">${h.rank} of ${h.of}</td><td>${esc(dateOf(h.a))}</td></tr>`).join("")
+        + `</tbody></table></div>`;
+    } else {
+      html += `<div class="empty">${esc(q)} is not held in any portfolio.</div>`;
+      // Offer close tickers rather than guessing which one was meant.
+      const near = [...new Set(ok.flatMap((r) => (r.a.positions || []).map((x) => String(x.ticker).toUpperCase())))]
+        .filter((t) => t.startsWith(q) || q.startsWith(t)).slice(0, 8);
+      if (near.length) {
+        html += `<div class="meta">Similar tickers held:</div><div class="chips">`
+          + near.map((t) => `<button class="chip" data-ticker="${esc(t)}">${esc(t)}</button>`).join("") + `</div>`;
+      }
+    }
+    if (held.length && notHeld.length) {
+      html += `<div class="note">Not held in: ${notHeld.map((r) => esc(r.p.product_name || r.p.code)).join(", ")}.</div>`;
+    }
+    if (notHeld.some((r) => r.a.delayed)) {
+      html += `<div class="note">A delayed book is about 45 days old, so a recently added position would not show there yet.</div>`;
+    }
+    const failed = results.filter((r) => r.err);
+    if (failed.length) {
+      html += `<div class="note" style="color:var(--down)">Could not check: ${failed.map((r) => esc(r.p.product_name || r.p.code)).join(", ")}.</div>`;
+    }
+    html += `<div class="note">A stock's presence in a model is not a recommendation to own it.</div>`;
+    box.innerHTML = html;
+    box.querySelectorAll("[data-ticker]").forEach((chip) => chip.addEventListener("click", () => {
+      $("ticker").value = chip.dataset.ticker;
+      runFind();
+    }));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Events
+  // ---------------------------------------------------------------------------
+  function onToolResult(result) {
+    try {
+      // The spec sends the CallToolResult as `params` itself; accept a `{result: ...}`
+      // wrapper too, because a host that sends one would otherwise leave the page blank.
+      const data = parseResult(result && result.result && !result.content ? result.result : result);
+      // Set only after a successful parse. Setting it first meant an unparseable result
+      // disabled the bootstrap fallback as well, turning a bad payload into a dead page
+      // with no second chance.
+      gotToolResult = true;
+      state.portfolios = data.portfolios || [];
+      state.selected = data.selected || null;
+      state.allocation = data.allocation || null;
+      if (state.selected && state.allocation) cache.set(state.selected, state.allocation);
+      if (data.disclaimer) $("disclaimer").textContent = data.disclaimer;
+      renderAll();
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  $("portfolio").addEventListener("change", async (e) => {
+    state.selected = e.target.value;
+    $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading…</td></tr></tbody>`;
+    try {
+      state.allocation = await allocationFor(state.selected);
+      renderAll();
+    } catch (err) {
+      showError(err.message);
+    }
+  });
+
+  $("filter").addEventListener("input", renderHoldings);
+  $("days").addEventListener("change", () => { loadChanges(); contextChanged(); });
+  $("ticker").addEventListener("input", () => { clearTimeout(findTimer); findTimer = setTimeout(runFind, 350); });
+
+  const TABS = ["holdings", "sectors", "changes", "compare", "find"];
+  document.querySelectorAll("nav button").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+    TABS.forEach((t) => { $("tab-" + t).hidden = t !== btn.dataset.tab; });
+    currentTab = btn.dataset.tab;
+    renderActions();
+    contextChanged();
+    if (btn.dataset.tab === "changes") loadChanges();
+    if (btn.dataset.tab === "compare") { renderComparePicks(); loadCompare(); }
+    if (btn.dataset.tab === "find") { $("ticker").focus(); if ($("ticker").value.trim()) runFind(); }
+  }));
+
+  // Keep the host's iframe sized to the content. Measure the content wrapper, not the
+  // document: the host sizes the iframe from what we report, and a document is at least
+  // as tall as its iframe, so reporting documentElement.scrollHeight can grow the frame
+  // but never shrink it - switching from a long tab to a short one left empty space.
+  const wrap = document.querySelector(".wrap");
+  let reported = { width: 0, height: 0 };
+  function reportSize(force) {
+    const box = wrap.getBoundingClientRect();
+    const size = { width: Math.ceil(box.width), height: Math.ceil(box.height) };
+    if (!force && Math.abs(size.height - reported.height) < 2 && Math.abs(size.width - reported.width) < 2) return;
+    reported = size;
+    notify("ui/notifications/size-changed", size);
+  }
+  new ResizeObserver(() => reportSize(false)).observe(wrap);
+
+  // ---------------------------------------------------------------------------
+  // Handshake
+  // ---------------------------------------------------------------------------
+  $("disclaimer").textContent = "Informational and educational purposes only. Not investment, legal, or tax advice, and not a recommendation or solicitation. No suitability assessment has been performed.";
+
+  // If the host never delivers the tool result (or delivers it before we listen),
+  // load the data ourselves rather than sitting on an empty page.
+  let gotToolResult = false;
+  async function bootstrap() {
+    if (gotToolResult) return;
+    if (!canCallTools) {
+      showError("No portfolio data was received. Ask the assistant to open the Portfolio Explorer again.");
+      return;
+    }
+    try {
+      const listing = await callTool("list_portfolios", {});
+      if (gotToolResult) return;
+      const portfolios = listing.portfolios || [];
+      const first = portfolios.find((p) => p.access === "subscribed") || portfolios[0];
+      const allocation = first ? await callTool("get_portfolio_allocation", { portfolio_code: first.code }) : null;
+      if (gotToolResult) return;
+      onToolResult({ content: [{ type: "text", text: JSON.stringify({
+        portfolios, selected: first ? first.code : null, allocation, disclaimer: listing.disclaimer,
+      }) }] });
+    } catch (err) {
+      showError(err.message);
+    }
+  }
+
+  // Record which optional features this host supports (page-only tool, hidden from the
+  // model). Sends feature flags and display modes only: no locale, time zone, sizes, or the
+  // theme variables' values.
+  function reportHost(init) {
+    if (!canCallTools || !init) return;
+    const ctx = init.hostContext || {};
+    const vars = ctx.styles && ctx.styles.variables;
+    const context = {};
+    ["theme", "displayMode", "availableDisplayModes", "platform", "deviceCapabilities"].forEach((k) => { if (k in ctx) context[k] = ctx[k]; });
+    if (vars && typeof vars === "object") context.styles = { variables: Object.fromEntries(Object.keys(vars).map((k) => [k, ""])) };
+    request("tools/call", { name: "report_explorer_host", arguments: {
+      host_capabilities: init.hostCapabilities || {},
+      host_context: context,
+      host_info: init.hostInfo || null,
+    } }).catch(() => {});
+  }
+
+  $("holdings").innerHTML = `<tbody><tr><td class="empty">Loading portfolios…</td></tr></tbody>`;
+
+  request("ui/initialize", {
+    protocolVersion: "2025-06-18",
+    appInfo: { name: "financial-portfolios-ai-explorer", version: "__APP_VERSION__" },
+    appCapabilities: {},
+  }).then((init) => {
+    hostCaps = (init && init.hostCapabilities) || {};
+    applyContext(init && init.hostContext);
+    canCallTools = !!hostCaps.serverTools;
+    notify("ui/notifications/initialized", {});
+    reportSize(true);
+    renderActions();
+    reportHost(init);
+    setTimeout(bootstrap, 2500);
+  }).catch(() => {
+    notify("ui/notifications/initialized", {});
+  });
+})();
+</script>
+</body>
+</html>

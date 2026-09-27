@@ -1,0 +1,72 @@
+{
+  "$comment": "Client configuration for the prod deployment (https://financial-portfolios.ai). Generated from mcp_clients.json by scripts/render_manifests.py --clients. Do not edit.",
+  "claude_desktop": {
+    "file_location": {
+      "macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
+      "windows": "%APPDATA%\\Claude\\claude_desktop_config.json"
+    },
+    "config": {
+      "mcpServers": {
+        "financial-portfolios-ai": {
+          "command": "uv",
+          "args": [
+            "--directory",
+            "/path/to/financial-portfolios-ai-mcp",
+            "run",
+            "financial-portfolios-ai-mcp",
+            "stdio"
+          ],
+          "env": {
+            "FINANCIAL_PORTFOLIOS_BASE_URL": "https://financial-portfolios.ai",
+            "FINANCIAL_PORTFOLIOS_API_TOKEN": "aqat_v1_your_token_here"
+          }
+        }
+      }
+    }
+  },
+  "cursor_ide": {
+    "file_location": ".cursor/mcp.json or Settings > Features > MCP",
+    "config": {
+      "mcpServers": {
+        "financial-portfolios-ai": {
+          "url": "https://financial-portfolios.ai/mcp",
+          "headers": {
+            "X-API-Key": "aqat_v1_your_token_here"
+          }
+        }
+      }
+    }
+  },
+  "windsurf_ide": {
+    "file_location": "~/.codeium/windsurf/mcp_config.json",
+    "config": {
+      "mcpServers": {
+        "financial-portfolios-ai": {
+          "url": "https://financial-portfolios.ai/mcp",
+          "headers": {
+            "X-API-Key": "aqat_v1_your_token_here"
+          }
+        }
+      }
+    }
+  },
+  "gemini_cli": {
+    "command": "gemini mcp add --transport http financial-portfolios-ai https://financial-portfolios.ai/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
+  },
+  "claude_code_cli": {
+    "command": "claude mcp add --transport http financial-portfolios-ai https://financial-portfolios.ai/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
+  },
+  "librechat_or_open_webui": {
+    "config": {
+      "mcpServers": {
+        "financial-portfolios-ai": {
+          "type": "streamable-http",
+          "url": "https://financial-portfolios.ai/mcp",
+          "headers": {
+            "X-API-Key": "aqat_v1_your_token_here"
+          }
+        }
+      }
+    }
+  }
+}

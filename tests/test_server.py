@@ -21,7 +21,7 @@ def test_server_metadata():
     """Verify MCPServer attributes and configuration."""
     assert mcp_server.name == "financial-portfolios-ai"
     assert mcp_server.title == "Financial Portfolios AI"
-    assert mcp_server.website_url == "https://financial-portfolios.ai"
+    assert mcp_server.website_url == "https://test.financial-portfolios.ai"  # follows the configured target
     assert mcp_server.version == __version__
 
 

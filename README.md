@@ -61,7 +61,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
   3. Command-line clients (Claude Code) do not run that flow: they pass a personal token as
      an `X-API-Key` header instead (see [Authentication](#authentication)).
 - **Directory Manifest:** Uses [`claude_connector.json`](claude_connector.json).
-- **Claude Desktop Config:** See [`mcp_clients.json`](mcp_clients.json) for `claude_desktop_config.json`.
+- **Claude Desktop Config:** See [`clients/mcp_clients.dev.json`](clients/mcp_clients.dev.json) or [`clients/mcp_clients.prod.json`](clients/mcp_clients.prod.json) for `claude_desktop_config.json` - pick the deployment you are installing against.
 
 ---
 
@@ -104,7 +104,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
   }
   ```
 - **Windsurf IDE (`~/.codeium/windsurf/mcp_config.json`):**
-  See [`mcp_clients.json`](mcp_clients.json) for details.
+  See [`clients/mcp_clients.dev.json`](clients/mcp_clients.dev.json) or [`clients/mcp_clients.prod.json`](clients/mcp_clients.prod.json).
 
 ---
 
@@ -169,7 +169,7 @@ Ready-made starters Claude lists in the connector. Portfolio-code inputs are opt
 
 ```bash
 # 1. Build and push container with Cloud Build
-gcloud builds submit --config=cloudbuild.yaml
+gcloud builds submit --config=cloudbuild.yaml --substitutions=_ENV=dev   # or _ENV=prod
 
 # 2. Deploy to Cloud Run
 gcloud run deploy financial-portfolios-ai-mcp \
@@ -177,8 +177,12 @@ gcloud run deploy financial-portfolios-ai-mcp \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars FINANCIAL_PORTFOLIOS_BASE_URL=https://financial-portfolios.ai
+  --set-env-vars FINANCIAL_PORTFOLIOS_ENV=dev   # or prod
 ```
+
+**The target is always chosen at deploy or run time.** Nothing in this repository defaults to
+dev or prod: without `FINANCIAL_PORTFOLIOS_ENV` (or an explicit `FINANCIAL_PORTFOLIOS_BASE_URL`)
+the server refuses to start, and `cloudbuild.yaml` refuses to build without `_ENV`.
 
 ### Health Endpoints
 
@@ -226,8 +230,7 @@ A dev deployment therefore advertises `https://dev.financial-portfolios.ai/asset
 purely from its deploy substitution:
 
 ```bash
-gcloud builds submit --config cloudbuild.yaml \
-  --substitutions=_PORTAL_ORIGIN=https://dev.financial-portfolios.ai,_MCP_PUBLIC_BASE_URL=https://dev.financial-portfolios.ai
+gcloud builds submit --config cloudbuild.yaml --substitutions=_ENV=dev
 ```
 
 ## Manifests
@@ -300,9 +303,9 @@ python scripts/smoke_test.py --token aqat_v1_xxxxx
 
 Exit code is 0 only if every executed check passes.
 
-> **Local docker-compose:** the compose file defaults `FINANCIAL_PORTFOLIOS_BASE_URL`
-> to the production origin. To point the server at a local portal backend on the
-> shared docker network, create a (gitignored) `.env` next to `docker-compose.yml`
+> **Local docker-compose:** there is no default target. Run
+> `FINANCIAL_PORTFOLIOS_ENV=dev docker compose up -d`, or, to point the server at a local portal
+> backend on the shared docker network, create a (gitignored) `.env` next to `docker-compose.yml`
 > with `FINANCIAL_PORTFOLIOS_BASE_URL=http://aqa-portal-backend:8000` and
 > `docker compose up -d`.
 

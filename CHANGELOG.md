@@ -9,6 +9,19 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Changed
+
+- **No default target deployment.** The server no longer falls back to production: it needs
+  `FINANCIAL_PORTFOLIOS_ENV=dev|prod` (which sets every URL) or an explicit
+  `FINANCIAL_PORTFOLIOS_BASE_URL`, and refuses to start otherwise - the image exits at once
+  rather than sitting unhealthy. `cloudbuild.yaml` takes `_ENV` and stops before building
+  without it; `docker-compose.yml` has no default either. Deployments that already set the
+  URLs explicitly, like the current dev service, are unaffected.
+- **Client snippets per deployment.** `mcp_clients.json` is now a template;
+  `clients/mcp_clients.dev.json` and `clients/mcp_clients.prod.json` are generated from it
+  (`scripts/render_manifests.py --clients`, checked by a test), and a running server serves the
+  right one at `/mcp/manifests/mcp_clients.json`.
+
 ## [1.4.3] - 2026-09-26
 
 ### Fixed

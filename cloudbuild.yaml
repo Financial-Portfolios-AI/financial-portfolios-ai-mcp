@@ -1,4 +1,16 @@
+# The target deployment is chosen here, at deploy time, and nowhere in the code:
+#   gcloud builds submit --substitutions=_ENV=dev
+#   gcloud builds submit --substitutions=_ENV=prod
+# There is no default. Step 0 stops the build before anything is pushed if _ENV is missing.
 steps:
+  # 0. Refuse to build without a target
+  - name: 'bash'
+    script: |
+      case "${_ENV}" in
+        dev|prod) echo "Deploying to ${_ENV}" ;;
+        *) echo "Set _ENV to dev or prod: gcloud builds submit --substitutions=_ENV=dev" >&2; exit 1 ;;
+      esac
+
   # 1. Build container image from parent workspace root
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -35,12 +47,10 @@ steps:
       # /.well-known/oauth-protected-resource (RFC 9728) so marketplace/directory
       # clients discover the portal authorization server and this resource. They
       # must be the PUBLIC portal origin, not localhost (ADR-0196/0198).
-      # Every public URL this server advertises (portal API, OAuth issuer, MCP
-      # resource URL, and the /assets icon URLs) is derived from _PORTAL_ORIGIN, so
-      # a dev deployment advertises dev URLs without any code or manifest edit:
-      #   gcloud builds submit --substitutions=_PORTAL_ORIGIN=https://dev.financial-portfolios.ai
+      # FINANCIAL_PORTFOLIOS_ENV makes the server derive every public URL it advertises (portal
+      # API, OAuth issuer, MCP resource URL, /assets icons) from the named deployment.
       - '--set-env-vars'
-      - 'FINANCIAL_PORTFOLIOS_BASE_URL=${_PORTAL_ORIGIN},OAUTH_AUTHORIZATION_SERVER=${_PORTAL_ORIGIN},MCP_PUBLIC_URL=${_PORTAL_ORIGIN}/mcp,MCP_PUBLIC_BASE_URL=${_MCP_PUBLIC_BASE_URL},MCP_LOG_LEVEL=${_LOG_LEVEL}'
+      - 'FINANCIAL_PORTFOLIOS_ENV=${_ENV},MCP_PUBLIC_BASE_URL=${_MCP_PUBLIC_BASE_URL},MCP_LOG_LEVEL=${_LOG_LEVEL}'
       # The /sse transport holds long-lived streaming connections. Cloud Run's own
       # request timeout must be >= the LB backend timeout (mcp_backend_timeout_sec,
       # 3600s in mcp_edge.tf) or the edge would cut streams short.
@@ -57,13 +67,11 @@ steps:
 
 substitutions:
   _REGION: 'us-central1'
-  # Public origin of the environment being deployed (prod by default; pass
-  # https://dev.financial-portfolios.ai for the dev environment).
-  _PORTAL_ORIGIN: 'https://financial-portfolios.ai'
-  # Origin that serves this server's /assets icons. Defaults to the portal origin,
-  # which proxies /assets and /mcp; override when the MCP service is reached on its
-  # own hostname (e.g. the Cloud Run run.app URL) instead of through the portal.
-  _MCP_PUBLIC_BASE_URL: 'https://financial-portfolios.ai'
+  # Target deployment: dev or prod. Deliberately empty - see the top of this file.
+  _ENV: ''
+  # Origin that serves this server's /assets icons, when it differs from the deployment's
+  # own origin (e.g. the Cloud Run run.app URL). Empty means derive it from _ENV.
+  _MCP_PUBLIC_BASE_URL: ''
   _LOG_LEVEL: 'INFO'
 
 images:

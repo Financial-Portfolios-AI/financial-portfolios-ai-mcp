@@ -8,6 +8,7 @@ produces the submittable artifacts:
     python scripts/render_manifests.py --env prod
     python scripts/render_manifests.py --env dev
     python scripts/render_manifests.py --origin https://staging.example.com
+    python scripts/render_manifests.py --clients   # committed clients/mcp_clients.<env>.json
 
 A running server renders the same documents on demand at `GET /manifests/<name>`,
 using the origin the request arrived on - prefer that when you can reach the
@@ -23,16 +24,36 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from financial_portfolios_ai_mcp.manifests import (
+    CLIENTS_DIR,
     ENVIRONMENTS,
     MANIFESTS,
     PLACEHOLDER,
+    clients_filename,
     render,
 )
+
+
+def render_clients(env: str) -> str:
+    """The committed client-snippet file for one environment, as text."""
+    document = render("mcp_clients.json", ENVIRONMENTS[env])
+    if document is None:
+        raise SystemExit("mcp_clients.json template not found")
+    document = {
+        "$comment": f"Client configuration for the {env} deployment ({ENVIRONMENTS[env]}). "
+        "Generated from mcp_clients.json by scripts/render_manifests.py --clients. Do not edit.",
+        **document,
+    }
+    return json.dumps(document, indent=2) + "\n"
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument(
+        "--clients",
+        action="store_true",
+        help="Write the committed clients/mcp_clients.<env>.json for every environment.",
+    )
     target.add_argument(
         "--env",
         choices=sorted(ENVIRONMENTS),
@@ -47,6 +68,15 @@ def main(argv: list[str] | None = None) -> int:
         help="Directory to write to (default: build/manifests/<env or host>).",
     )
     args = parser.parse_args(argv)
+
+    if args.clients:
+        out = REPO_ROOT / CLIENTS_DIR
+        out.mkdir(exist_ok=True)
+        for env in sorted(ENVIRONMENTS):
+            path = out / clients_filename(env)
+            path.write_text(render_clients(env), encoding="utf-8")
+            print(f"{env} -> {path.relative_to(REPO_ROOT)}")
+        return 0
 
     origin = (args.origin or ENVIRONMENTS[args.env]).rstrip("/")
     if not origin.startswith(("http://", "https://")):

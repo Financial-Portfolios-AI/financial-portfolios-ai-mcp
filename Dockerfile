@@ -24,7 +24,7 @@ COPY financial-portfolios-ai-mcp/src/ ./src/
 COPY financial-portfolios-ai-mcp/openapi.yaml ./openapi.yaml
 # All three provider manifest templates: pyproject force-includes them into the
 # wheel so the server can render them at /manifests/<name>.
-COPY financial-portfolios-ai-mcp/claude_connector.json financial-portfolios-ai-mcp/chatgpt_manifest.json financial-portfolios-ai-mcp/gemini-extension.json financial-portfolios-ai-mcp/GEMINI.md ./
+COPY financial-portfolios-ai-mcp/claude_connector.json financial-portfolios-ai-mcp/chatgpt_manifest.json financial-portfolios-ai-mcp/gemini-extension.json financial-portfolios-ai-mcp/GEMINI.md financial-portfolios-ai-mcp/mcp_clients.json ./
 
 # Create virtualenv and install all dependencies
 RUN uv venv /app/.venv
@@ -49,7 +49,7 @@ RUN groupadd -r mcpuser && useradd -r -g mcpuser -d /app -s /sbin/nologin mcpuse
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/openapi.yaml ./openapi.yaml
-COPY --from=builder /app/claude_connector.json /app/chatgpt_manifest.json /app/gemini-extension.json ./
+COPY --from=builder /app/claude_connector.json /app/chatgpt_manifest.json /app/gemini-extension.json /app/mcp_clients.json ./
 # The SDK is installed editable ([tool.uv.sources] editable=true), so its source
 # tree must exist at the same path at runtime for the .pth import to resolve.
 COPY --from=builder /financial-portfolios-ai-sdk /financial-portfolios-ai-sdk
@@ -69,4 +69,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz').read()" || exit 1
 
 # Cloud Run execution entry point
-CMD ["uvicorn", "financial_portfolios_ai_mcp.app:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+# Check the configuration before uvicorn starts: with --workers the parent process outlives a
+# worker that fails on bad settings (e.g. no FINANCIAL_PORTFOLIOS_ENV), leaving a container
+# that is up but never healthy. This makes a missing target exit immediately instead.
+CMD ["sh", "-c", "python -c 'from financial_portfolios_ai_mcp.config import get_settings; get_settings()' && exec uvicorn financial_portfolios_ai_mcp.app:app --host 0.0.0.0 --port 8080 --workers 2"]

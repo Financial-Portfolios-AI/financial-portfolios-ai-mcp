@@ -1,5 +1,5 @@
 {
-  "$comment": "Ready-to-use configuration snippets for various MCP client applications",
+  "$comment": "Template: ${PUBLIC_ORIGIN} is replaced per deployment. Use clients/mcp_clients.dev.json or clients/mcp_clients.prod.json, or GET /mcp/manifests/mcp_clients.json from the deployment you want. Regenerate with: python scripts/render_manifests.py --clients",
   "claude_desktop": {
     "file_location": {
       "macos": "~/Library/Application Support/Claude/claude_desktop_config.json",
@@ -17,7 +17,7 @@
             "stdio"
           ],
           "env": {
-            "FINANCIAL_PORTFOLIOS_BASE_URL": "https://financial-portfolios.ai",
+            "FINANCIAL_PORTFOLIOS_BASE_URL": "${PUBLIC_ORIGIN}",
             "FINANCIAL_PORTFOLIOS_API_TOKEN": "aqat_v1_your_token_here"
           }
         }
@@ -29,7 +29,7 @@
     "config": {
       "mcpServers": {
         "financial-portfolios-ai": {
-          "url": "https://financial-portfolios.ai/mcp",
+          "url": "${PUBLIC_ORIGIN}/mcp",
           "headers": {
             "X-API-Key": "aqat_v1_your_token_here"
           }
@@ -42,7 +42,7 @@
     "config": {
       "mcpServers": {
         "financial-portfolios-ai": {
-          "url": "https://financial-portfolios.ai/mcp",
+          "url": "${PUBLIC_ORIGIN}/mcp",
           "headers": {
             "X-API-Key": "aqat_v1_your_token_here"
           }
@@ -51,17 +51,17 @@
     }
   },
   "gemini_cli": {
-    "command": "gemini mcp add --transport http financial-portfolios-ai https://financial-portfolios.ai/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
+    "command": "gemini mcp add --transport http financial-portfolios-ai ${PUBLIC_ORIGIN}/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
   },
   "claude_code_cli": {
-    "command": "claude mcp add --transport http financial-portfolios-ai https://financial-portfolios.ai/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
+    "command": "claude mcp add --transport http financial-portfolios-ai ${PUBLIC_ORIGIN}/mcp --header 'X-API-Key: aqat_v1_your_token_here'"
   },
   "librechat_or_open_webui": {
     "config": {
       "mcpServers": {
         "financial-portfolios-ai": {
           "type": "streamable-http",
-          "url": "https://financial-portfolios.ai/mcp",
+          "url": "${PUBLIC_ORIGIN}/mcp",
           "headers": {
             "X-API-Key": "aqat_v1_your_token_here"
           }
