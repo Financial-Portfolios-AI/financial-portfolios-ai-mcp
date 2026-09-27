@@ -259,7 +259,7 @@ origin, and another asserts the script and the endpoint produce identical docume
 ## Continuous Integration
 
 Every push and pull request runs lint, the test suite, and a smoke test against the built
-image. See [docs/CI.md](docs/CI.md) - it needs an `SDK_READ_TOKEN` secret, because the SDK
+image. See [docs/CI.md](docs/CI.md) - it needs an `SDK_DEPLOY_KEY` secret, because the SDK
 is a separate repository.
 
 ---

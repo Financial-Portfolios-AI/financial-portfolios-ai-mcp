@@ -5,10 +5,10 @@ name: CI
 # is a separate private repository, so every job checks out both into that layout - the same
 # one the Dockerfile builds from.
 #
-# Cross-repo checkout needs a token: the automatic GITHUB_TOKEN is scoped to this repository
-# only. Add a repository or organisation secret named SDK_READ_TOKEN - a fine-grained PAT
-# with Contents: read on financial-portfolios-ai-sdk. Without it the checkout step fails with
-# an explanatory message rather than a confusing 404.
+# Cross-repo checkout needs a credential: the automatic GITHUB_TOKEN is scoped to this
+# repository only. SDK_DEPLOY_KEY is the private half of a read-only deploy key on
+# financial-portfolios-ai-sdk ("MCP CI (read-only)"), stored for Actions and Dependabot.
+# See docs/CI.md for rotating it.
 
 on:
   push:
@@ -42,7 +42,7 @@ jobs:
         with:
           repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
           path: financial-portfolios-ai-sdk
-          token: ${{ secrets.SDK_READ_TOKEN }}
+          ssh-key: ${{ secrets.SDK_DEPLOY_KEY }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -86,7 +86,7 @@ jobs:
         with:
           repository: Financial-Portfolios-AI/financial-portfolios-ai-sdk
           path: financial-portfolios-ai-sdk
-          token: ${{ secrets.SDK_READ_TOKEN }}
+          ssh-key: ${{ secrets.SDK_DEPLOY_KEY }}
 
       # Context is the parent directory, as in cloudbuild.yaml, so the SDK is available
       # to the build.

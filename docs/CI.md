@@ -8,24 +8,26 @@
 | **Lint and test** | `ruff check`, then the full `pytest` suite on Python 3.12, the version the image uses |
 | **Build image and smoke-test it** | builds the Docker image, runs the container, and drives a real MCP client against it with [`scripts/ci_smoke.py`](../scripts/ci_smoke.py) |
 
-## One-time setup: `SDK_READ_TOKEN`
+## SDK access: `SDK_DEPLOY_KEY`
 
-**CI cannot pass until this secret exists.** The server depends on the SDK through a local
-sibling path (`[tool.uv.sources]`), so both repositories are checked out side by side, the
-layout the Dockerfile also builds from. GitHub's automatic `GITHUB_TOKEN` is scoped to this
-repository alone and cannot read the SDK.
+The server depends on the SDK through a local sibling path (`[tool.uv.sources]`), so both
+repositories are checked out side by side, the layout the Dockerfile also builds from.
+GitHub's automatic `GITHUB_TOKEN` is scoped to this repository alone and cannot read the
+private SDK, so the checkout uses an SSH **deploy key**: read-only, valid for that one
+repository, owned by no person, and with no expiry.
 
-1. Create a **fine-grained personal access token** with `Contents: read` on
-   `Financial-Portfolios-AI/financial-portfolios-ai-sdk`.
-2. Add it as a secret named `SDK_READ_TOKEN` under **Settings → Secrets and variables →
-   Actions**, on this repository or the organisation.
-3. Add the same value under **Dependabot** in that screen. Workflows on a Dependabot pull
-   request read Dependabot's secrets, not Actions', so without this copy every Dependabot
-   PR fails its checkout while pushes to `main` pass.
+- Public half: deploy key **"MCP CI (read-only)"** on `financial-portfolios-ai-sdk`.
+- Private half: secret **`SDK_DEPLOY_KEY`** on this repository, under both **Actions** and
+  **Dependabot** (Dependabot PRs read Dependabot's secrets, not Actions').
+- Deploy keys must be allowed at organisation level (Settings → Member privileges).
 
-Without it the "Check out the SDK" step fails with `Input required and not supplied:
-token` - which is exactly how the first run after this landed failed, and the first thing
-to check on a red run.
+To rotate: generate a new pair with `ssh-keygen -t ed25519 -N ""`, add the public half as a
+read-only deploy key on the SDK repo, `gh secret set SDK_DEPLOY_KEY` (and again with
+`--app dependabot`) from the private half, delete the old deploy key, then delete the local
+key files.
+
+If the "Check out the SDK" step fails with a permission or "repository not found" error, the
+key or one of the two secrets is missing.
 
 ## What the smoke test covers
 
