@@ -55,7 +55,7 @@ No. Subscriptions are bought on the website, never through the connector.
 Zoe Tsekas · zoetsekas@financial-portfolios.ai
 
 **Support email or URL**
-https://financial-portfolios.ai/contact
+support@financial-portfolios.ai
 
 **Privacy policy URL**
 https://financial-portfolios.ai/legal/privacy **[must load on the production domain before submitting]**
@@ -129,7 +129,7 @@ These need the account owner, not the drafting session:
       `resource_metadata` (`python scripts/ci_smoke.py https://financial-portfolios.ai`)
 - [ ] OAuth sign-in completes end to end on production (the consent page was fixed on dev on
       2026-09-27)
-- [ ] Privacy, terms and contact pages load on the production domain
+- [ ] Privacy and terms pages load on the production domain, and support@financial-portfolios.ai receives mail
 - [ ] Icon URL above serves on production
 - [ ] Every **[confirm]** above answered
 - [ ] Review expected to take weeks: Meta is onboarding the first ~2,000 submissions in waves
