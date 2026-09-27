@@ -12,7 +12,7 @@ serves (it returns 404 today). Items marked **[confirm]** need an owner's answer
 Financial Portfolios AI
 
 **Company or developer**
-Financial Portfolios AI **[confirm legal entity name]**
+Autonomous Intelligent Agents LLC (operator of Financial Portfolios AI)
 
 **Product website**
 https://financial-portfolios.ai
