@@ -285,7 +285,7 @@ def register_tools(server: Any) -> None:
                 data["disclaimer"] = DISCLAIMER
                 return data
         except AuthenticationError as e:
-            return access_error(e)
+            return access_error(e, portfolio_code)
         except ValidationError as e:
             return {"error": "Invalid Holdings Format", "message": str(e), "disclaimer": DISCLAIMER}
         except RateLimitError as e:
