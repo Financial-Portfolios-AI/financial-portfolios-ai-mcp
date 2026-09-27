@@ -55,7 +55,7 @@ No. Subscriptions are bought on the website, never through the connector.
 Zoe Tsekas · zoetsekas@financial-portfolios.ai
 
 **Support email or URL**
-https://financial-portfolios.ai/contact **[confirm, or give a support@ address]**
+https://financial-portfolios.ai/contact
 
 **Privacy policy URL**
 https://financial-portfolios.ai/legal/privacy **[must load on the production domain before submitting]**
