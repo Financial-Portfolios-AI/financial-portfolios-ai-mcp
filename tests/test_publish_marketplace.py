@@ -74,13 +74,13 @@ def test_a_changed_plugin_shape_fails_loudly_rather_than_silently_publishing():
 # --------------------------------------------------------------------------- #
 def test_generated_manifest_targets_the_requested_environment():
     manifest = json.loads(publish.gemini_manifest(DEV, "dev"))
-    assert manifest["mcpServers"]["financial-portfolios-ai"]["httpUrl"] == f"{DEV}/mcp"
+    assert manifest["mcpServers"]["fpai"]["httpUrl"] == f"{DEV}/mcp"
     assert "not the production deployment" in manifest["$comment"]
     # The token placeholder belongs to Gemini, not to the origin renderer.
-    assert manifest["mcpServers"]["financial-portfolios-ai"]["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
+    assert manifest["mcpServers"]["fpai"]["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
 
     production = json.loads(publish.gemini_manifest(PROD, "prod"))
-    assert production["mcpServers"]["financial-portfolios-ai"]["httpUrl"] == f"{PROD}/mcp"
+    assert production["mcpServers"]["fpai"]["httpUrl"] == f"{PROD}/mcp"
     assert "not the production deployment" not in production["$comment"]
 
 

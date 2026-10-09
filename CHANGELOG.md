@@ -11,6 +11,16 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ### Changed
 
+- **Shorter server key and install commands.** The client-side server key is `fpai` (was
+  `financial-portfolios-ai`), so tool names in Claude Code shrink by 19 characters, e.g.
+  `mcp__plugin_financial-portfolios_fpai__get_portfolio_allocation`. The install snippets use the short
+  flags and read the token from `FINANCIAL_PORTFOLIOS_API_TOKEN`:
+  `claude mcp add -t http fpai <url> -H "X-API-Key: $FINANCIAL_PORTFOLIOS_API_TOKEN"`.
+  **Migration:** an existing install keeps working under its old key; to adopt the new one, remove it
+  (`claude mcp remove financial-portfolios-ai`), add it again, and update any `mcp__...__financial-portfolios-ai__*`
+  permission rules. The extension name (`gemini extensions config financial-portfolios-ai`) and the
+  package, image and service names are unchanged.
+
 - **No default target deployment.** The server no longer falls back to production: it needs
   `FINANCIAL_PORTFOLIOS_ENV=dev|prod` (which sets every URL) or an explicit
   `FINANCIAL_PORTFOLIOS_BASE_URL`, and refuses to start otherwise - the image exits at once
