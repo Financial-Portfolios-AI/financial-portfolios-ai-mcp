@@ -9,6 +9,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.4] - 2026-10-09
+
 ### Changed
 
 - **Shorter server key and install commands.** The client-side server key is `fpai` (was
@@ -369,7 +371,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...HEAD
+[1.4.4]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...v1.4.2
 [1.4.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.0...v1.4.1

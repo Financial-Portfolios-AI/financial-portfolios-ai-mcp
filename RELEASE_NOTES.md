@@ -9,6 +9,12 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.4 — October 2026
+
+- **Shorter setup commands.** The connection is now named `fpai`, so the commands you copy are shorter and your assistant's tool names are easier to read. Connections you have already set up keep working.
+
+---
+
 ## Version 1.4.3 — September 2026
 
 - **Clearer messages when something needs a subscription.** Aligning holdings to a model
