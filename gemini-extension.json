@@ -5,7 +5,7 @@
   "description": "Systematic, AI-driven model portfolios: target allocations, holdings history, concentration and sector metrics, model-alignment arithmetic, and quantitative research. Informational and educational only - not investment advice.",
   "contextFileName": "GEMINI.md",
   "mcpServers": {
-    "financial-portfolios-ai": {
+    "fpai": {
       "httpUrl": "${PUBLIC_ORIGIN}/mcp",
       "headers": {
         "X-API-Key": "${FINANCIAL_PORTFOLIOS_API_TOKEN}"

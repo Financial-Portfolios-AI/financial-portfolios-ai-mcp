@@ -41,11 +41,8 @@ The **Gemini CLI** natively supports Model Context Protocol (MCP) servers:
 
 ```bash
 # Register the remote MCP server in Gemini CLI
-gemini mcp add \
-  --transport http \
-  financial-portfolios-ai \
-  https://<your-cloud-run-domain>/mcp \
-  --header "X-API-Key: aqat_v1_your_token_here"
+export FINANCIAL_PORTFOLIOS_API_TOKEN=aqat_v1_your_token_here
+gemini mcp add -t http fpai https://<your-cloud-run-domain>/mcp -H "X-API-Key: $FINANCIAL_PORTFOLIOS_API_TOKEN"
 ```
 
 Once added, any prompt run through `gemini` can autonomously discover and execute your portfolio tools.

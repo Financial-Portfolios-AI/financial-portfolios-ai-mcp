@@ -85,7 +85,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
   are excluded and the rest answer as JSON.
 - **Gemini CLI, configured by hand:**
   ```bash
-  gemini mcp add --transport http financial-portfolios-ai https://<your-domain>/mcp --header 'X-API-Key: aqat_v1_<token>'
+  gemini mcp add -t http fpai https://<your-domain>/mcp -H "X-API-Key: $FINANCIAL_PORTFOLIOS_API_TOKEN"
   ```
 
 ---
@@ -96,7 +96,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
   ```json
   {
     "mcpServers": {
-      "financial-portfolios-ai": {
+      "fpai": {
         "url": "https://<your-cloud-run-domain>/mcp",
         "headers": { "X-API-Key": "aqat_v1_your_token_here" }
       }

@@ -224,7 +224,7 @@ async def test_gemini_extension_is_a_real_gemini_cli_extension():
     )
     assert re.fullmatch(r"[a-z0-9-]+", manifest["name"]), "name must be lowercase with dashes"
     assert manifest["version"] and manifest["description"]
-    server = manifest["mcpServers"]["financial-portfolios-ai"]
+    server = manifest["mcpServers"]["fpai"]
     assert server["httpUrl"].endswith("/mcp")
     assert "url" not in server, "`url` is the SSE key; this server speaks Streamable HTTP"
 
@@ -233,7 +233,7 @@ async def test_gemini_extension_is_a_real_gemini_cli_extension():
     assert server["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
     assert any(s["envVar"] == "FINANCIAL_PORTFOLIOS_API_TOKEN" and s["sensitive"] for s in manifest["settings"])
     rendered = render_manifest("gemini-extension.json", "https://financial-portfolios.ai")
-    assert rendered["mcpServers"]["financial-portfolios-ai"]["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
+    assert rendered["mcpServers"]["fpai"]["headers"]["X-API-Key"] == "${FINANCIAL_PORTFOLIOS_API_TOKEN}"
 
     # Gemini CLI does not implement MCP Apps and so does not honour `_meta.ui.visibility`:
     # a page-only tool would otherwise appear in its tool list as something to call.
