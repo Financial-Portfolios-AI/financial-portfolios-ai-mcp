@@ -90,7 +90,9 @@ https://financial-portfolios.ai/agentic **[or the marketplace README until that 
 >   adds that portfolio's live book and the premium figures (expected return and volatility,
 >   equity exposure, cash, effective N).
 > - Alignment calculations against a model portfolio need a subscription to it.
-> - Regional availability: global. No regional restriction.
+> - Regional availability: United States. Paid subscriptions are offered only to residents of the
+>   United States who are 18 or older. The delayed public books can be viewed from elsewhere, but that
+>   is not an offer to subscribe outside the United States (portal ADR-0343).
 > - Rate limits: API keys default to 60 requests per minute and 10,000 per day. OAuth sign-in and
 >   client registration are rate-limited per IP.
 
