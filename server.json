@@ -19,29 +19,6 @@
       "url": "https://financial-portfolios.ai/sse"
     }
   ],
-  "packages": [
-    {
-      "registryType": "pypi",
-      "identifier": "financial-portfolios-ai-mcp",
-      "version": "1.4.6",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "FINANCIAL_PORTFOLIOS_API_TOKEN",
-          "description": "Personal API token (aqat_v1_...) from Settings > API Tokens. Remote connectors use OAuth 2.1 instead.",
-          "isSecret": true,
-          "isRequired": false
-        },
-        {
-          "name": "FINANCIAL_PORTFOLIOS_BASE_URL",
-          "description": "Portal origin the server calls, when running locally. Or set FINANCIAL_PORTFOLIOS_ENV to dev or prod. One of the two is required.",
-          "isRequired": false
-        }
-      ]
-    }
-  ],
   "_meta": {
     "io.modelcontextprotocol.registry/publisher-provided": {
       "developer": {
