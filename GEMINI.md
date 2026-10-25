@@ -81,7 +81,7 @@ gemini extensions config financial-portfolios-ai
 ```
 
 It is stored in the extension's `.env` and sent as `X-API-Key`. Generate one at
-<${PUBLIC_ORIGIN}/settings/api-tokens>. Without a token the server answers `401`
+<${PUBLIC_ORIGIN}/api-access>. Without a token the server answers `401`
 and no portfolio is visible.
 
 ---

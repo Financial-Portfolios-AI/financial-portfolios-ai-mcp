@@ -28,4 +28,4 @@ Before starting any submission process, ensure you have the following repository
 - [x] **Terms of Service:** `https://financial-portfolios.ai/legal/terms`
 - [x] **Privacy Policy:** `https://financial-portfolios.ai/legal/privacy`
 - [x] **High-Resolution Logo:** 512×512 PNG (`https://financial-portfolios.ai/assets/logo-512.png`).
-- [x] **Google Social Login & API Token Generation:** `https://financial-portfolios.ai/settings/api-tokens`.
+- [x] **Google Social Login & API Token Generation:** `https://financial-portfolios.ai/api-access`.

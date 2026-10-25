@@ -16,7 +16,7 @@
   "settings": [
     {
       "name": "API token",
-      "description": "Personal API token from ${PUBLIC_ORIGIN}/settings/api-tokens (starts with aqat_v1_). Without one the server answers 401 and no portfolio is visible.",
+      "description": "Personal API token from ${PUBLIC_ORIGIN}/api-access (starts with aqat_v1_). Without one the server answers 401 and no portfolio is visible.",
       "envVar": "FINANCIAL_PORTFOLIOS_API_TOKEN",
       "sensitive": true
     }

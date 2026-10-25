@@ -9,6 +9,16 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.6] - 2026-10-25
+
+### Fixed
+- The API-token link (Access Centre panel, tool text, Gemini/Claude Code install files, README)
+  pointed at `/settings/api-tokens`, which the portal does not serve (404). It is `/api-access`.
+
+### Changed
+- `docs/directory_listings.md`: production now serves every listing URL; the Gemini extension
+  points at production; remaining operator steps before a directory submission.
+
 ## [1.4.5] - 2026-10-25
 
 ### Fixed
@@ -384,7 +394,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.6...HEAD
+[1.4.6]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...v1.4.3

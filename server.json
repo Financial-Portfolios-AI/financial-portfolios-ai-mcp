@@ -3,7 +3,7 @@
   "name": "ai.financial-portfolios/financial-portfolios-ai",
   "title": "Financial Portfolios AI",
   "description": "Systematic model portfolios: allocations, holdings history, model-alignment arithmetic, research.",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "websiteUrl": "https://financial-portfolios.ai",
   "repository": {
     "url": "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp",
@@ -23,7 +23,7 @@
     {
       "registryType": "pypi",
       "identifier": "financial-portfolios-ai-mcp",
-      "version": "1.4.5",
+      "version": "1.4.6",
       "transport": {
         "type": "stdio"
       },
