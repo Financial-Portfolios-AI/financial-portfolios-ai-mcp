@@ -113,7 +113,16 @@ async def test_blank_code_uses_subscribed_portfolios_not_a_fixed_default(name):
 @pytest.mark.asyncio
 async def test_explicit_code_is_used_directly():
     text = await _render("portfolio_review", {"portfolio": "AQA_DEFENSIVE"})
-    assert "Portfolio: 'AQA_DEFENSIVE'. Use this code directly." in text
+    assert "Portfolio: 'AQA_DEFENSIVE'" in text and "Use this code directly" in text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("typed", ["Defensive", "defensive", " Defensive "])
+async def test_a_product_name_resolves_to_its_code(typed):
+    """Users pick "Defensive" from the drop-down, not AQA_DEFENSIVE."""
+    text = await _render("portfolio_review", {"portfolio": typed})
+    assert "Portfolio: 'AQA_DEFENSIVE'" in text
+    assert "product_name" in text  # fallback when a name does not map
 
 
 # --------------------------------------------------------------------------- #
@@ -127,10 +136,22 @@ async def test_portfolio_changes_passes_the_window_and_flags_delayed_history():
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("days", ["0", "366", "soon"])
-async def test_portfolio_changes_rejects_an_invalid_window(days):
-    with pytest.raises(ValueError):
-        await mcp_server.get_prompt("portfolio_changes", {"days": days})
+@pytest.mark.parametrize(
+    "days,expected", [("", 30), ("soon", 30), ("0", 1), ("366", 365), (" 90 ", 90)]
+)
+async def test_portfolio_changes_tolerates_blank_and_clamps_the_window(days, expected):
+    """Clients send an untouched optional field as "" - that used to fail the whole prompt."""
+    text = await _render("portfolio_changes", {"days": days})
+    assert f"days={expected}" in text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("name,default", [("portfolio_report", 90), ("portfolio_digest", 7)])
+async def test_blank_days_renders_with_the_default(name, default):
+    """2026-10-25 prod: "Error rendering prompt portfolio_report" from days=""."""
+    args = {"days": ""} if name == "portfolio_digest" else {"portfolio": "", "days": ""}
+    text = await _render(name, args)
+    assert f"days={default}" in text or f"{default} days" in text
 
 
 @pytest.mark.asyncio
@@ -274,16 +295,20 @@ async def test_completion_suggests_live_codes_subscribed_first():
     ref = PromptReference(type="ref/prompt", name="portfolio_review")
     with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
         result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value=""), None)
-    assert result.values[0] == "AQA_DEFENSIVE"
-    assert set(result.values) == {"AQA_DEFENSIVE", "AQA_BALANCED", "AQA_AGGRESSIVE"}
+    assert result.values[0] == "Defensive"
+    assert set(result.values) == {"Defensive", "Balanced", "Aggressive"}
 
 
 @pytest.mark.asyncio
 async def test_completion_filters_by_what_was_typed_case_insensitively():
     ref = PromptReference(type="ref/prompt", name="portfolio_changes")
     with patch("financial_portfolios_ai_mcp.prompts.get_async_client", return_value=_client_returning(_catalog())):
-        result = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value="aqa_ag"), None)
-    assert result.values == ["AQA_AGGRESSIVE"]
+        by_code = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value="aqa_ag"), None)
+        by_name = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value="aggr"), None)
+        mid_word = await complete_portfolio_code(ref, CompletionArgument(name="portfolio", value="fens"), None)
+    assert by_code.values == ["Aggressive"]
+    assert by_name.values == ["Aggressive"]
+    assert mid_word.values == ["Defensive"]
 
 
 def _client_with_books(books, failures=()):
@@ -356,7 +381,7 @@ async def test_completion_answers_the_resource_template_too():
 @pytest.mark.asyncio
 async def test_completion_ignores_arguments_it_knows_nothing_about():
     prompt_ref = PromptReference(type="ref/prompt", name="portfolio_changes")
-    assert await complete_portfolio_code(prompt_ref, CompletionArgument(name="days", value="3"), None) is None
+    assert await complete_portfolio_code(prompt_ref, CompletionArgument(name="horizon", value="3"), None) is None
 
     template_ref = ResourceTemplateReference(type="ref/resource", uri="research://posts/latest")
     assert await complete_portfolio_code(template_ref, CompletionArgument(name="slug", value="a"), None) is None
@@ -429,7 +454,26 @@ async def test_multi_portfolio_completion_extends_the_list_without_repeats():
             ref, CompletionArgument(name="portfolios", value="AQA_DEFENSIVE, "), None
         )
 
-    assert first.values[0] == "AQA_DEFENSIVE"
-    assert second.values == ["AQA_DEFENSIVE, AQA_BALANCED"]
-    # Already-chosen codes are not offered again.
-    assert rest.values == ["AQA_DEFENSIVE, AQA_BALANCED", "AQA_DEFENSIVE, AQA_AGGRESSIVE"]
+    assert first.values[0] == "Defensive"
+    assert second.values == ["AQA_DEFENSIVE, Balanced"]
+    # Already-chosen portfolios are not offered again, whether entered as a code or a name.
+    assert rest.values == ["AQA_DEFENSIVE, Balanced", "AQA_DEFENSIVE, Aggressive"]
+
+
+@pytest.mark.asyncio
+async def test_days_and_topic_offer_a_drop_down():
+    ref = PromptReference(type="ref/prompt", name="portfolio_report")
+    days = await complete_portfolio_code(ref, CompletionArgument(name="days", value=""), None)
+    assert days.values == ["7", "30", "90", "180", "365"]
+    narrowed = await complete_portfolio_code(ref, CompletionArgument(name="days", value="3"), None)
+    assert narrowed.values == ["30", "365"]
+    topic = await complete_portfolio_code(
+        PromptReference(type="ref/prompt", name="market_research_digest"), CompletionArgument(name="topic", value="infl"), None
+    )
+    assert topic.values == ["Inflation"]
+
+
+@pytest.mark.asyncio
+async def test_compare_portfolios_accepts_names():
+    text = await _render("compare_portfolios", {"portfolios": "Defensive, balanced"})
+    assert "Compare these portfolios: 'AQA_DEFENSIVE', 'AQA_BALANCED'." in text

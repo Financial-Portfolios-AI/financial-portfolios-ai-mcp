@@ -9,6 +9,11 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.5 — October 2026
+
+- **Fixed:** the "Interactive portfolio report", "What changed" and digest starters no longer fail when the number of days is left blank.
+- **Easier choices:** starters accept portfolio names such as *Defensive* or *Quality*, and offer drop-downs for the portfolio, the number of days and the research topic.
+
 ## Version 1.4.4 — October 2026
 
 - **Shorter setup commands.** The connection is now named `fpai`, so the commands you copy are shorter and your assistant's tool names are easier to read. Connections you have already set up keep working.

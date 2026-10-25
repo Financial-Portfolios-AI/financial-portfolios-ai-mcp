@@ -14,6 +14,7 @@ recommend a security, a trade or a portfolio choice.
 """
 
 import logging
+import re
 from typing import Annotated, Any
 
 from mcp.types import Completion, CompletionArgument, PromptReference, ResourceTemplateReference
@@ -35,13 +36,19 @@ MULTI_PORTFOLIO_ARGUMENTS = frozenset({"portfolios"})
 # completed the same way a single-code prompt argument is.
 TEMPLATE_PORTFOLIO_ARGUMENTS = frozenset({"portfolio_code"})
 TICKER_ARGUMENTS = frozenset({"ticker"})
+DAYS_ARGUMENTS = frozenset({"days"})
+TOPIC_ARGUMENTS = frozenset({"topic"})
+# Drop-down choices for the free-text inputs. A client shows completion values as a picker, so a
+# short list of sensible values turns a blank box into a choice; typing anything else still works.
+DAY_CHOICES = ("7", "30", "90", "180", "365")
+TOPIC_CHOICES = ("Inflation", "Interest rates", "Energy", "AI and technology", "Earnings", "Market regime")
 
 PortfolioCode = Annotated[
     str,
     Field(
         description=(
-            "Model portfolio code, e.g. AQA_DEFENSIVE, AQA_BALANCED or AQA_AGGRESSIVE. "
-            "Leave blank to use the portfolios you subscribe to."
+            "Model portfolio, e.g. Defensive, Balanced, Aggressive or Quality (the code, such as "
+            "AQA_DEFENSIVE, works too). Leave blank to use the portfolios you subscribe to."
         )
     ),
 ]
@@ -84,11 +91,49 @@ portfolio suits them - no suitability assessment has been performed. If asked, s
 and point them to a licensed adviser."""
 
 
+def _to_code(value: str) -> str:
+    """Map what a user types or picks to a portfolio code: "Defensive" -> "AQA_DEFENSIVE".
+
+    Product names are the code without its "AQA_" prefix (Balanced, Aggressive, Defensive,
+    Quality), so the mapping needs no portal call - prompts render synchronously and must not
+    fail on a network error. Anything already starting with AQA_ is passed through.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    code = re.sub(r"[^A-Z0-9]+", "_", raw.upper()).strip("_")
+    return code if code.startswith("AQA_") else f"AQA_{code}"
+
+
 def _code_or_subscribed(portfolio: str) -> str:
-    code = (portfolio or "").strip()
-    if code:
-        return f"Portfolio: '{code}'. Use this code directly."
+    raw = (portfolio or "").strip()
+    if raw:
+        code = _to_code(raw)
+        return (
+            f"Portfolio: '{code}' (the user chose '{raw}'). Use this code directly; if "
+            "`get_portfolio_allocation` does not recognise it, call `list_portfolios` and match "
+            "the user's words against each entry's `product_name`."
+        )
     return _RESOLVE_PORTFOLIOS
+
+
+def _days(value: Any, default: int) -> int:
+    """Parse a `days` argument. MCP prompt arguments arrive as strings, and a client sends an
+    untouched optional field as "" - which an `int` parameter rejected, so the whole prompt
+    failed to render ("Error rendering prompt portfolio_report", 2026-10-25). Blank or invalid
+    means the default; anything else is clamped to 1-365."""
+    try:
+        n = int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+    return max(1, min(365, n))
+
+
+def _days_field(default: int, what: str) -> Any:
+    return Annotated[
+        str,
+        Field(description=f"{what}, from 1 to 365. Leave blank for {default}."),
+    ]
 
 
 
@@ -144,6 +189,13 @@ async def _complete_ticker(value: str) -> Completion:
     return Completion(values=values[:100], total=len(values), has_more=len(values) > 100)
 
 
+def _complete_fixed(choices: tuple[str, ...], value: str) -> Completion:
+    """Offer a fixed list as a drop-down, narrowed by what has been typed."""
+    typed = value.strip().lower()
+    values = [c for c in choices if typed in c.lower()]
+    return Completion(values=values, total=len(values), has_more=False)
+
+
 async def complete_portfolio_code(ref: Any, argument: CompletionArgument, context: Any) -> Completion | None:
     """Suggest the user's live portfolio codes for portfolio inputs.
 
@@ -166,6 +218,10 @@ async def complete_portfolio_code(ref: Any, argument: CompletionArgument, contex
     elif isinstance(ref, PromptReference):
         if name in TICKER_ARGUMENTS:
             return await _complete_ticker(argument.value or "")
+        if name in DAYS_ARGUMENTS:
+            return _complete_fixed(DAY_CHOICES, argument.value or "")
+        if name in TOPIC_ARGUMENTS:
+            return _complete_fixed(TOPIC_CHOICES, argument.value or "")
         if name not in SINGLE_PORTFOLIO_ARGUMENTS and name not in MULTI_PORTFOLIO_ARGUMENTS:
             return None
         single = name in SINGLE_PORTFOLIO_ARGUMENTS
@@ -186,11 +242,25 @@ async def complete_portfolio_code(ref: Any, argument: CompletionArgument, contex
     except Exception:  # noqa: BLE001 - completion is best-effort by design
         return Completion(values=[], total=0, has_more=False)
 
-    taken = {c.upper() for c in chosen}
+    # Prompts take the readable product name ("Defensive") and map it to the code themselves, so
+    # that is what the drop-down offers. A resource template needs the literal code. Matching is
+    # on any part of the name or code, so "def", "Defensive" and "AQA_DEF" all find it.
+    taken = {_to_code(c) for c in chosen}
     ranked = sorted(result.portfolios, key=lambda p: p.access != "subscribed")
-    codes = [p.code for p in ranked if p.code.upper().startswith(typed) and p.code.upper() not in taken]
+
+    def label(p: Any) -> str:
+        if isinstance(ref, ResourceTemplateReference):
+            return p.code
+        return (getattr(p, "product_name", None) or p.code.removeprefix("AQA_").title()).strip()
+
+    labels = [
+        label(p)
+        for p in ranked
+        if p.code.upper() not in taken
+        and (typed in p.code.upper() or typed in (getattr(p, "product_name", "") or "").upper())
+    ]
     prefix = ", ".join(chosen)
-    values = [f"{prefix}, {code}" if prefix else code for code in codes]
+    values = [f"{prefix}, {lab}" if prefix else lab for lab in labels]
     return Completion(values=values[:100], total=len(values), has_more=len(values) > 100)
 
 def register_prompts(server: Any) -> None:
@@ -333,11 +403,9 @@ End with the disclaimer."""
     )
     def portfolio_changes(
         portfolio: PortfolioCode = "",
-        days: Annotated[
-            int,
-            Field(description="How many days back to look, from 1 to 365. Defaults to 30.", ge=1, le=365),
-        ] = 30,
+        days: _days_field(30, "How many days back to look") = "",
     ) -> str:
+        days = _days(days, 30)
         return f"""You are an educational assistant for Financial Portfolios AI, explaining how a model portfolio has changed.
 
 {DISCLAIMER_TEXT}
@@ -374,13 +442,13 @@ End with the disclaimer."""
             str,
             Field(
                 description=(
-                    "Comma-separated portfolio codes to compare, e.g. AQA_DEFENSIVE, AQA_BALANCED. "
-                    "Leave blank to compare every portfolio."
+                    "Comma-separated portfolios to compare, e.g. Defensive, Balanced (codes such as "
+                    "AQA_DEFENSIVE work too). Leave blank to compare every portfolio."
                 )
             ),
         ] = "",
     ) -> str:
-        codes = [c.strip() for c in (portfolios or "").split(",") if c.strip()]
+        codes = [_to_code(c) for c in (portfolios or "").split(",") if c.strip()]
         which = (
             "Compare these portfolios: " + ", ".join(f"'{c}'" for c in codes) + "."
             if codes
@@ -443,11 +511,9 @@ End with the disclaimer."""
     )
     def portfolio_report(
         portfolio: PortfolioCode = "",
-        days: Annotated[
-            int,
-            Field(description="Days of history to show changes for, from 1 to 365. Defaults to 90.", ge=1, le=365),
-        ] = 90,
+        days: _days_field(90, "Days of history to show changes for") = "",
     ) -> str:
+        days = _days(days, 90)
         return f"""You are building an interactive, educational report on a Financial Portfolios AI model portfolio.
 
 {DISCLAIMER_TEXT}
@@ -610,11 +676,9 @@ End with the disclaimer."""
         ),
     )
     def portfolio_digest(
-        days: Annotated[
-            int,
-            Field(description="How many days the digest should cover, from 1 to 365. Defaults to 7.", ge=1, le=365),
-        ] = 7,
+        days: _days_field(7, "How many days the digest should cover") = "",
     ) -> str:
+        days = _days(days, 7)
         return f"""You are producing a recurring digest of the user's Financial Portfolios AI model portfolios, covering the last {days} days.
 
 {DISCLAIMER_TEXT}
