@@ -81,7 +81,7 @@ https://financial-portfolios.ai/agentic **[or the marketplace README until that 
   Discovery via `WWW-Authenticate: Bearer resource_metadata=…` (RFC 9728) and
   `/.well-known/oauth-authorization-server`. Scopes: `portfolios:read`, `research:read`.
 - ☑ API keys: personal token (`aqat_v1_…`) in the `X-API-Key` header, issued at
-  `/settings/api-tokens`.
+  `/api-access`.
 - ☐ Other
 
 **Access requirements / restrictions**

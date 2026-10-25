@@ -258,7 +258,7 @@ components:
       type: apiKey
       in: header
       name: X-API-Key
-      description: Personal API token (format aqat_v1_<hex_token>) obtained from https://financial-portfolios.ai/settings/api-tokens
+      description: Personal API token (format aqat_v1_<hex_token>) obtained from https://financial-portfolios.ai/api-access
 
   responses:
     UnauthorizedError:

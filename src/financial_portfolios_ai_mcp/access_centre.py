@@ -94,7 +94,7 @@ def register_access_centre(apps: Apps) -> None:
         links = {
             "portal": base,
             "pricing": f"{base}/#pricing",
-            "api_tokens": f"{base}/settings/api-tokens",
+            "api_tokens": f"{base}/api-access",
         }
 
         async def fetch_list() -> dict[str, Any]:

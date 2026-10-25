@@ -122,7 +122,7 @@ async def test_panel_reports_access_counts_and_links():
     assert data["subscribed"] == 1 and data["delayed"] == 1
     assert data["plan"] == "subscriber"
     assert data["links"]["pricing"].endswith("/#pricing")
-    assert data["links"]["portal"] and data["links"]["api_tokens"].endswith("/settings/api-tokens")
+    assert data["links"]["portal"] and data["links"]["api_tokens"].endswith("/api-access")
     # Naming what the delayed book withholds is the whole point of the panel.
     assert data["delayed_hides"] == DELAYED_HIDES
     assert "disclaimer" in data

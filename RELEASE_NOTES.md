@@ -9,6 +9,10 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.6 — October 2026
+
+- **Fixed:** the "get an API token" link now opens the right page (API access) instead of a page that did not exist.
+
 ## Version 1.4.5 — October 2026
 
 - **Fixed:** the "Interactive portfolio report", "What changed" and digest starters no longer fail when the number of days is left blank.

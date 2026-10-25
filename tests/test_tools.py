@@ -219,4 +219,4 @@ def test_a_missing_subscription_is_not_reported_as_a_failed_sign_in():
 
     signed_out = access_error(AuthenticationError("Invalid or revoked API key", status_code=401))
     assert signed_out["error"] == "Not signed in"
-    assert "settings/api-tokens" in signed_out["hint"]
+    assert "api-access" in signed_out["hint"]

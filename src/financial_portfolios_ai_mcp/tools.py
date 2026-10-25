@@ -48,7 +48,7 @@ def access_error(e: AuthenticationError, portfolio_code: str = "") -> dict[str, 
         "message": str(e),
         "hint": (
             "Reconnect the connector to sign in again. Command-line clients using a personal "
-            f"API token can check or replace it at {portal_url}/settings/api-tokens."
+            f"API token can check or replace it at {portal_url}/api-access."
         ),
         "disclaimer": DISCLAIMER,
     }
@@ -96,7 +96,7 @@ def register_tools(server: Any) -> None:
             return {
                 "error": "Authentication or Subscription required",
                 "message": str(e),
-                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "hint": "Please generate an API token at https://financial-portfolios.ai/api-access after logging in with Google.",
                 "disclaimer": DISCLAIMER,
             }
         except RateLimitError as e:
@@ -380,7 +380,7 @@ def register_tools(server: Any) -> None:
             return {
                 "error": "Authentication required",
                 "message": str(e),
-                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "hint": "Please generate an API token at https://financial-portfolios.ai/api-access after logging in with Google.",
                 "disclaimer": DISCLAIMER,
             }
         except FinancialPortfoliosAIError as e:
@@ -423,7 +423,7 @@ def register_tools(server: Any) -> None:
             return {
                 "error": "Authentication or active subscription required to read this post",
                 "message": str(e),
-                "hint": "Please generate an API token at https://financial-portfolios.ai/settings/api-tokens after logging in with Google.",
+                "hint": "Please generate an API token at https://financial-portfolios.ai/api-access after logging in with Google.",
                 "disclaimer": DISCLAIMER,
             }
         except FinancialPortfoliosAIError as e:

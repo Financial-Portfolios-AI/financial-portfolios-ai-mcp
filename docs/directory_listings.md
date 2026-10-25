@@ -75,9 +75,11 @@ Vertex AI-style manifest that no Google surface read and whose product shuts dow
 2026-11-26; see [providers_and_automation.md](providers_and_automation.md).
 
 Published to the public marketplace repo (`financial-portfolios-ai-marketplace`), because
-`gemini extensions install` clones a public repository and this one is private. It points at
-the **dev** deployment: `https://financial-portfolios.ai/mcp` returns `404` today, so a
-production build would install cleanly and fail on every call.
+`gemini extensions install` clones a public repository and this one is private. Since
+2026-10-25 it points at **production** (`https://financial-portfolios.ai/mcp`), generated with
+`scripts/publish_marketplace.py --env prod`. The Gemini CLI gallery (geminicli.com/extensions)
+lists it by crawling: a public repo, `gemini-extension.json` at the root, the
+`gemini-cli-extension` topic, and a git tag. There is no submission form.
 
 ---
 
@@ -99,7 +101,7 @@ record, not us.
 | Developer / company | Financial Portfolios AI (legal entity: **Autonomous Intelligent Agents LLC**, the name the published privacy policy is issued under — use whichever the portal asks for, and keep it consistent with the policy) |
 | Company website | https://financial-portfolios.ai |
 | Categories | Finance / Investing / Research / Data analysis (pick up to 5) |
-| Documentation URL | https://financial-portfolios.ai/docs |
+| Documentation URL | https://financial-portfolios.ai/docs (redirects to the connector guide at /agentic) |
 | Privacy policy URL | https://financial-portfolios.ai/legal/privacy (dev: https://dev.financial-portfolios.ai/legal/privacy) |
 | Support contact | support@financial-portfolios.ai |
 | Icon | `/mcp/assets/icon-512.png` |
@@ -111,18 +113,20 @@ The tagline above is 53 characters. The description must keep the disclosure sen
 
 ---
 
-## Before submitting anywhere: production is not serving these pages yet
+## Production status (re-checked 2026-10-25)
 
-Checked on 2026-09-12. `https://financial-portfolios.ai` serves a "We're under
-construction" placeholder for **every** path, so the URLs above return HTTP 200 with the
-placeholder rather than the real page — `/legal/privacy` included. Status codes are
-useless here: a nonsense path returns 200 too, and `/mcp/assets/icon-512.png` returns
-`text/html` instead of a PNG.
+Production serves every URL in the table above: `/legal/privacy` (server-rendered, with the
+Google user-data section), `/legal/terms`, `/docs` (redirect to `/agentic`), and
+`/mcp/assets/icon-512.png` as `image/png`. `https://financial-portfolios.ai/mcp` answers `401`
+with the RFC 9728 challenge, and OAuth dynamic client registration accepts only the
+`claude.ai`, `claude.com` and `chatgpt.com` redirect hosts (plus loopback).
 
-The same pages are live and correct on dev (`https://dev.financial-portfolios.ai/legal/privacy`
-renders the full policy, dated 2026-08-22, issued by Autonomous Intelligent Agents LLC).
+Still needed before a portal submission, and owned by the operator rather than this repo:
 
-This blocks submission rather than delaying it: a missing or incomplete privacy policy is
-an immediate rejection at Claude review, and every provider's reviewer fetches the
-production URLs. Ship the production site, re-check each URL in the table above, then
-submit.
+- A **reviewer account** with a subscription, signing in without MFA or emailed codes (OpenAI
+  requires that; prod sign-in is Google only, so a Workspace user with 2-step verification off).
+- The **support mailbox** in the table must exist.
+- For ChatGPT: OpenAI **business verification**, a **demo video URL**, and the domain token,
+  served by the portal at `/.well-known/openai-apps-challenge` (Terraform
+  `openai_apps_challenge`).
+- For Claude: 3-5 carousel **screenshots** of the MCP App panels (PNG, at least 1000px wide).

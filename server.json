@@ -3,7 +3,7 @@
   "name": "ai.financial-portfolios/financial-portfolios-ai",
   "title": "Financial Portfolios AI",
   "description": "Systematic model portfolios: allocations, holdings history, model-alignment arithmetic, research.",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "websiteUrl": "https://financial-portfolios.ai",
   "repository": {
     "url": "https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp",
@@ -17,29 +17,6 @@
     {
       "type": "sse",
       "url": "https://financial-portfolios.ai/sse"
-    }
-  ],
-  "packages": [
-    {
-      "registryType": "pypi",
-      "identifier": "financial-portfolios-ai-mcp",
-      "version": "1.4.5",
-      "transport": {
-        "type": "stdio"
-      },
-      "environmentVariables": [
-        {
-          "name": "FINANCIAL_PORTFOLIOS_API_TOKEN",
-          "description": "Personal API token (aqat_v1_...) from Settings > API Tokens. Remote connectors use OAuth 2.1 instead.",
-          "isSecret": true,
-          "isRequired": false
-        },
-        {
-          "name": "FINANCIAL_PORTFOLIOS_BASE_URL",
-          "description": "Portal origin the server calls, when running locally. Or set FINANCIAL_PORTFOLIOS_ENV to dev or prod. One of the two is required.",
-          "isRequired": false
-        }
-      ]
     }
   ],
   "_meta": {

@@ -149,7 +149,7 @@ Remote connectors (Claude web/desktop) sign in with OAuth 2.1: a tokenless reque
 with a 401 and WWW-Authenticate: Bearer resource_metadata=... (RFC 9728), and the client completes
 the flow against the portal. There is no API key for the user to paste.
 Command-line and local stdio clients instead pass a personal API token (format: aqat_v1_...),
-generated at https://financial-portfolios.ai/settings/api-tokens, as an X-API-Key or
+generated at https://financial-portfolios.ai/api-access, as an X-API-Key or
 Authorization header, or via FINANCIAL_PORTFOLIOS_API_TOKEN for stdio.
 """
 

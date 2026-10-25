@@ -42,7 +42,7 @@ This MCP server connects **Claude**, **ChatGPT**, and **Google Gemini** directly
 ## Authentication
 
 1. Visit [financial-portfolios.ai](https://financial-portfolios.ai) and sign in using **Google Social Login** (or email credentials).
-2. Go to **Settings > API Tokens** (or [financial-portfolios.ai/settings/api-tokens](https://financial-portfolios.ai/settings/api-tokens)).
+2. Go to **Settings > API Tokens** (or [financial-portfolios.ai/api-access](https://financial-portfolios.ai/api-access)).
 3. Click **Generate API Token**.
 4. Copy your token (starts with `aqat_v1_...`).
 
