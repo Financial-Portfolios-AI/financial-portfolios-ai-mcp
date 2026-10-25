@@ -9,6 +9,19 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.5] - 2026-10-25
+
+### Fixed
+- `portfolio_report`, `portfolio_changes` and `portfolio_digest` failed to render ("Error rendering
+  prompt") when a client sent the untouched optional `days` field as an empty string. Blank now
+  means the default; other values are clamped to 1-365.
+
+### Changed
+- Prompts accept a portfolio's name (Defensive, Balanced, Aggressive, Quality) as well as its code,
+  and their hints lead with the names.
+- Prompt drop-downs: portfolio fields suggest names, matching any part of the name or code;
+  `days` offers 7, 30, 90, 180 and 365; the research `topic` offers common topics.
+
 ## [1.4.4] - 2026-10-09
 
 ### Changed
@@ -371,7 +384,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...HEAD
+[1.4.5]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...v1.4.4
 [1.4.3]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.2...v1.4.3
 [1.4.2]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.1...v1.4.2
