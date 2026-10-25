@@ -120,10 +120,10 @@ async def test_opening_without_holdings_leaves_the_editor_empty():
 
 
 @pytest.mark.asyncio
-async def test_tool_description_sends_the_model_to_the_brokerage_connector_first():
+async def test_tool_description_reuses_given_holdings_and_names_no_other_connector():
     tool = {t.name: t for t in await mcp_server.list_tools()}["open_rebalance_studio"]
-    assert "brokerage" in tool.description
-    assert "should not be asked to retype" in tool.description
+    assert "already given their positions" in tool.description
+    assert "connector" not in tool.description.lower()
     assert "Never ask the user for brokerage credentials" in tool.description
 
 

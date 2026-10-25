@@ -85,6 +85,7 @@ def register_access_centre(apps: Apps) -> None:
         annotations=ToolAnnotations(
             title="Access & Connection",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

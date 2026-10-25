@@ -70,6 +70,7 @@ def register_analysis_tools(server: MCPServer) -> None:
         annotations=ToolAnnotations(
             title="Concentration and sector mix",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -129,6 +130,7 @@ def register_analysis_tools(server: MCPServer) -> None:
         annotations=ToolAnnotations(
             title="What the model changed",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

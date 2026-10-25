@@ -9,6 +9,16 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.4.7] - 2026-10-25
+
+### Fixed (OpenAI directory scan findings)
+- Every tool now declares `readOnlyHint`, `destructiveHint` and `openWorldHint` as explicit
+  booleans (`destructiveHint` was omitted). A test pins all three on every tool.
+- Server instructions, tool descriptions and prompts no longer tell the model to use another
+  plugin or connector (market data, news, brokerage). Holdings come from what the user provides;
+  context may come from the model's general knowledge. The order-safety rules are unchanged:
+  explicit per-batch confirmation, no standing authorization, no invented prices, no credentials.
+
 ## [1.4.6] - 2026-10-25
 
 ### Fixed
@@ -394,7 +404,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.6...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.7...HEAD
+[1.4.7]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...v1.4.5
 [1.4.4]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.3...v1.4.4

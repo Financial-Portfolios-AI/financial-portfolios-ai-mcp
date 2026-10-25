@@ -47,6 +47,7 @@ def register_research_reader(apps: Apps) -> None:
         annotations=ToolAnnotations(
             title="Research Reader",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

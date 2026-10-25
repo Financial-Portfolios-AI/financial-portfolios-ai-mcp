@@ -283,22 +283,20 @@ def register_prompts(server: Any) -> None:
 {DISCLAIMER_TEXT}
 
 1. Call `list_portfolios` so the menu can use their real portfolio names, and note which are subscribed and which are delayed.
-2. Check which other tools this conversation has: a market-data or news connector (company news, filings, prices) and a brokerage or aggregator connector (positions). Do not call them; just look at what is available.
-3. Present this menu, one line each, marking any journey whose extra connector is missing as "needs a ... connector":
+2. Present this menu, one line each:
 
 | Journey | Ask | Uses |
 |---|---|---|
 | What my subscription shows me | "What can my account see?" | `open_access_centre` |
 | Show me a portfolio | "Show me <portfolio>" | `open_portfolio_explorer` |
 | How has it done | "How has <portfolio> performed?" | `get_portfolio_performance` |
-| News on what it holds | "What's the news on <portfolio>'s top holdings?" | holdings + news connector |
+| What changed | "What changed in <portfolio> this month?" | `get_portfolio_changes` |
 | What the portfolios agree on | "What do my portfolios have in common?" | `open_breadth_board` |
-| How far my account has drifted | "How far has my account drifted from <portfolio>?" | brokerage connector + `open_rebalance_studio` |
-| Align my account | "Align my account to <portfolio>" | `open_rebalance_studio`; orders are proposed, you confirm and place them |
+| How far my holdings are from a model | "Compare my holdings with <portfolio>" | your holdings + `open_rebalance_studio` |
+| Align to a model | "What would align my holdings to <portfolio>?" | `open_rebalance_studio`; share differences only - you place any orders yourself |
 | Keep me posted | "Every Monday, summarise what changed" | your assistant's scheduler, read-only |
 
-4. If a connector is missing, say in one sentence what kind to add and what it unlocks. Do not name it as a requirement for the other journeys.
-5. For "keep me posted", say that scheduled runs report only: they never prepare or place orders.
+3. For "keep me posted", say that scheduled runs report only: they never prepare or place orders.
 6. End by asking which one they'd like, and offer to start the first.
 
 {_DELAYED_BOOK}
@@ -563,8 +561,8 @@ These calculations are target-model alignment arithmetic only - not trade execut
 {_code_or_subscribed(portfolio)}
 
 1. Confirm access before asking for any holdings: call `list_portfolios` and check the target has `access: "subscribed"`. Alignment calculations require a subscription. If the target is not subscribed, explain that and stop - do not collect the user's holdings.
-2. Get the holdings without making the user retype them. If a brokerage, custodian or portfolio-tracking connector is available, read the positions from there. Never ask anyone for brokerage credentials or account numbers.
-3. Open `open_rebalance_studio`, passing `holdings` when you have them. It shows the positions in an editable table so the user can correct them before anything is calculated - positions read from another service can be stale, partial, or from a different account than they mean. With no connector to read from, the panel is also where they paste or type them; `get_rebalance_template` gives the format. Limits: 200 rows, 512 KB.
+2. Use the holdings the user has given in the conversation, so they are not asked to retype them. Never ask anyone for brokerage credentials or account numbers.
+3. Open `open_rebalance_studio`, passing `holdings` when you have them. It shows the positions in an editable table so the user can correct them before anything is calculated - the panel is also where they paste or type them; `get_rebalance_template` gives the format. Limits: 200 rows, 512 KB.
 4. If the client cannot render the panel, collect the holdings in the conversation and call `rebalance_portfolio` directly.
 5. Present the results:
    - Positions with a calculated reduction (negative delta) to match the target weight.
@@ -721,7 +719,7 @@ End with the disclaimer."""
 
 This is a report, not a trade plan. It is safe to run on a schedule, so do not ask the user questions and do not propose, prepare or place any order. If they want to act on it, that is a separate, explicit request.
 
-1. Read the user's current positions from a brokerage, custodian or portfolio-tracking connector if one is available. Never ask for brokerage credentials or account numbers. If no such connector is there, say the check needs one and stop - do not ask the user to type their holdings into a scheduled run.
+1. Use the positions the user has provided in the conversation. Never ask for brokerage credentials or account numbers. If none were provided, say the check needs the user's holdings and stop - do not ask for them in a scheduled run.
 2. Confirm the target has `access: "subscribed"` via `list_portfolios`. Alignment needs a subscription; if it is not subscribed, say so and stop.
 3. Call `rebalance_portfolio` with the target and those holdings.
 4. Report, in under 200 words:
