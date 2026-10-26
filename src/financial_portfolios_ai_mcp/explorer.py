@@ -117,6 +117,7 @@ def build_explorer() -> Apps:
         annotations=ToolAnnotations(
             title="Portfolio Explorer",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -171,6 +172,7 @@ def build_explorer() -> Apps:
         annotations=ToolAnnotations(
             title="Explorer host capabilities (internal)",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=False,
         ),
     )

@@ -406,7 +406,7 @@ def test_instructions_gate_order_placement_behind_confirmation():
     """
     text = mcp_server.instructions
     assert "places no orders" in text
-    assert "explicit confirmation of that specific" in text
+    assert "explicit confirmation of that specific batch" in text
     # "Always rebalance me" is the phrasing that sounds like standing permission and is not.
     assert "no standing authorization and no auto-execute" in text.lower()
     assert "always rebalance me" in text
@@ -418,9 +418,23 @@ def test_instructions_gate_order_placement_behind_confirmation():
     assert "Never ask for brokerage credentials" in text
 
 
-def test_instructions_allow_context_from_other_tools():
-    """Users run this beside market-data and brokerage connectors, and should use them."""
+def test_instructions_do_not_steer_the_model_to_other_connectors():
+    """OpenAI's directory review rejects server instructions that tell the model to use another
+    plugin or connector (findings, 2026-10-25). General-knowledge context stays allowed."""
     text = mcp_server.instructions
-    assert "Using Other Connected Tools" in text
-    assert "market data, company" in text and "filings, news" in text
-    assert "outside fact came from" in text
+    assert "Using Other Connected Tools" not in text
+    for phrase in ("other tools the user has connected", "brokerage connector", "news connector",
+                   "portfolio-tracking connector", "connected tool"):
+        assert phrase not in text
+    assert "general knowledge" in text
+
+
+@pytest.mark.asyncio
+async def test_every_tool_sets_all_three_hints_explicitly():
+    """OpenAI's scan requires explicit booleans for readOnlyHint, destructiveHint and
+    openWorldHint on every tool; Claude's requires readOnlyHint or destructiveHint and a title."""
+    for tool in await mcp_server.list_tools():
+        a = tool.annotations.model_dump(by_alias=True, exclude_none=True)
+        assert a.get("title"), tool.name
+        for key in ("readOnlyHint", "destructiveHint", "openWorldHint"):
+            assert isinstance(a.get(key), bool), (tool.name, key)

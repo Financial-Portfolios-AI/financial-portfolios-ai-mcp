@@ -177,17 +177,18 @@ async def test_rebalance_checks_entitlement_before_collecting_holdings():
     """A non-subscriber must not be asked to hand over holdings that will be refused."""
     text = await _render("rebalance_advisor", {"portfolio": "AQA_BALANCED"})
     check = text.index("Confirm access before asking for any holdings")
-    collect = text.index("Get the holdings without making the user retype them")
+    collect = text.index("Use the holdings the user has given in the conversation")
     assert check < collect
     assert "do not collect the user's holdings" in text
 
 
 @pytest.mark.asyncio
-async def test_rebalance_reads_holdings_from_a_connector_before_asking():
-    """Retyping what a brokerage connector already holds is the wrong path, and asking for
-    credentials is never acceptable."""
+async def test_rebalance_uses_holdings_the_user_provides_and_names_no_other_connector():
+    """OpenAI review (2026-10-25) flags text that steers the model to another plugin or connector;
+    holdings come from the user, and asking for credentials is never acceptable."""
     text = await _render("rebalance_advisor")
-    assert "brokerage, custodian or portfolio-tracking connector" in text
+    assert "holdings the user has given in the conversation" in text
+    assert "connector is available" not in text and "portfolio-tracking connector" not in text
     assert "Never ask anyone for brokerage credentials" in text
     # The Studio shows what arrived so the user can correct it before anything is calculated.
     assert "open_rebalance_studio" in text
@@ -225,7 +226,8 @@ async def test_start_here_offers_every_journey_and_keeps_schedules_read_only():
                  "open_breadth_board", "open_rebalance_studio"):
         assert tool in text
     assert "never prepare or place orders" in text
-    assert "news connector" in text and "brokerage connector" in text
+    # No journey depends on, or names, another connector (OpenAI review, 2026-10-25).
+    assert "connector" not in text.split("Journey")[1].split("Keep me posted")[0]
 
 
 @pytest.mark.asyncio
@@ -238,7 +240,8 @@ async def test_drift_check_reports_without_proposing_trades():
     text = await _render("drift_check", {"portfolio": "AQA_BALANCED"})
     assert "do not propose, prepare or place any order" in text
     assert "Do not translate the gaps into share quantities" in text
-    assert "do not ask the user to type their holdings into a scheduled run" in text
+    assert "do not ask for them in a scheduled run" in text
+    assert "portfolio-tracking connector" not in text
     # An aligned account is a result, not an empty report.
     assert "Being aligned is a result worth reporting" in text
 

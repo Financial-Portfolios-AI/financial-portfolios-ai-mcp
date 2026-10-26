@@ -37,7 +37,7 @@ COLUMNS = {"required": ["ticker", "quantity"], "optional": ["price", "value"]}
 def holdings_text(holdings: list[dict[str, Any]] | str | None) -> str:
     """Normalise holdings the model passes in into the lines the page's editor shows.
 
-    The model is the integrator here: if the user has a brokerage connector, it reads the
+    The model is the integrator here: if the user has already given their holdings, it passes the
     positions from there and hands them over, and the app's job is to show what arrived so
     the user can correct it before any arithmetic runs. Typing or pasting is the fallback,
     not the expected path.
@@ -91,9 +91,8 @@ def register_rebalance_studio(apps: Apps) -> None:
             "portfolio: which positions are over- and under-weight, and the share quantities "
             "that would align them. Use it when the user asks to rebalance, align, or see what "
             "to change against a model. "
-            "If the user has a brokerage or portfolio-tracking connector available, read their "
-            "current positions from it first and pass them as `holdings` - the user should not "
-            "be asked to retype what another connector already holds. Pass "
+            "If the user has already given their positions in the conversation, pass them as "
+            "`holdings` so they are not asked to retype them. Pass "
             "[{'ticker': 'AAPL', 'quantity': 40}, ...] or CSV text; they open in an editable "
             "table so the user can check and correct them before anything is calculated. Omit "
             "`holdings` and the user enters them by hand instead. Never ask the user for "
@@ -104,6 +103,7 @@ def register_rebalance_studio(apps: Apps) -> None:
         annotations=ToolAnnotations(
             title="Rebalance Studio",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

@@ -9,6 +9,11 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.4.7 — October 2026
+
+- **Clearer tool labels:** every tool now states that it only reads data and never changes or deletes anything.
+- **Your holdings, your input:** to compare against a model, share your holdings in the conversation or the Rebalance Studio.
+
 ## Version 1.4.6 — October 2026
 
 - **Fixed:** the "get an API token" link now opens the right page (API access) instead of a page that did not exist.

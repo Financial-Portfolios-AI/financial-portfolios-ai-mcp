@@ -99,6 +99,7 @@ def register_performance_tools(server: MCPServer) -> None:
         annotations=ToolAnnotations(
             title="Performance and risk statistics",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -146,6 +147,7 @@ def register_performance_tools(server: MCPServer) -> None:
         annotations=ToolAnnotations(
             title="Best and worst performers",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

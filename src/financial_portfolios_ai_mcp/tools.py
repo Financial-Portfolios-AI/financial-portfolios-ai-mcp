@@ -73,6 +73,7 @@ def register_tools(server: Any) -> None:
         annotations=ToolAnnotations(
             title="List model portfolios",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -126,11 +127,12 @@ def register_tools(server: Any) -> None:
             "user whenever `delayed` is true rather than presenting a delayed book as current. Can also "
             "fetch a historical snapshot via `as_of`. Output represents mathematical target-model "
             "allocation arithmetic, not personalized investment advice."
-            " To add context, pair the holdings with a connected market-data or news tool (company, news, filings) and attribute what it says; to compare against the user's own account, read positions from a connected brokerage tool."
+            " To compare against the user's own holdings, use the positions they provide with `open_rebalance_studio` or `rebalance_portfolio`."
         ),
         annotations=ToolAnnotations(
             title="Portfolio holdings and target allocation",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -195,6 +197,7 @@ def register_tools(server: Any) -> None:
         annotations=ToolAnnotations(
             title="Allocation history",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -252,13 +255,13 @@ def register_tools(server: Any) -> None:
             "entitled. "
             "Note: Uploaded holdings data is processed solely for model alignment calculations. "
             "Output represents mathematical calculations, not trade execution or individualized investment advice. "
-            "Read the holdings from a connected brokerage or aggregator tool (e.g. SnapTrade, IBKR) "
-            "rather than asking the user to type them, and prefer `open_rebalance_studio` so they can "
-            "check them first. Never run this unattended to prepare orders."
+            "Use the holdings the user provides in the conversation, and prefer `open_rebalance_studio` "
+            "so they can check them first. It computes figures only and places no orders."
         ),
         annotations=ToolAnnotations(
             title="Model alignment arithmetic",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -310,6 +313,7 @@ def register_tools(server: Any) -> None:
         annotations=ToolAnnotations(
             title="Holdings CSV template",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -340,12 +344,13 @@ def register_tools(server: Any) -> None:
         title="Search research and market commentary",
         description=(
             "List published quantitative research articles, market commentaries, and investment "
-            "insights from Financial Portfolios AI. This is the publisher's own research; for third-party "
-            "news on a holding, use a connected news or market-data tool and attribute it."
+            "insights from Financial Portfolios AI. This is the publisher's own research, not "
+            "third-party news."
         ),
         annotations=ToolAnnotations(
             title="Search research and market commentary",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -399,6 +404,7 @@ def register_tools(server: Any) -> None:
         annotations=ToolAnnotations(
             title="Read a research article",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
@@ -446,6 +452,7 @@ def register_tools(server: Any) -> None:
         annotations=ToolAnnotations(
             title="API token details",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )

@@ -92,6 +92,7 @@ def register_breadth_board(apps: Apps) -> None:
         annotations=ToolAnnotations(
             title="Breadth Board",
             read_only_hint=True,
+            destructive_hint=False,
             open_world_hint=True,
         ),
     )
