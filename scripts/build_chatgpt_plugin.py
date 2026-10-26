@@ -20,9 +20,19 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
-from financial_portfolios_ai_mcp.disclosure import SERVICE_DESCRIPTION  # noqa: E402
+from financial_portfolios_ai_mcp.disclosure import DISCLAIMER  # noqa: E402
 
 ORIGIN = "https://financial-portfolios.ai"
+
+# Listing copy. OpenAI review rejects pricing, subscription offers and promotions in plugin
+# descriptions (2026-10-25), so this describes what the plugin does and carries the disclaimer -
+# not access tiers. The server's own SERVICE_DESCRIPTION (which explains subscribed vs delayed
+# access to the model) is deliberately not reused here.
+PLUGIN_DESCRIPTION = (
+    "Research systematic, AI-driven model portfolios: current holdings and target weights, how "
+    "each book has changed, concentration and sector mix, published hypothetical performance, and "
+    "quantitative market research, with interactive explorer panels. " + DISCLAIMER
+)
 
 # Review metadata (developers.openai.com/plugins/deploy/submission#testing): exactly 5 positive and
 # 3 negative cases, read-only in the portal - change them here and re-upload the ZIP. Prompts use
@@ -34,8 +44,7 @@ POSITIVE_CASES = [
         "prompt": "Which model portfolios does Financial Portfolios AI publish, and which can I see?",
         "tools_triggered": "list_portfolios",
         "expected_behavior": "Lists Aggressive, Balanced, Defensive and Quality with each one's risk "
-        "level and access (subscribed = live book; otherwise the public book delayed about 45 days), "
-        "with the informational-only disclaimer.",
+        "level and the access the signed-in account has, with the informational-only disclaimer.",
     },
     {
         "description": "Show a portfolio's current holdings",
@@ -89,7 +98,7 @@ RELEASE_NOTES = (
     "Browse the Financial Portfolios AI model portfolios (Aggressive, Balanced, Defensive, Quality): "
     "current holdings, what changed, concentration and sector mix, and published hypothetical "
     "performance, plus interactive explorer panels. Read-only; informational and educational only, "
-    "not investment advice. Available to US residents."
+    "not investment advice."
 )
 
 
@@ -98,13 +107,13 @@ def manifests(version: str, demo_url: str = "") -> tuple[dict, dict]:
         "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
         "name": "financial-portfolios-ai",
         "version": version,
-        "description": SERVICE_DESCRIPTION,
+        "description": PLUGIN_DESCRIPTION,
         "extensions": {
             "com.openai": {
                 "interface": {
                     "displayName": "Financial Portfolios AI",  # <=30
                     "shortDescription": "Model portfolios and research",  # <=30
-                    "longDescription": SERVICE_DESCRIPTION,  # <=4000
+                    "longDescription": PLUGIN_DESCRIPTION,  # <=4000
                     "developerName": "Autonomous Intelligent Agents LLC",
                     "category": "Finance",
                     "capabilities": ["Read"],
@@ -125,8 +134,8 @@ def manifests(version: str, demo_url: str = "") -> tuple[dict, dict]:
                     "test_cases": {"positive": POSITIVE_CASES, "negative": NEGATIVE_CASES},
                     **({"demo_recording_url": demo_url} if demo_url else {}),
                     "commerce": False,
-                    "commerce_description": "No purchases happen in ChatGPT. Subscriptions are bought "
-                    "on financial-portfolios.ai; the plugin only reads published model portfolios.",
+                    "commerce_description": "The plugin does not sell products or process payments; it "
+                    "only reads published model portfolios.",
                 },
                 "publication": {"release_notes": RELEASE_NOTES, "countries": ["US"]},
             }
