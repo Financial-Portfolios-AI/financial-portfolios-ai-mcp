@@ -254,10 +254,9 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
   credential - the portal answers differently per subscriber - and concurrent reads of one
   key share a single fetch, which matters because the Explorer's stock search reads every
   portfolio at once. The Explorer and the tools share the cache.
-- **Monitoring** in `financial-portfolios-dev`: an uptime check on the public
-  protected-resource metadata, log metrics for errors and retries, and three alert policies
-  (endpoint down, error logs, 5xx) notifying the existing ops email. Policy definitions are
-  checked into `ops/monitoring`, and `docs/OPERATIONS.md` documents the log filters.
+- **Monitoring**: an uptime check on the public protected-resource metadata, log metrics for
+  errors and retries, and three alert policies (endpoint down, error logs, 5xx). The policy
+  definitions and runbook are kept in the private operations repository.
 
 ### Changed
 

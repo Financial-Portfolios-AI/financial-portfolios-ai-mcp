@@ -9,7 +9,7 @@ needs a new endpoint, a market-data feed or a schema change.
 ## 1. What the hosts actually do
 
 Not assumptions - `explorer_host_report` records from the deployed service. Query them with
-the filter in [OPERATIONS.md](OPERATIONS.md).
+the service's log filter (kept in the private operations runbook).
 
 As of 2026-09-18, three reports exist, all from one host:
 
