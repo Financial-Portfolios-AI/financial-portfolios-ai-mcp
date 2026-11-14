@@ -376,10 +376,16 @@ def test_instructions_still_forbid_computing_performance_from_another_source():
     """
     text = mcp_server.instructions
     assert "The boundary is authorship, not subject." in text
-    assert "Do not compute, estimate or chart a return" in text
-    assert "from prices obtained anywhere else" in text
-    # The worked example is the exact question that tempts a model to price the book.
-    assert "did best" in text and "not by pricing the book yourself" in text
+    # A user's own prices may be used to recalculate, but the result is the USER's, never ours.
+    assert "Recalculating with the user's own price data:" in text
+    assert "the user's own hypothetical calculation" in text
+    assert "never the publisher's" in text
+    assert "may differ from `get_portfolio_performance` and the website" in text
+    assert "do not adapt it to their circumstances" in text
+    # The delayed public book stays described as the published book, not the current allocation.
+    assert "not the current allocation" in text
+    # The worked example stays: "which holdings did best" is answered by the published metrics.
+    assert "did best" in text and "`get_portfolio_metrics` for the published book" in text
     # And the derived tools must not be mistaken for performance.
     assert "are not performance" in text
 
@@ -438,3 +444,17 @@ async def test_every_tool_sets_all_three_hints_explicitly():
         assert a.get("title"), tool.name
         for key in ("readOnlyHint", "destructiveHint", "openWorldHint"):
             assert isinstance(a.get(key), bool), (tool.name, key)
+
+
+def test_recalculation_wording_does_not_send_the_model_to_another_connector():
+    """OpenAI's scan (1.4.7) objected to instructions that tell the model to use another connector.
+
+    The recalculation rule covers prices the USER provides in the conversation; it must never
+    name a market-data provider or tell the model to go and fetch prices from elsewhere.
+    """
+    text = mcp_server.instructions
+    start = text.index("Recalculating with the user's own price data:")
+    section = text[start:text.index("Context about the companies held:", start)]
+    for banned in ("market-data", "market data provider", "connector", "plugin", "fetch", "look up prices"):
+        assert banned not in section.lower(), banned
+    assert "typed, pasted or uploaded" in section

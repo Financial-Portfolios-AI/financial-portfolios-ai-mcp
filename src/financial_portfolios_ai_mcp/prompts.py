@@ -81,8 +81,10 @@ Performance comes from `get_portfolio_performance` (curve and risk statistics) a
 hypothetical and simulated. Whenever you show any of those figures, include the `disclaimer`
 field from that same response, in full and unaltered. Check `available` first: while price
 history is backfilling it is false with a `reason`, which you should report rather than treat as
-an error or as zero. Never compute a return, gain, drawdown or benchmark comparison yourself, or
-from prices obtained elsewhere."""
+an error or as zero. If the user supplies their own prices and asks for a recalculation, you may
+compute it from the published weights (`get_portfolio_history`), but present it as the user's own
+hypothetical calculation from their data - never as the publisher's figure - and say it may differ
+from the published performance."""
 
 _BOUNDARY = """\
 Stay informational. Describe what the model portfolios contain and how they differ; do
@@ -535,7 +537,7 @@ Then build the report as a single self-contained interactive page (an artifact w
 - Changes over the period: positions added and removed, and the largest weight shifts, with turnover. Skip this section if there is nothing to compare, and say why.
 - Footer: the full disclaimer text above, verbatim, visible on the page itself - the report may be shared without this conversation.
 
-Use only numbers returned by the tools. Performance figures come from `get_portfolio_performance` and `get_portfolio_metrics` and are hypothetical and simulated; if you include any of them, show the `disclaimer` from that response with them, in full and unaltered. Never compute, estimate or chart a return, gain, drawdown or benchmark comparison yourself, and never from prices obtained elsewhere - a figure derived that way is not the publisher's and will not match the website.
+Use only numbers returned by the tools. Performance figures come from `get_portfolio_performance` and `get_portfolio_metrics` and are hypothetical and simulated; if you include any of them, show the `disclaimer` from that response with them, in full and unaltered. Do not put a return you worked out yourself in the report as if it were the publisher's; if the user supplied their own prices and asked for a recalculation, show it separately, labelled as the user's own hypothetical calculation from their data, with the same disclosure.
 
 {_DELAYED_BOOK}
 

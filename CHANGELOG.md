@@ -9,6 +9,13 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Proposed (not released; pending counsel and the directory reviews)
+- Server instructions, prompts and the Gemini context let the model recalculate a model portfolio's
+  performance from prices the USER supplies, using `get_portfolio_history` weights held forward
+  between snapshots. The result must be labelled as the user's own hypothetical calculation, never
+  as the publisher's figure, and may differ from `get_portfolio_performance` and the website.
+  The wording never names or sends the model to another connector (OpenAI's 1.4.7 finding).
+
 ## [1.4.7] - 2026-10-25
 
 ### Fixed (OpenAI directory scan findings)

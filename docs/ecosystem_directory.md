@@ -34,7 +34,7 @@ own account and API key. We never proxy, store or redistribute their data.
 | :--- | :--- | :--- |
 | What does the model hold? How did it change? | ✅ | — |
 | Prices, charts, fundamentals, news on holdings | ❌ | [Market data](#market-data-providers) |
-| Performance of holdings or a benchmark | ❌ | Market data. See the note on [performance](#3-performance-computed-from-third-party-prices) |
+| Performance of holdings or a benchmark | The user's own recalculation from their own prices (labelled as theirs) | Market data the user provides. See the note on [performance](#3-performance-computed-from-third-party-prices) |
 | View my own accounts and holdings | ❌ | [Account aggregators](#account-aggregators-read-only), read-only and preferred, or [Brokerage](#brokerage-firms) |
 | Place trades | ❌ | [Brokerage](#brokerage-firms). See the [compliance boundary](#1-publisher-exclusion-listing-vs-integrating) |
 
@@ -156,12 +156,14 @@ brings. Today there is no compensation, and this document must say so wherever i
 published.
 
 ### 3. Performance computed from third-party prices
-With a data provider connected, a customer or Claude can price our model's holdings and
+With the user's own price data, a customer or Claude can price our model's holdings and
 compute a "performance" figure. That is **hypothetical model performance**, a heavily
-regulated presentation, and one we currently prevent: `portfolio_report` forbids
-computing returns "from other sources". Counsel should decide whether this may be shown
-at all, to whom (subscribers or the public), and with which disclosures, before that
-guard is relaxed.
+regulated presentation. PROPOSED 2026-11-14 (owner request, branch
+`feat/allow-user-priced-recalculation`, NOT released): the server instructions let the model do it
+when the user supplies the prices, labelled as the user's own hypothetical calculation and never as
+the publisher's figure. Counsel should still decide whether this may be shown, to whom (subscribers
+or the public), and with which disclosures, and the directory reviews in flight (Claude, ChatGPT,
+Muse) should finish before this ships.
 
 ### 4. Unattended trading
 Public.com executes without per-trade confirmation. Robinhood makes confirmation

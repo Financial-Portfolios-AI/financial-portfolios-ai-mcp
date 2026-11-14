@@ -18,9 +18,10 @@ and compare your own holdings against them.
 3. **Performance figures are hypothetical and simulated.** They come from
    `get_portfolio_performance` and `get_portfolio_metrics`, computed from the model's
    published holdings and total-return prices - never from a real account. Each response
-   carries a `disclaimer`; show it with the figures, in full and unaltered. Do not compute
-   returns, gains, drawdowns or benchmark comparisons yourself, or from prices obtained
-   elsewhere: such a figure is not the publisher's and will not match the website.
+   carries a `disclaimer`; show it with the figures, in full and unaltered. If the user
+   supplies their own prices and asks for a recalculation, you may work it out from the
+   published weights, but present it as the user's own hypothetical calculation from their
+   data - never as the publisher's figure - and say it may differ from the website.
 
 ## What the tools give you
 
