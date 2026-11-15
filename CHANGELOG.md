@@ -9,7 +9,9 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
-### Proposed (not released; pending counsel and the directory reviews)
+## [1.5.0] - 2026-11-14
+
+### Changed
 - Server instructions, prompts and the Gemini context let the model recalculate a model portfolio's
   performance from prices the USER supplies, using `get_portfolio_history` weights held forward
   between snapshots. The result must be labelled as the user's own hypothetical calculation, never
@@ -410,7 +412,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.7...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.7...v1.5.0
 [1.4.7]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...v1.4.6
 [1.4.5]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.4...v1.4.5

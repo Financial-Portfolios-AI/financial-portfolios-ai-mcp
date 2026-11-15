@@ -9,6 +9,10 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.5.0 — November 2026
+
+- **Your own prices:** if you give your assistant your own price data, it can combine it with a model portfolio's published weights. The result is your own calculation, labelled as such, and may differ from the figures on the website.
+
 ## Version 1.4.7 — October 2026
 
 - **Clearer tool labels:** every tool now states that it only reads data and never changes or deletes anything.
