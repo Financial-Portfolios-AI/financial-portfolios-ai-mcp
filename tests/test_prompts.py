@@ -412,8 +412,9 @@ async def test_report_carries_the_disclosure_and_computes_no_performance_of_its_
     assert "days=30" in text
     assert "hypothetical and simulated" in text
     assert "in full and unaltered" in text
-    assert "Never compute, estimate or chart a return" in text
-    assert "from prices obtained" in text and "elsewhere" in text
+    # A recalculation from the user's own prices may be shown, but never as the publisher's figure.
+    assert "labelled as the user's own hypothetical calculation" in text
+    assert "as if it were the publisher's" in text
 
 
 @pytest.mark.asyncio

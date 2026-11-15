@@ -34,7 +34,12 @@ behaviour until a single test open settles which.
 
 ## 2. The performance firewall
 
-`server.py` is explicit, and `test_server.py:318`, `test_prompts.py:229` and
+> **PROPOSED 2026-11-14 (owner request, unreleased, pending counsel and the directory reviews):**
+> the model may recalculate performance from prices the USER supplies, labelled as the user's own
+> hypothetical calculation and never as the publisher's figure. The text below is the rule as
+> released up to 1.4.7.
+
+`server.py` is explicit, and `test_server.py`, `test_prompts.py` and
 `test_release.py:52` enforce it:
 
 > Never offer, compute, estimate or chart performance, returns, gains, drawdowns, best or
@@ -208,7 +213,7 @@ The firewall keeps the half that earns something:
 | | |
 | :--- | :--- |
 | **Allowed** | Figures the portal publishes, relayed with the portal's own simulated/hypothetical disclosure attached |
-| **Still refused** | Performance this connector computes itself by pricing holdings from a market-data connector |
+| **Still refused (1.4.7)** | Performance this connector computes itself by pricing holdings from a market-data connector. PROPOSED relaxation: the user's own prices, labelled as theirs (see §2) |
 
 The distinction is authorship, not subject. A figure the publisher produced and labelled is
 the publisher's to publish. A figure we derive from someone else's prices is one nobody

@@ -7,10 +7,9 @@ so a customer read a figure on the site and was told by the assistant that it di
 exist. That was an inconsistency, not a safety margin.
 
 The boundary that remains is **authorship, not subject**. A figure the publisher computed
-and labelled is the publisher's to publish, and this relays it. A figure derived here by
-pricing holdings with a market-data connector would be one nobody vetted, carrying no
-hypothetical labelling and not matching the website - that stays out of scope, and
-`server.py` tells the model so.
+and labelled is the publisher's to publish, and this relays it. A figure a user has the model
+work out from their own prices is the user's own labelled calculation, never the publisher's:
+`server.py` tells the model how to label it.
 
 Each response carries its own `disclaimer` from the portal - a different statement from the
 ADR-0161 constant on allocation and history, because these numbers need a different one.
