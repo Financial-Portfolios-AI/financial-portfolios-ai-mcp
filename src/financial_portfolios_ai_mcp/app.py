@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from mcp.server.transport_security import TransportSecuritySettings
 
+from financial_portfolios_ai_mcp import server_card
 from financial_portfolios_ai_mcp._version import __version__
 from financial_portfolios_ai_mcp.auth import reset_request_token, set_request_token
 from financial_portfolios_ai_mcp.config import get_settings
@@ -30,7 +31,7 @@ _PROTECTED_PREFIXES = ("/mcp", "/sse")
 # Public sub-paths of a protected prefix. The icons and manifests live under /mcp
 # because that is what the portal load balancer routes here, but a connector
 # directory fetches them with no credential - challenging those would hide the logo.
-_PUBLIC_PREFIXES = ("/mcp/assets", "/mcp/manifests")
+_PUBLIC_PREFIXES = ("/mcp/assets", "/mcp/manifests", "/mcp/server-card")
 
 # Immutable, versioned-by-content brand assets: cache hard at the CDN/browser.
 _ASSET_CACHE_CONTROL = "public, max-age=604800, immutable"
@@ -246,7 +247,8 @@ def create_app() -> FastAPI:
         allow_origins=["*"],
         allow_credentials=False,
         allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["X-API-Key", "Authorization", "Content-Type"],
+        allow_headers=["X-API-Key", "Authorization", "Content-Type", "If-None-Match"],
+        expose_headers=["ETag"],
     )
 
     @app.get("/", summary="Root status and metadata")
@@ -317,6 +319,28 @@ def create_app() -> FastAPI:
             media_type="image/x-icon",
             headers={"Cache-Control": _ASSET_CACHE_CONTROL},
         )
+
+    def _discovery_document(request: Request, document: dict, media_type: str) -> Response:
+        # SEP-2127: public, cacheable, with a strong ETag so clients can revalidate with a 304.
+        body, etag = server_card.encode(document)
+        headers = {
+            **server_card.CARD_CORS_HEADERS,
+            "Cache-Control": server_card.CARD_CACHE_CONTROL,
+            "ETag": etag,
+        }
+        if request.headers.get("if-none-match", "").strip() == etag:
+            return Response(status_code=304, headers=headers)
+        return Response(content=body, media_type=media_type, headers=headers)
+
+    @app.api_route(server_card.CARD_PATH, methods=["GET", "HEAD"], summary="MCP Server Card (SEP-2127)")
+    async def get_server_card(request: Request) -> Response:
+        origin = _request_origin(request.scope)
+        return _discovery_document(request, server_card.build_card(origin), server_card.CARD_MEDIA_TYPE)
+
+    @app.api_route(server_card.CATALOG_PATH, methods=["GET", "HEAD"], summary="AI Catalog listing the server card")
+    async def get_ai_catalog(request: Request) -> Response:
+        origin = _request_origin(request.scope)
+        return _discovery_document(request, server_card.build_catalog(origin), server_card.CATALOG_MEDIA_TYPE)
 
     @app.get("/.well-known/oauth-protected-resource", summary="OAuth 2.1 protected-resource metadata")
     async def protected_resource_metadata() -> JSONResponse:
