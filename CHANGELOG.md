@@ -9,6 +9,9 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+### Added
+- MCP Server Card (SEP-2127): `GET /mcp/server-card` (`application/mcp-server-card+json`) publishes the server's identity, remote endpoints and supported protocol versions before any connection, with CORS, `Cache-Control` and an `ETag` (304 on `If-None-Match`). `GET /.well-known/ai-catalog.json` lists it. Public, no credential; no tools, resources or prompts. A test pins the card to `server.json` and the advertised protocol versions to what the transport accepts.
+
 ## [1.5.0] - 2026-11-14
 
 ### Changed
