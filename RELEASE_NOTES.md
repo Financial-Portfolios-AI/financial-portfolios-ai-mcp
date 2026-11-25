@@ -9,6 +9,10 @@ suitability assessment has been performed.
 
 ---
 
+## Version 1.5.1 — November 2026
+
+- **Easier to discover:** the server now publishes a standard "server card", so directories and AI clients can see what it is and how to connect before signing in.
+
 ## Version 1.5.0 — November 2026
 
 - **Your own prices:** if you give your assistant your own price data, it can combine it with a model portfolio's published weights. The result is your own calculation, labelled as such, and may differ from the figures on the website.

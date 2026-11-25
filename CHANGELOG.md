@@ -9,6 +9,8 @@ Customer-facing notes for each release are in [RELEASE_NOTES.md](RELEASE_NOTES.m
 
 ## [Unreleased]
 
+## [1.5.1] - 2026-11-25
+
 ### Added
 - MCP Server Card (SEP-2127): `GET /mcp/server-card` (`application/mcp-server-card+json`) publishes the server's identity, remote endpoints and supported protocol versions before any connection, with CORS, `Cache-Control` and an `ETag` (304 on `If-None-Match`). `GET /.well-known/ai-catalog.json` lists it. Public, no credential; no tools, resources or prompts. A test pins the card to `server.json` and the advertised protocol versions to what the transport accepts.
 
@@ -415,7 +417,8 @@ not show the corresponding control.
 
 Initial release.
 
-[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.5.0...v1.5.1
 [1.5.0]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.7...v1.5.0
 [1.4.7]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.6...v1.4.7
 [1.4.6]: https://github.com/Financial-Portfolios-AI/financial-portfolios-ai-mcp/compare/v1.4.5...v1.4.6
